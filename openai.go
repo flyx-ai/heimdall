@@ -43,7 +43,6 @@ type openAIRequest struct {
 	StreamOptions streamOptions          `json:"stream_options"`
 	Temperature   float32                `json:"temperature,omitempty"`
 	TopP          float32                `json:"top_p,omitempty"`
-	// ResponseFormat map[string]interface{} `json:"response_format",omitempty`
 }
 
 type Openai struct {
@@ -72,14 +71,14 @@ func (oa Openai) StreamResponse(
 
 	body, err := json.Marshal(apiReq)
 	if err != nil {
-		return nil, fmt.Errorf("marshal request: %w", err)
+		return nil, err
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST",
 		fmt.Sprintf("%s/chat/completions", openAIBaseURL),
 		bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
+		return nil, err
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -87,12 +86,12 @@ func (oa Openai) StreamResponse(
 
 	resp, err := oa.Client.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("do request: %w", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status: %d", resp.StatusCode)
+		return nil, err
 	}
 
 	reader := bufio.NewReader(resp.Body)
@@ -110,7 +109,7 @@ func (oa Openai) StreamResponse(
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("read line: %w", err)
+			return nil, err
 		}
 
 		line = strings.TrimPrefix(line, "data: ")
@@ -121,13 +120,13 @@ func (oa Openai) StreamResponse(
 
 		var chunk openAIChunk
 		if err := json.Unmarshal([]byte(line), &chunk); err != nil {
-			return nil, fmt.Errorf("unmarshal chunk: %w", err)
+			return nil, err
 		}
 
 		if len(chunk.Choices) > 0 {
 			fullContent.WriteString(chunk.Choices[0].Delta.Content)
 			if err := chunkHandler(chunk.Choices[0].Delta.Content); err != nil {
-				return nil, fmt.Errorf("handle chunk: %w", err)
+				return nil, err
 			}
 		}
 

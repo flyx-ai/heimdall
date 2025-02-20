@@ -3,7 +3,6 @@ package heimdall
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -59,11 +58,10 @@ func (r *Router) Stream(
 	chunkHandler func(chunk string) error,
 ) error {
 	if chunkHandler == nil {
-		return errors.New("a chunk handler must be provided to stream response")
+		return ErrNoChunkHandler
 	}
 
 	models := append([]Model{req.Model}, req.Fallback...)
-	// groupingID := uuid.New()
 	var resp *CompletionResponse
 	var err error
 
@@ -72,7 +70,6 @@ func (r *Router) Stream(
 			ctx,
 			req,
 			model,
-			// groupingID,
 			chunkHandler,
 		)
 		if resp != nil && err == nil {
@@ -80,39 +77,7 @@ func (r *Router) Stream(
 		}
 	}
 
-	// var systemMsg string
-	// var userMsg string
-	// messages := make([]openAIMsg, len(req.Messages))
-	// for i, msg := range req.Messages {
-	// 	if msg.Role == "system" {
-	// 		systemMsg = msg.Content
-	// 	}
-	// 	if msg.Role == "user" {
-	// 		userMsg = msg.Content
-	// 	}
-	// 	messages[i] = openAIMsg(msg)
-	// }
-
 	req.Tags["request_type"] = "stream"
-
-	// tags, err := json.Marshal(req.Tags)
-	// if err != nil {
-	// 	slog.ErrorContext(ctx, "log final request and response", "error", err)
-	// }
-
-	// if _, err := clients.RiverQueue.Insert(ctx, jobs.HeimdallRequestArgs{
-	// 	ID:           groupingID,
-	// 	Success:      err == nil,
-	// 	TopP:         req.TopP,
-	// 	Temperature:  req.Temperature,
-	// 	SystemPrompt: systemMsg,
-	// 	UserPrompt:   userMsg,
-	// 	Response:     resp.Content,
-	// 	Model:        resp.Model.Name,
-	// 	Tags:         tags,
-	// }, &river.InsertOpts{}); err != nil {
-	// 	slog.ErrorContext(ctx, "log final request and response", "error", err)
-	// }
 
 	return err
 }
@@ -121,7 +86,6 @@ func (r *Router) tryStreamWithModel(
 	ctx context.Context,
 	req CompletionRequest,
 	model Model,
-	// groupingID uuid.UUID,
 	chunkHandler func(chunk string) error,
 ) (*CompletionResponse, error) {
 	keys := r.config.ProviderAPIKeys[model.Provider]
@@ -130,7 +94,6 @@ func (r *Router) tryStreamWithModel(
 	for i := range keys {
 		key := &keys[i]
 		if !key.isAvailable() {
-			//}
 			continue
 		}
 
@@ -176,14 +139,8 @@ func (r *Router) streamResponse(
 			key,
 			chunkHandler,
 		)
-	// case ProviderGoogle:
-	// 	resp, err = c.streamResponseGoogle(ctx, req, chunkHandler)
-	// case ProviderPerplexity:
-	// 	resp, err = c.streamResponsePerplexity(ctx, req, chunkHandler)
-	// case ProviderAnthropic:
-	// 	resp, err = c.streamResponseAnthropic(ctx, req, chunkHandler)
 	default:
-		err = fmt.Errorf("unsupported provider: %s", provider)
+		err = ErrUnsupportedProvider
 	}
 
 	return resp, err
@@ -200,19 +157,6 @@ func (ak *APIKey) isAvailable() bool {
 
 	return ak.requestsUsed < ak.RequestsLimit
 }
-
-// func (r *Router) getKeysForProvider(provider Provider) []*APIKey {
-// 	r.mu.RLock()
-// 	defer r.mu.RUnlock()
-//
-// 	var keys []*APIKey
-// 	for _, key := range r.config.Keys {
-// 		if key.Provider == provider {
-// 			keys = append(keys, key)
-// 		}
-// 	}
-// 	return keys
-// }
 
 func (ak *APIKey) handleKeyError(key *APIKey, err error) {
 	key.mu.Lock()
