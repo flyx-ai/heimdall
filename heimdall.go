@@ -9,12 +9,11 @@ import (
 )
 
 type APIKey struct {
-	Key              string
-	RequestsLimit    int
-	requestsUsed     int
-	requestRemaining int
-	ResetAt          time.Time
-	mu               sync.Mutex
+	Key           string
+	RequestsLimit int
+	requestsUsed  int
+	ResetAt       time.Time
+	mu            sync.Mutex
 }
 
 type RouterConfig struct {
@@ -33,7 +32,6 @@ type LLM interface {
 
 type Router struct {
 	config RouterConfig
-	mu     sync.RWMutex
 	llms   map[Provider]LLM
 }
 
@@ -158,6 +156,7 @@ func (ak *APIKey) isAvailable() bool {
 	return ak.requestsUsed < ak.RequestsLimit
 }
 
+//nolint:unused // needed later
 func (ak *APIKey) handleKeyError(key *APIKey, err error) {
 	key.mu.Lock()
 	defer key.mu.Unlock()
