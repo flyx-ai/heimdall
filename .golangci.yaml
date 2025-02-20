@@ -1,0 +1,17 @@
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - goimports
+    - sloglint
+    - makezero
+  presets:
+    - bugs
+  fast: false
