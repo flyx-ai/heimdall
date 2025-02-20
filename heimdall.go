@@ -104,6 +104,7 @@ func (r *Router) tryStreamWithModel(
 		)
 		if err != nil {
 			if errors.Is(err, ErrRateLimitHit) {
+				key.handleRateLimit()
 				continue
 			}
 			if errors.Is(err, context.Canceled) {
@@ -156,14 +157,9 @@ func (ak *APIKey) isAvailable() bool {
 	return ak.requestsUsed < ak.RequestsLimit
 }
 
-//nolint:unused // needed later
-func (ak *APIKey) handleKeyError(key *APIKey, err error) {
-	key.mu.Lock()
-	defer key.mu.Unlock()
+func (ak *APIKey) handleRateLimit() {
+	ak.mu.Lock()
+	defer ak.mu.Unlock()
 
-	if errors.Is(err, ErrRateLimitHit) {
-		key.requestsUsed = key.RequestsLimit
-	} else {
-		key.requestsUsed++
-	}
+	ak.requestsUsed = ak.RequestsLimit
 }
