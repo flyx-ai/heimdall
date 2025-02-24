@@ -9,16 +9,6 @@ import (
 	"github.com/flyx-ai/heimdall"
 )
 
-func chunkHandler(chunk string) error {
-	// slog.Info(
-	// 	"#################### CHUNK ######################",
-	// 	"value",
-	// 	chunk,
-	// )
-	//
-	return nil
-}
-
 func main() {
 	ctx := context.Background()
 
@@ -30,6 +20,12 @@ func main() {
 					Key:              os.Getenv("OPENAI_API_KEY"),
 					RequestsLimit:    500,
 					RequestRemaining: 500,
+				},
+				heimdall.APIKey{
+					Name:             "ONE",
+					Key:              os.Getenv("OPENAI_API_KEY_TWO"),
+					RequestsLimit:    10000,
+					RequestRemaining: 10000,
 				},
 			},
 			heimdall.ProviderGoogle: {
@@ -47,7 +43,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	req := heimdall.CompletionRequest{
-		Model: heimdall.ModelGemini15Pro,
+		Model: heimdall.ModelGPT4OMini,
 		Messages: []heimdall.Message{
 			{
 				Role:    "system",
@@ -59,7 +55,7 @@ func main() {
 			},
 		},
 		Fallback: []heimdall.Model{
-			heimdall.ModelGPT4OMini,
+			heimdall.ModelGemini15Pro,
 			heimdall.ModelGPT4OModel,
 		},
 		Temperature: 1,
@@ -71,13 +67,15 @@ func main() {
 	}
 
 	router.ReqsStats()
-	for i := range 50 {
+	for i := range 2 {
 		wg.Add(1)
 		go func(routineNum int) {
 			defer wg.Done()
 
-			if err := router.Stream(ctx, req, chunkHandler); err != nil {
+			if res, err := router.Complete(ctx, req); err != nil {
 				slog.Info("ERRRRRR", "e", err)
+			} else {
+				slog.Info("ITERATION DONE", "i", i, "res", res)
 			}
 		}(i)
 	}
