@@ -31,9 +31,11 @@ func main() {
 					RequestsLimit:    500,
 					RequestRemaining: 500,
 				},
+			},
+			heimdall.ProviderGoogle: {
 				heimdall.APIKey{
-					Name:             "TWO",
-					Key:              os.Getenv("OPEN_API_KEY_PROD"),
+					Name:             "ONE",
+					Key:              os.Getenv("GOOGLE_API_KEY"),
 					RequestsLimit:    10000,
 					RequestRemaining: 10000,
 				},
@@ -45,7 +47,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	req := heimdall.CompletionRequest{
-		Model: heimdall.ModelGPT4,
+		Model: heimdall.ModelGemini15Pro,
 		Messages: []heimdall.Message{
 			{
 				Role:    "system",

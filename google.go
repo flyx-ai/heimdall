@@ -12,50 +12,14 @@ import (
 	"time"
 )
 
-const openAIBaseURL = "https://api.openai.com/v1"
+const googleBaseUrl = "https://generativelanguage.googleapis.com/v1beta:chatCompletions"
 
-type openAIRequestMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type openAIChunk struct {
-	Choices []struct {
-		Delta struct {
-			Content string `json:"content"`
-		} `json:"delta"`
-	} `json:"choices"`
-	Usage struct {
-		PromptTokens     int `json:"prompt_tokens"`
-		CompletionTokens int `json:"completion_tokens"`
-		TotalTokens      int `json:"total_tokens"`
-	} `json:"usage"`
-}
-
-type streamOptions struct {
-	IncludeUsage bool `json:"include_usage"`
-}
-
-type openAIRequest struct {
-	Model         string                 `json:"model"`
-	Messages      []openAIRequestMessage `json:"messages"`
-	Stream        bool                   `json:"stream"`
-	StreamOptions streamOptions          `json:"stream_options"`
-	Temperature   float32                `json:"temperature,omitempty"`
-	TopP          float32                `json:"top_p,omitempty"`
-}
-
-type Openai struct {
+type Google struct {
 	Client http.Client
 }
 
-type RateLimit struct {
-	Remaining int
-	Limit     int
-	Reset     time.Time
-}
-
-func (oa Openai) StreamResponse(
+// TODO: Implement manual key checking
+func (g Google) StreamResponse(
 	ctx context.Context,
 	req CompletionRequest,
 	key APIKey,
@@ -77,43 +41,27 @@ func (oa Openai) StreamResponse(
 
 	body, err := json.Marshal(apiReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST",
-		fmt.Sprintf("%s/chat/completions", openAIBaseURL),
+		googleBaseUrl,
 		bytes.NewReader(body))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create request: %w", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+key.Key)
 
-	resp, err := oa.Client.Do(httpReq)
+	resp, err := g.Client.Do(httpReq)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("do request: %w", err)
 	}
-
 	defer resp.Body.Close()
 
-	rateLimit := parseOpenAICompatRateLimit(resp)
-
-	used := rateLimit.Limit - rateLimit.Remaining
-	remaining := rateLimit.Remaining
-	reset := rateLimit.Reset
-
-	if key.requestsUsed < used {
-		key.requestsUsed = used
-	}
-
-	if key.RequestRemaining > remaining {
-		key.RequestRemaining = remaining
-	}
-
-	// TODO: fix this logic
-	if key.ResetAt.Before(reset) {
-		key.ResetAt = rateLimit.Reset
+	for key, values := range resp.Header {
+		fmt.Println(key, ":", values)
 	}
 
 	switch resp.StatusCode {
@@ -136,7 +84,7 @@ func (oa Openai) StreamResponse(
 			break
 		}
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("read line: %w", err)
 		}
 
 		line = strings.TrimPrefix(line, "data: ")
@@ -147,13 +95,13 @@ func (oa Openai) StreamResponse(
 
 		var chunk openAIChunk
 		if err := json.Unmarshal([]byte(line), &chunk); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unmarshal chunk: %w", err)
 		}
 
 		if len(chunk.Choices) > 0 {
 			fullContent.WriteString(chunk.Choices[0].Delta.Content)
 			if err := chunkHandler(chunk.Choices[0].Delta.Content); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("handle chunk: %w", err)
 			}
 		}
 
