@@ -27,7 +27,7 @@ type LLM interface {
 		req CompletionRequest,
 		key APIKey,
 	) (*CompletionResponse, error)
-	StreamResponse(
+	streamResponse(
 		ctx context.Context,
 		req CompletionRequest,
 		key APIKey,
@@ -64,7 +64,7 @@ func New(config RouterConfig) *Router {
 	}
 
 	openai := openai{client: c}
-	google := Google{Client: c}
+	google := google{client: c}
 
 	return &Router{
 		config: config,
@@ -170,14 +170,14 @@ func (r *Router) streamResponse(
 
 	switch provider {
 	case ProviderOpenAI:
-		resp, err = r.llms[ProviderOpenAI].StreamResponse(
+		resp, err = r.llms[ProviderOpenAI].streamResponse(
 			ctx,
 			req,
 			key,
 			chunkHandler,
 		)
 	case ProviderGoogle:
-		resp, err = r.llms[ProviderGoogle].StreamResponse(
+		resp, err = r.llms[ProviderGoogle].streamResponse(
 			ctx,
 			req,
 			key,

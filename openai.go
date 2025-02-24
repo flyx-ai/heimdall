@@ -168,7 +168,7 @@ func (oa openai) completeResponse(
 	}, nil
 }
 
-func (oa openai) StreamResponse(
+func (oa openai) streamResponse(
 	ctx context.Context,
 	req CompletionRequest,
 	key APIKey,
