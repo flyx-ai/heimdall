@@ -14,21 +14,108 @@ import (
 
 const googleBaseUrl = "https://generativelanguage.googleapis.com/v1beta:chatCompletions"
 
-type Google struct {
-	Client http.Client
+type google struct {
+	client http.Client
 }
 
-// dummy impl
-func (g Google) completeResponse(
+// TODO: Implement manual key checking
+func (g google) completeResponse(
 	ctx context.Context,
 	req CompletionRequest,
 	key APIKey,
 ) (*CompletionResponse, error) {
-	return nil, nil
+	messages := make([]openAIRequestMessage, len(req.Messages))
+	for i, msg := range req.Messages {
+		messages[i] = openAIRequestMessage(msg)
+	}
+
+	apiReq := openAIRequest{
+		Model:         req.Model.Name,
+		Messages:      messages,
+		Stream:        true,
+		StreamOptions: streamOptions{IncludeUsage: true},
+		Temperature:   1.0,
+	}
+
+	body, err := json.Marshal(apiReq)
+	if err != nil {
+		return nil, err
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST",
+		googleBaseUrl,
+		bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+key.Key)
+
+	resp, err := g.client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusTooManyRequests:
+		return nil, ErrRateLimitHit
+	}
+
+	reader := bufio.NewReader(resp.Body)
+	var fullContent strings.Builder
+	var usage Usage
+	chunks := 0
+	now := time.Now()
+
+	for {
+		if chunks == 0 && time.Since(now).Seconds() > 3.0 {
+			return nil, context.Canceled
+		}
+		line, err := reader.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		line = strings.TrimPrefix(line, "data: ")
+		line = strings.TrimSpace(line)
+		if line == "" || line == "[DONE]" {
+			continue
+		}
+
+		var chunk openAIChunk
+		if err := json.Unmarshal([]byte(line), &chunk); err != nil {
+			return nil, err
+		}
+
+		if len(chunk.Choices) > 0 {
+			fullContent.WriteString(chunk.Choices[0].Delta.Content)
+		}
+
+		chunks++
+
+		if chunk.Usage.TotalTokens != 0 {
+			usage = Usage{
+				PromptTokens:     chunk.Usage.PromptTokens,
+				CompletionTokens: chunk.Usage.CompletionTokens,
+				TotalTokens:      chunk.Usage.TotalTokens,
+			}
+		}
+	}
+
+	return &CompletionResponse{
+		Content: fullContent.String(),
+		Model:   req.Model,
+		Usage:   usage,
+	}, nil
 }
 
 // TODO: Implement manual key checking
-func (g Google) StreamResponse(
+func (g google) streamResponse(
 	ctx context.Context,
 	req CompletionRequest,
 	key APIKey,
@@ -63,7 +150,7 @@ func (g Google) StreamResponse(
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+key.Key)
 
-	resp, err := g.Client.Do(httpReq)
+	resp, err := g.client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("do request: %w", err)
 	}
