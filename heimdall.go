@@ -5,16 +5,10 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"sync"
 	"time"
 )
 
 type APIKey struct {
-	Key           string
-	RequestsLimit int
-	requestsUsed  int
-	ResetAt       time.Time
-	mu            sync.Mutex
 	Name             string
 	Key              string
 	RequestsLimit    int
@@ -32,7 +26,7 @@ type LLM interface {
 	StreamResponse(
 		ctx context.Context,
 		req CompletionRequest,
-		key string,
+		key APIKey,
 		chunkHandler func(chunk string) error,
 	) (*CompletionResponse, error)
 }
@@ -59,6 +53,7 @@ func (r *Router) ReqsStats() {
 		}
 	}
 }
+
 func New(config RouterConfig) *Router {
 	c := http.Client{
 		Timeout: config.Timeout,
@@ -123,12 +118,11 @@ func (r *Router) tryStreamWithModel(
 			ctx,
 			req,
 			model.Provider,
-			key.Key,
+			key,
 			chunkHandler,
 		)
 		if err != nil {
 			if errors.Is(err, ErrRateLimitHit) {
-				key.handleRateLimit()
 				continue
 			}
 			if errors.Is(err, context.Canceled) {
@@ -148,7 +142,7 @@ func (r *Router) streamResponse(
 	ctx context.Context,
 	req CompletionRequest,
 	provider Provider,
-	key string,
+	key APIKey,
 	chunkHandler func(chunk string) error,
 ) (*CompletionResponse, error) {
 	var resp *CompletionResponse
@@ -170,20 +164,5 @@ func (r *Router) streamResponse(
 }
 
 func (ak *APIKey) isAvailable() bool {
-	ak.mu.Lock()
-	defer ak.mu.Unlock()
-
-	if time.Now().After(ak.ResetAt) {
-		ak.requestsUsed = 0
-		ak.ResetAt = time.Now().Add(24 * time.Hour)
-	}
-
-	return ak.requestsUsed < ak.RequestsLimit
-}
-
-func (ak *APIKey) handleRateLimit() {
-	ak.mu.Lock()
-	defer ak.mu.Unlock()
-
-	ak.requestsUsed = ak.RequestsLimit
+	return ak.RequestRemaining > 1
 }
