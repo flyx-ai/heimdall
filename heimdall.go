@@ -3,6 +3,7 @@ package heimdall
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -14,6 +15,12 @@ type APIKey struct {
 	requestsUsed  int
 	ResetAt       time.Time
 	mu            sync.Mutex
+	Name             string
+	Key              string
+	RequestsLimit    int
+	requestsUsed     int
+	RequestRemaining int
+	ResetAt          time.Time
 }
 
 type RouterConfig struct {
@@ -35,6 +42,23 @@ type Router struct {
 	llms   map[Provider]LLM
 }
 
+func (r *Router) ReqsStats() {
+	for provider, keys := range r.config.ProviderAPIKeys {
+		for _, key := range keys {
+			slog.Info(
+				"API KEY STATS",
+				"provider",
+				provider,
+				"key_name",
+				key.Name,
+				"requests_remaining",
+				key.RequestRemaining,
+				"requests_used",
+				key.requestsUsed,
+			)
+		}
+	}
+}
 func New(config RouterConfig) *Router {
 	c := http.Client{
 		Timeout: config.Timeout,
@@ -90,7 +114,7 @@ func (r *Router) tryStreamWithModel(
 	var err error
 
 	for i := range keys {
-		key := &keys[i]
+		key := keys[i]
 		if !key.isAvailable() {
 			continue
 		}
