@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -49,10 +50,33 @@ type Openai struct {
 	Client http.Client
 }
 
+type RateLimit struct {
+	Remaining int
+	Limit     int
+	Reset     time.Time
+}
+
+func parseInt(s string) int {
+	if s == "" {
+		return 0
+	}
+	v, _ := strconv.Atoi(s)
+	return v
+}
+
+func parseOpenAIRateLimit(resp *http.Response) RateLimit {
+	return RateLimit{
+		Remaining: parseInt(resp.Header.Get("x-ratelimit-remaining-requests")),
+		Limit:     parseInt(resp.Header.Get("x-ratelimit-limit-requests")),
+		Reset: time.Now().
+			Add(time.Duration(parseInt(resp.Header.Get("x-ratelimit-reset-requests"))) * time.Second),
+	}
+}
+
 func (oa Openai) StreamResponse(
 	ctx context.Context,
 	req CompletionRequest,
-	key string,
+	key APIKey,
 	chunkHandler func(chunk string) error,
 ) (*CompletionResponse, error) {
 	messages := make([]openAIRequestMessage, len(req.Messages))
@@ -82,16 +106,37 @@ func (oa Openai) StreamResponse(
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+key)
+	httpReq.Header.Set("Authorization", "Bearer "+key.Key)
 
 	resp, err := oa.Client.Do(httpReq)
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, err
+	rateLimit := parseOpenAIRateLimit(resp)
+
+	used := rateLimit.Limit - rateLimit.Remaining
+	remaining := rateLimit.Remaining
+	reset := rateLimit.Reset
+
+	if key.requestsUsed < used {
+		key.requestsUsed = used
+	}
+
+	if key.RequestRemaining > remaining {
+		key.RequestRemaining = remaining
+	}
+
+	// TODO: fix this logic
+	if key.ResetAt.Before(reset) {
+		key.ResetAt = rateLimit.Reset
+	}
+
+	switch resp.StatusCode {
+	case http.StatusTooManyRequests:
+		return nil, ErrRateLimitHit
 	}
 
 	reader := bufio.NewReader(resp.Body)
