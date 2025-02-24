@@ -14,28 +14,6 @@ import (
 
 const googleBaseUrl = "https://generativelanguage.googleapis.com/v1beta:chatCompletions"
 
-type googleRequest struct {
-	Contents []googleContent `json:"contents"`
-}
-
-type googleContent struct {
-	Role  string              `json:"role,omitempty"`
-	Parts []googleContentPart `json:"parts"`
-}
-
-type googleContentPart struct {
-	Text string `json:"text"`
-}
-
-type googleStreamResponse struct {
-	Candidates []googleCandidate `json:"candidates"`
-}
-
-type googleCandidate struct {
-	Content      googleContent `json:"content"`
-	FinishReason string        `json:"finishReason"`
-}
-
 type Google struct {
 	Client http.Client
 }
