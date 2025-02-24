@@ -22,6 +22,11 @@ type RouterConfig struct {
 }
 
 type LLM interface {
+	completeResponse(
+		ctx context.Context,
+		req CompletionRequest,
+		key APIKey,
+	) (*CompletionResponse, error)
 	StreamResponse(
 		ctx context.Context,
 		req CompletionRequest,
@@ -58,7 +63,7 @@ func New(config RouterConfig) *Router {
 		Timeout: config.Timeout,
 	}
 
-	openai := Openai{Client: c}
+	openai := openai{client: c}
 	google := Google{Client: c}
 
 	return &Router{
@@ -68,6 +73,26 @@ func New(config RouterConfig) *Router {
 			ProviderGoogle: google,
 		},
 	}
+}
+
+func (r *Router) Complete(
+	ctx context.Context,
+	req CompletionRequest,
+) (*CompletionResponse, error) {
+	models := append([]Model{req.Model}, req.Fallback...)
+	var err error
+	var resp *CompletionResponse
+
+	for _, model := range models {
+		resp, err = r.tryWithModel(ctx, req, model)
+		if resp != nil && err == nil {
+			break
+		}
+
+		continue
+	}
+
+	return resp, err
 }
 
 func (r *Router) Stream(
@@ -157,6 +182,66 @@ func (r *Router) streamResponse(
 			req,
 			key,
 			chunkHandler,
+		)
+	default:
+		err = ErrUnsupportedProvider
+	}
+
+	return resp, err
+}
+
+func (r *Router) tryWithModel(
+	ctx context.Context,
+	req CompletionRequest,
+	model Model,
+) (*CompletionResponse, error) {
+	keys := r.config.ProviderAPIKeys[model.Provider]
+	var err error
+
+	for i := range keys {
+		key := keys[i]
+		if !key.isAvailable() {
+			continue
+		}
+
+		resp, err := r.completeResponse(
+			ctx,
+			req,
+			model.Provider,
+			key,
+		)
+		if err != nil {
+			slog.ErrorContext(ctx, "tryWithModel", "error", err)
+			continue
+		}
+
+		return resp, nil
+	}
+
+	return nil, err
+}
+
+func (r *Router) completeResponse(
+	ctx context.Context,
+	req CompletionRequest,
+	provider Provider,
+	key APIKey,
+) (*CompletionResponse, error) {
+	var resp *CompletionResponse
+	var err error
+
+	switch provider {
+	case ProviderOpenAI:
+		resp, err = r.llms[ProviderOpenAI].completeResponse(
+			ctx,
+			req,
+			key,
+		)
+	case ProviderGoogle:
+		resp, err = r.llms[ProviderGoogle].completeResponse(
+			ctx,
+			req,
+			key,
 		)
 	default:
 		err = ErrUnsupportedProvider

@@ -18,6 +18,15 @@ type Google struct {
 	Client http.Client
 }
 
+// dummy impl
+func (g Google) completeResponse(
+	ctx context.Context,
+	req CompletionRequest,
+	key APIKey,
+) (*CompletionResponse, error) {
+	return nil, nil
+}
+
 // TODO: Implement manual key checking
 func (g Google) StreamResponse(
 	ctx context.Context,
