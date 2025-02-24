@@ -2,7 +2,6 @@ package heimdall
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -60,11 +59,13 @@ func New(config RouterConfig) *Router {
 	}
 
 	openai := Openai{Client: c}
+	google := Google{Client: c}
 
 	return &Router{
 		config: config,
 		llms: map[Provider]LLM{
 			ProviderOpenAI: openai,
+			ProviderGoogle: google,
 		},
 	}
 }
@@ -122,13 +123,7 @@ func (r *Router) tryStreamWithModel(
 			chunkHandler,
 		)
 		if err != nil {
-			if errors.Is(err, ErrRateLimitHit) {
-				continue
-			}
-			if errors.Is(err, context.Canceled) {
-				continue
-			}
-
+			slog.ErrorContext(ctx, "tryStreamWithModel", "error", err)
 			continue
 		}
 
@@ -151,6 +146,13 @@ func (r *Router) streamResponse(
 	switch provider {
 	case ProviderOpenAI:
 		resp, err = r.llms[ProviderOpenAI].StreamResponse(
+			ctx,
+			req,
+			key,
+			chunkHandler,
+		)
+	case ProviderGoogle:
+		resp, err = r.llms[ProviderGoogle].StreamResponse(
 			ctx,
 			req,
 			key,
