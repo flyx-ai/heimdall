@@ -35,7 +35,7 @@ var ModelGPT4Turbo Model = Model{
 	Name:     "gpt-4-turbo",
 }
 
-var ModelGPT4OModel = Model{
+var ModelGPT4O = Model{
 	Provider: ProviderOpenAI,
 	Name:     "gpt-4o",
 }
