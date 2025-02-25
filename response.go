@@ -12,9 +12,10 @@ type Usage struct {
 	TotalTokens      int
 }
 type CompletionResponse struct {
-	Content string
-	Model   Model
-	Usage   Usage
+	Content    string
+	Model      Model
+	Usage      Usage
+	RequestLog Logging
 }
 
 func parseInt(s string) int {
