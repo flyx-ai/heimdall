@@ -56,7 +56,7 @@ func main() {
 		},
 		Fallback: []heimdall.Model{
 			heimdall.ModelGemini15Pro,
-			heimdall.ModelGPT4OModel,
+			heimdall.ModelGPT4O,
 		},
 		Temperature: 1,
 		Tags: map[string]string{
