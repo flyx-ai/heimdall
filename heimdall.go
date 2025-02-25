@@ -2,6 +2,7 @@ package heimdall
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -79,18 +80,60 @@ func (r *Router) Complete(
 	ctx context.Context,
 	req CompletionRequest,
 ) (*CompletionResponse, error) {
+	now := time.Now()
+	var systemMsg string
+	var userMsg string
+	for _, msg := range req.Messages {
+		if msg.Role == "system" {
+			systemMsg = msg.Content
+		}
+		if msg.Role == "user" {
+			userMsg = msg.Content
+		}
+	}
+	requestLog := Logging{
+		Events: []Event{
+			{
+				Timestamp:   now,
+				Description: "start of call to Complete",
+			},
+		},
+		SystemMsg: systemMsg,
+		UserMsg:   userMsg,
+		Start:     now,
+	}
+
 	models := append([]Model{req.Model}, req.Fallback...)
 	var err error
 	var resp *CompletionResponse
 
 	for _, model := range models {
-		resp, err = r.tryWithModel(ctx, req, model)
+		requestLog.Events = append(requestLog.Events, Event{
+			Timestamp: time.Now(),
+			Description: fmt.Sprintf(
+				"attempting tryWithModel using model: %s",
+				model.Name,
+			),
+		})
+		resp, err = r.tryWithModel(ctx, req, model, &requestLog)
 		if resp != nil && err == nil {
 			break
 		}
 
 		continue
 	}
+
+	if err == nil && resp != nil {
+		requestLog.Response = resp.Content
+		requestLog.Completed = true
+	}
+	if err != nil && resp == nil {
+		requestLog.Completed = false
+	}
+
+	requestLog.End = time.Now()
+
+	resp.RequestLog = requestLog
 
 	return resp, err
 }
@@ -194,13 +237,33 @@ func (r *Router) tryWithModel(
 	ctx context.Context,
 	req CompletionRequest,
 	model Model,
+	requestLog *Logging,
 ) (*CompletionResponse, error) {
 	keys := r.config.ProviderAPIKeys[model.Provider]
 	var err error
 
 	for i := range keys {
 		key := keys[i]
+
+		requestLog.Events = append(requestLog.Events, Event{
+			Timestamp: time.Now(),
+			Description: fmt.Sprintf(
+				"attempting to call completeResponse using key: %s and model: %s",
+				key.Name,
+				model.Name,
+			),
+		})
+
 		if !key.isAvailable() {
+			requestLog.Events = append(requestLog.Events, Event{
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"key: %s not available for provider: %s",
+					key.Name,
+					model.Provider,
+				),
+			})
+
 			continue
 		}
 
@@ -209,14 +272,39 @@ func (r *Router) tryWithModel(
 			req,
 			model.Provider,
 			key,
+			requestLog,
 		)
 		if err != nil {
-			slog.ErrorContext(ctx, "tryWithModel", "error", err)
+			requestLog.Events = append(requestLog.Events, Event{
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"call to completeResponse failed with err: %s and model: %s",
+					err.Error(),
+					model.Name,
+				),
+			})
 			continue
 		}
 
+		requestLog.Events = append(requestLog.Events, Event{
+			Timestamp: time.Now(),
+			Description: fmt.Sprintf(
+				"call to completeResponse with key: %s and model: %s finised successfully",
+				key.Name,
+				model.Name,
+			),
+		})
+
 		return resp, nil
 	}
+
+	requestLog.Events = append(requestLog.Events, Event{
+		Timestamp: time.Now(),
+		Description: fmt.Sprintf(
+			"call to tryWithModel failed with err: %v",
+			err,
+		),
+	})
 
 	return nil, err
 }
@@ -226,6 +314,7 @@ func (r *Router) completeResponse(
 	req CompletionRequest,
 	provider Provider,
 	key APIKey,
+	requestLog *Logging,
 ) (*CompletionResponse, error) {
 	var resp *CompletionResponse
 	var err error
@@ -244,6 +333,13 @@ func (r *Router) completeResponse(
 			key,
 		)
 	default:
+		requestLog.Events = append(requestLog.Events, Event{
+			Timestamp: time.Now(),
+			Description: fmt.Sprintf(
+				"unsupported provider: %s passed to completeResponse",
+				provider,
+			),
+		})
 		err = ErrUnsupportedProvider
 	}
 
