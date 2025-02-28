@@ -50,7 +50,7 @@ func (g google) completeResponse(
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+key.Key)
+	httpReq.Header.Set("Authorization", "Bearer "+key.Secret)
 
 	resp, err := g.client.Do(httpReq)
 	if err != nil {
@@ -148,7 +148,7 @@ func (g google) streamResponse(
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+key.Key)
+	httpReq.Header.Set("Authorization", "Bearer "+key.Secret)
 
 	resp, err := g.client.Do(httpReq)
 	if err != nil {

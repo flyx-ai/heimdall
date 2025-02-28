@@ -17,13 +17,13 @@ func main() {
 			heimdall.ProviderOpenAI: {
 				heimdall.APIKey{
 					Name:             "ONE",
-					Key:              os.Getenv("OPENAI_API_KEY"),
+					Secret:           os.Getenv("OPENAI_API_KEY"),
 					RequestsLimit:    500,
 					RequestRemaining: 500,
 				},
 				heimdall.APIKey{
 					Name:             "ONE",
-					Key:              os.Getenv("OPENAI_API_KEY_TWO"),
+					Secret:           os.Getenv("OPENAI_API_KEY_TWO"),
 					RequestsLimit:    10000,
 					RequestRemaining: 10000,
 				},
@@ -31,7 +31,7 @@ func main() {
 			heimdall.ProviderGoogle: {
 				heimdall.APIKey{
 					Name:             "ONE",
-					Key:              os.Getenv("GOOGLE_API_KEY"),
+					Secret:           os.Getenv("GOOGLE_API_KEY"),
 					RequestsLimit:    10000,
 					RequestRemaining: 10000,
 				},

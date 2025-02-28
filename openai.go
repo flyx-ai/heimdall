@@ -86,7 +86,7 @@ func (oa openai) completeResponse(
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+key.Key)
+	httpReq.Header.Set("Authorization", "Bearer "+key.Secret)
 
 	resp, err := oa.client.Do(httpReq)
 	if err != nil {
@@ -201,7 +201,7 @@ func (oa openai) streamResponse(
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+key.Key)
+	httpReq.Header.Set("Authorization", "Bearer "+key.Secret)
 
 	resp, err := oa.client.Do(httpReq)
 	if err != nil {

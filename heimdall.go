@@ -8,14 +8,14 @@ import (
 	"time"
 )
 
-type APIKey struct {
-	Name             string
-	Key              string
-	RequestsLimit    int
-	requestsUsed     int
-	RequestRemaining int
-	ResetAt          time.Time
-}
+// type APIKey struct {
+// 	Name             string
+// 	Key              string
+// 	RequestsLimit    int
+// 	requestsUsed     int
+// 	RequestRemaining int
+// 	ResetAt          time.Time
+// }
 
 type RouterConfig struct {
 	ProviderAPIKeys map[Provider][]APIKey
