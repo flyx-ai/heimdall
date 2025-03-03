@@ -64,3 +64,13 @@ var ModelGemini10Pro = Model{
 	Provider: ProviderGoogle,
 	Name:     "gemini-1.0-pro-002",
 }
+
+var ModelGemini20Flash = Model{
+	Provider: ProviderGoogle,
+	Name:     "gemini-2.0-flash",
+}
+
+var ModelGemini20FlashList = Model{
+	Provider: ProviderGoogle,
+	Name:     "gemini-2.0-flash-lite",
+}
