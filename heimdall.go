@@ -61,7 +61,7 @@ func (r *Router) ReqsStats() {
 
 func New(config RouterConfig) *Router {
 	c := http.Client{
-		Timeout: config.Timeout,
+		Timeout: config.Timeout * time.Second,
 	}
 
 	openai := openai{client: c}
