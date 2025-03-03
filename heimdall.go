@@ -133,7 +133,14 @@ func (r *Router) Complete(
 
 	requestLog.End = time.Now()
 
-	resp.RequestLog = requestLog
+	if resp != nil {
+		resp.RequestLog = requestLog
+	}
+	if resp != nil {
+		resp = &CompletionResponse{
+			RequestLog: requestLog,
+		}
+	}
 
 	return resp, err
 }
