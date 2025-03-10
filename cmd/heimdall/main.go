@@ -4,13 +4,14 @@ import (
 	"context"
 	"log/slog"
 	"os"
-	"sync"
 
 	"github.com/flyx-ai/heimdall"
 )
 
 func main() {
 	ctx := context.Background()
+
+	gApiKey := os.Getenv("GOOGLE_API_KEY")
 
 	router := heimdall.New(heimdall.RouterConfig{
 		ProviderAPIKeys: map[heimdall.Provider][]heimdall.APIKey{
@@ -31,7 +32,7 @@ func main() {
 			heimdall.ProviderGoogle: {
 				heimdall.APIKey{
 					Name:             "ONE",
-					Key:              os.Getenv("GOOGLE_API_KEY"),
+					Key:              gApiKey,
 					RequestsLimit:    10000,
 					RequestRemaining: 10000,
 				},
@@ -40,10 +41,8 @@ func main() {
 		Timeout: 0,
 	})
 
-	var wg sync.WaitGroup
-
 	req := heimdall.CompletionRequest{
-		Model: heimdall.ModelGPT4OMini,
+		Model: heimdall.ModelGemini20Flash,
 		Messages: []heimdall.Message{
 			{
 				Role:    "system",
@@ -54,10 +53,7 @@ func main() {
 				Content: "please make a detailed analysis of the NVIDIA's current valuation.",
 			},
 		},
-		Fallback: []heimdall.Model{
-			heimdall.ModelGemini15Pro,
-			heimdall.ModelGPT4O,
-		},
+		Fallback:    []heimdall.Model{},
 		Temperature: 1,
 		Tags: map[string]string{
 			"env":  "test",
@@ -66,21 +62,9 @@ func main() {
 		TopP: 0,
 	}
 
-	router.ReqsStats()
-	for i := range 2 {
-		wg.Add(1)
-		go func(routineNum int) {
-			defer wg.Done()
-
-			if res, err := router.Complete(ctx, req); err != nil {
-				slog.Info("ERRRRRR", "e", err)
-			} else {
-				slog.Info("ITERATION DONE", "i", i, "res", res)
-			}
-		}(i)
+	if res, err := router.Complete(ctx, req); err != nil {
+		slog.Info("############# ERR ##################", "err", err)
+	} else {
+		slog.Info("############# RES ##################", "res", res.Content)
 	}
-
-	wg.Wait()
-
-	router.ReqsStats()
 }
