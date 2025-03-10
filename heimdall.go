@@ -33,7 +33,7 @@ type LLM interface {
 		req CompletionRequest,
 		key APIKey,
 		chunkHandler func(chunk string) error,
-	) (*CompletionResponse, error)
+	) (CompletionResponse, error)
 }
 
 type Router struct {
@@ -142,13 +142,13 @@ func (r *Router) Stream(
 	ctx context.Context,
 	req CompletionRequest,
 	chunkHandler func(chunk string) error,
-) error {
+) (CompletionResponse, error) {
 	if chunkHandler == nil {
-		return ErrNoChunkHandler
+		return CompletionResponse{}, ErrNoChunkHandler
 	}
 
 	models := append([]Model{req.Model}, req.Fallback...)
-	var resp *CompletionResponse
+	var resp CompletionResponse
 	var err error
 
 	for _, model := range models {
@@ -158,14 +158,14 @@ func (r *Router) Stream(
 			model,
 			chunkHandler,
 		)
-		if resp != nil && err == nil {
+		if err == nil {
 			break
 		}
 	}
 
 	req.Tags["request_type"] = "stream"
 
-	return err
+	return resp, err
 }
 
 func (r *Router) tryStreamWithModel(
@@ -173,7 +173,7 @@ func (r *Router) tryStreamWithModel(
 	req CompletionRequest,
 	model Model,
 	chunkHandler func(chunk string) error,
-) (*CompletionResponse, error) {
+) (CompletionResponse, error) {
 	keys := r.config.ProviderAPIKeys[model.Provider]
 	var err error
 
@@ -198,7 +198,7 @@ func (r *Router) tryStreamWithModel(
 		return resp, nil
 	}
 
-	return nil, err
+	return CompletionResponse{}, err
 }
 
 func (r *Router) streamResponse(
@@ -207,8 +207,8 @@ func (r *Router) streamResponse(
 	provider Provider,
 	key APIKey,
 	chunkHandler func(chunk string) error,
-) (*CompletionResponse, error) {
-	var resp *CompletionResponse
+) (CompletionResponse, error) {
+	var resp CompletionResponse
 	var err error
 
 	switch provider {
