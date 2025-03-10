@@ -59,10 +59,13 @@ func (oa openai) completeResponse(
 	ctx context.Context,
 	req CompletionRequest,
 	key APIKey,
-) (*CompletionResponse, error) {
+) (CompletionResponse, error) {
 	messages := make([]openAIRequestMessage, len(req.Messages))
 	for i, msg := range req.Messages {
-		messages[i] = openAIRequestMessage(msg)
+		messages[i] = openAIRequestMessage(openAIRequestMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
 	}
 
 	apiReq := openAIRequest{
@@ -75,14 +78,14 @@ func (oa openai) completeResponse(
 
 	body, err := json.Marshal(apiReq)
 	if err != nil {
-		return nil, fmt.Errorf("marshal request: %w", err)
+		return CompletionResponse{}, fmt.Errorf("marshal request: %w", err)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST",
 		fmt.Sprintf("%s/chat/completions", openAIBaseURL),
 		bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
+		return CompletionResponse{}, fmt.Errorf("create request: %w", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -90,7 +93,7 @@ func (oa openai) completeResponse(
 
 	resp, err := oa.client.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("do request: %w", err)
+		return CompletionResponse{}, fmt.Errorf("do request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -115,7 +118,7 @@ func (oa openai) completeResponse(
 
 	switch resp.StatusCode {
 	case http.StatusTooManyRequests:
-		return nil, ErrRateLimitHit
+		return CompletionResponse{}, ErrRateLimitHit
 	}
 
 	reader := bufio.NewReader(resp.Body)
@@ -126,14 +129,14 @@ func (oa openai) completeResponse(
 
 	for {
 		if chunks == 0 && time.Since(now).Seconds() > 3.0 {
-			return nil, context.Canceled
+			return CompletionResponse{}, context.Canceled
 		}
 		line, err := reader.ReadString('\n')
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("read line: %w", err)
+			return CompletionResponse{}, fmt.Errorf("read line: %w", err)
 		}
 
 		line = strings.TrimPrefix(line, "data: ")
@@ -144,7 +147,7 @@ func (oa openai) completeResponse(
 
 		var chunk openAIChunk
 		if err := json.Unmarshal([]byte(line), &chunk); err != nil {
-			return nil, fmt.Errorf("unmarshal chunk: %w", err)
+			return CompletionResponse{}, fmt.Errorf("unmarshal chunk: %w", err)
 		}
 
 		if len(chunk.Choices) > 0 {
@@ -161,7 +164,7 @@ func (oa openai) completeResponse(
 		}
 	}
 
-	return &CompletionResponse{
+	return CompletionResponse{
 		Content: fullContent.String(),
 		Model:   req.Model,
 		Usage:   usage,
@@ -173,10 +176,13 @@ func (oa openai) streamResponse(
 	req CompletionRequest,
 	key APIKey,
 	chunkHandler func(chunk string) error,
-) (*CompletionResponse, error) {
+) (CompletionResponse, error) {
 	messages := make([]openAIRequestMessage, len(req.Messages))
 	for i, msg := range req.Messages {
-		messages[i] = openAIRequestMessage(msg)
+		messages[i] = openAIRequestMessage(openAIRequestMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
 	}
 
 	apiReq := openAIRequest{
@@ -190,14 +196,14 @@ func (oa openai) streamResponse(
 
 	body, err := json.Marshal(apiReq)
 	if err != nil {
-		return nil, err
+		return CompletionResponse{}, err
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST",
 		fmt.Sprintf("%s/chat/completions", openAIBaseURL),
 		bytes.NewReader(body))
 	if err != nil {
-		return nil, err
+		return CompletionResponse{}, err
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -205,7 +211,7 @@ func (oa openai) streamResponse(
 
 	resp, err := oa.client.Do(httpReq)
 	if err != nil {
-		return nil, err
+		return CompletionResponse{}, err
 	}
 
 	defer resp.Body.Close()
@@ -231,7 +237,7 @@ func (oa openai) streamResponse(
 
 	switch resp.StatusCode {
 	case http.StatusTooManyRequests:
-		return nil, ErrRateLimitHit
+		return CompletionResponse{}, ErrRateLimitHit
 	}
 
 	reader := bufio.NewReader(resp.Body)
@@ -242,14 +248,14 @@ func (oa openai) streamResponse(
 
 	for {
 		if chunks == 0 && time.Since(now).Seconds() > 3.0 {
-			return nil, context.Canceled
+			return CompletionResponse{}, context.Canceled
 		}
 		line, err := reader.ReadString('\n')
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return CompletionResponse{}, err
 		}
 
 		line = strings.TrimPrefix(line, "data: ")
@@ -260,13 +266,13 @@ func (oa openai) streamResponse(
 
 		var chunk openAIChunk
 		if err := json.Unmarshal([]byte(line), &chunk); err != nil {
-			return nil, err
+			return CompletionResponse{}, err
 		}
 
 		if len(chunk.Choices) > 0 {
 			fullContent.WriteString(chunk.Choices[0].Delta.Content)
 			if err := chunkHandler(chunk.Choices[0].Delta.Content); err != nil {
-				return nil, err
+				return CompletionResponse{}, err
 			}
 		}
 
@@ -280,7 +286,7 @@ func (oa openai) streamResponse(
 		}
 	}
 
-	return &CompletionResponse{
+	return CompletionResponse{
 		Content: fullContent.String(),
 		Model:   req.Model,
 		Usage:   usage,

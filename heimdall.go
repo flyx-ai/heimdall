@@ -27,13 +27,13 @@ type LLM interface {
 		ctx context.Context,
 		req CompletionRequest,
 		key APIKey,
-	) (*CompletionResponse, error)
+	) (CompletionResponse, error)
 	streamResponse(
 		ctx context.Context,
 		req CompletionRequest,
 		key APIKey,
 		chunkHandler func(chunk string) error,
-	) (*CompletionResponse, error)
+	) (CompletionResponse, error)
 }
 
 type Router struct {
@@ -61,7 +61,7 @@ func (r *Router) ReqsStats() {
 
 func New(config RouterConfig) *Router {
 	c := http.Client{
-		Timeout: config.Timeout * time.Second,
+		Timeout: config.Timeout,
 	}
 
 	openai := openai{client: c}
@@ -79,7 +79,7 @@ func New(config RouterConfig) *Router {
 func (r *Router) Complete(
 	ctx context.Context,
 	req CompletionRequest,
-) (*CompletionResponse, error) {
+) (CompletionResponse, error) {
 	now := time.Now()
 	var systemMsg string
 	var userMsg string
@@ -105,7 +105,7 @@ func (r *Router) Complete(
 
 	models := append([]Model{req.Model}, req.Fallback...)
 	var err error
-	var resp *CompletionResponse
+	resp := CompletionResponse{}
 
 	for _, model := range models {
 		requestLog.Events = append(requestLog.Events, Event{
@@ -116,31 +116,24 @@ func (r *Router) Complete(
 			),
 		})
 		resp, err = r.tryWithModel(ctx, req, model, &requestLog)
-		if resp != nil && err == nil {
+		if err == nil {
 			break
 		}
 
 		continue
 	}
 
-	if err == nil && resp != nil {
+	if err == nil {
 		requestLog.Response = resp.Content
 		requestLog.Completed = true
 	}
-	if err != nil && resp == nil {
+	if err != nil {
 		requestLog.Completed = false
 	}
 
 	requestLog.End = time.Now()
 
-	if resp != nil {
-		resp.RequestLog = requestLog
-	}
-	if resp != nil {
-		resp = &CompletionResponse{
-			RequestLog: requestLog,
-		}
-	}
+	resp.RequestLog = requestLog
 
 	return resp, err
 }
@@ -149,13 +142,13 @@ func (r *Router) Stream(
 	ctx context.Context,
 	req CompletionRequest,
 	chunkHandler func(chunk string) error,
-) error {
+) (CompletionResponse, error) {
 	if chunkHandler == nil {
-		return ErrNoChunkHandler
+		return CompletionResponse{}, ErrNoChunkHandler
 	}
 
 	models := append([]Model{req.Model}, req.Fallback...)
-	var resp *CompletionResponse
+	var resp CompletionResponse
 	var err error
 
 	for _, model := range models {
@@ -165,14 +158,14 @@ func (r *Router) Stream(
 			model,
 			chunkHandler,
 		)
-		if resp != nil && err == nil {
+		if err == nil {
 			break
 		}
 	}
 
 	req.Tags["request_type"] = "stream"
 
-	return err
+	return resp, err
 }
 
 func (r *Router) tryStreamWithModel(
@@ -180,7 +173,7 @@ func (r *Router) tryStreamWithModel(
 	req CompletionRequest,
 	model Model,
 	chunkHandler func(chunk string) error,
-) (*CompletionResponse, error) {
+) (CompletionResponse, error) {
 	keys := r.config.ProviderAPIKeys[model.Provider]
 	var err error
 
@@ -205,7 +198,7 @@ func (r *Router) tryStreamWithModel(
 		return resp, nil
 	}
 
-	return nil, err
+	return CompletionResponse{}, err
 }
 
 func (r *Router) streamResponse(
@@ -214,8 +207,8 @@ func (r *Router) streamResponse(
 	provider Provider,
 	key APIKey,
 	chunkHandler func(chunk string) error,
-) (*CompletionResponse, error) {
-	var resp *CompletionResponse
+) (CompletionResponse, error) {
+	var resp CompletionResponse
 	var err error
 
 	switch provider {
@@ -245,7 +238,7 @@ func (r *Router) tryWithModel(
 	req CompletionRequest,
 	model Model,
 	requestLog *Logging,
-) (*CompletionResponse, error) {
+) (CompletionResponse, error) {
 	keys := r.config.ProviderAPIKeys[model.Provider]
 	var err error
 
@@ -313,7 +306,7 @@ func (r *Router) tryWithModel(
 		),
 	})
 
-	return nil, err
+	return CompletionResponse{}, err
 }
 
 func (r *Router) completeResponse(
@@ -322,8 +315,8 @@ func (r *Router) completeResponse(
 	provider Provider,
 	key APIKey,
 	requestLog *Logging,
-) (*CompletionResponse, error) {
-	var resp *CompletionResponse
+) (CompletionResponse, error) {
+	var resp CompletionResponse
 	var err error
 
 	switch provider {
