@@ -10,8 +10,6 @@ import (
 	"cloud.google.com/go/vertexai/genai"
 )
 
-const vertexAIBaseURL = "https://us-east1-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:streamGenerateContent"
-
 type Location string
 
 const (
