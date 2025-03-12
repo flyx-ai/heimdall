@@ -3,14 +3,22 @@ package heimdall
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"cloud.google.com/go/vertexai/genai"
+	"google.golang.org/api/option"
 )
 
+// APIKey is matched with a provider and will keep track of request limits returned from each provider.
+// Some providers requires you to add a location and project id to the request (e.g. if you're using vertex ai). These are optional. The only required field are 'Key'.
 type APIKey struct {
 	Name             string
 	Key              string
+	Location         string
+	ProjectID        string
 	RequestsLimit    int
 	requestsUsed     int
 	RequestRemaining int
@@ -60,6 +68,7 @@ func (r *Router) ReqsStats() {
 }
 
 func New(config RouterConfig) *Router {
+	ctx := context.Background()
 	c := http.Client{
 		Timeout: config.Timeout,
 	}
@@ -67,11 +76,31 @@ func New(config RouterConfig) *Router {
 	openai := openai{client: c}
 	google := google{client: c}
 
+	keys := config.ProviderAPIKeys[ProviderGoogleVertexAI]
+	var genClient *genai.Client
+	if len(keys) > 0 {
+		client, err := genai.NewClient(
+			ctx,
+			keys[0].ProjectID,
+			keys[0].Location,
+			option.WithCredentialsJSON([]byte(keys[0].Key)),
+		)
+		if err != nil {
+			log.Fatalf("Failed to create Vertex AI client: %v", err)
+		}
+
+		genClient = client
+
+	}
+
+	googleVertexAI := newGoogleVertexAI(c, genClient)
+
 	return &Router{
 		config: config,
 		llms: map[Provider]LLM{
-			ProviderOpenAI: openai,
-			ProviderGoogle: google,
+			ProviderOpenAI:         openai,
+			ProviderGoogle:         google,
+			ProviderGoogleVertexAI: googleVertexAI,
 		},
 	}
 }
@@ -226,6 +255,13 @@ func (r *Router) streamResponse(
 			key,
 			chunkHandler,
 		)
+	case ProviderGoogleVertexAI:
+		resp, err = r.llms[ProviderGoogleVertexAI].streamResponse(
+			ctx,
+			req,
+			key,
+			chunkHandler,
+		)
 	default:
 		err = ErrUnsupportedProvider
 	}
@@ -328,6 +364,12 @@ func (r *Router) completeResponse(
 		)
 	case ProviderGoogle:
 		resp, err = r.llms[ProviderGoogle].completeResponse(
+			ctx,
+			req,
+			key,
+		)
+	case ProviderGoogleVertexAI:
+		resp, err = r.llms[ProviderGoogleVertexAI].completeResponse(
 			ctx,
 			req,
 			key,

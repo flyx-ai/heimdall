@@ -12,4 +12,7 @@ var (
 	ErrNoChunkHandler      = errors.New(
 		"a chunk handler must be provided to stream response",
 	)
+	ErrProjectIDOrLocationMissing = errors.New(
+		"the model or provider passed requires you to use an api key that specifies location and project id",
+	)
 )
