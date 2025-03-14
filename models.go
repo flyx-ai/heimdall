@@ -67,10 +67,40 @@ var ModelGemini10Pro = Model{
 
 var ModelGemini20Flash = Model{
 	Provider: ProviderGoogle,
-	Name:     "gemini-2.0-flash",
+	Name:     "gemini-2.0-flash-001",
 }
 
-var ModelGemini20FlashList = Model{
+var ModelGemini20FlashLite = Model{
 	Provider: ProviderGoogle,
-	Name:     "gemini-2.0-flash-lite",
+	Name:     "gemini-2.0-flash-lite-001",
+}
+
+var ModelVertexGemini15FlashThinking = Model{
+	Provider: ProviderGoogleVertexAI,
+	Name:     "gemini-1.5-flash-002",
+}
+
+var ModelVertexGemini15Pro = Model{
+	Provider: ProviderGoogleVertexAI,
+	Name:     "gemini-1.5-pro-002",
+}
+
+var ModelVertexGemini10ProVision = Model{
+	Provider: ProviderGoogleVertexAI,
+	Name:     "gemini-1.0-pro-vision-001",
+}
+
+var ModelVertexGemini10Pro = Model{
+	Provider: ProviderGoogleVertexAI,
+	Name:     "gemini-1.0-pro-002",
+}
+
+var ModelVertexGemini20Flash = Model{
+	Provider: ProviderGoogleVertexAI,
+	Name:     "gemini-2.0-flash-001",
+}
+
+var ModelVertexGemini20FlashLite = Model{
+	Provider: ProviderGoogleVertexAI,
+	Name:     "gemini-2.0-flash-lite-001",
 }
