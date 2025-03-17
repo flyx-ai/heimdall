@@ -11,17 +11,54 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"cloud.google.com/go/vertexai/genai"
+	"google.golang.org/api/option"
 )
 
-type ModelNew string
-
-type Google struct {
-	apiKeys []string
-	models  []ModelNew
+type GoogleOptions struct {
+	vertexAIClient *genai.Client
 }
 
-func NewGoogle(keys []string) Google {
-	return Google{keys, nil}
+type GoogleOption func(*GoogleOptions)
+
+type Google struct {
+	apiKeys        []string
+	vertexAIClient *genai.Client
+}
+
+func WithVertexAI(
+	ctx context.Context,
+	projectID,
+	location,
+	credentialsJSON string,
+) GoogleOption {
+	return func(opts *GoogleOptions) {
+		client, err := genai.NewClient(
+			ctx,
+			projectID,
+			location,
+			option.WithCredentialsJSON([]byte(credentialsJSON)),
+		)
+		if err != nil {
+			return
+		}
+		opts.vertexAIClient = client
+	}
+}
+
+// NewGoogle register google as a provider on the router. If you want to use vertex ai you have to add it using the GoogleOptions functions.
+func NewGoogle(apiKeys []string, opts ...GoogleOption) Google {
+	options := &GoogleOptions{}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	return Google{
+		apiKeys:        apiKeys,
+		vertexAIClient: options.vertexAIClient,
+	}
 }
 
 func (g Google) completeResponse(
@@ -30,28 +67,155 @@ func (g Google) completeResponse(
 	client http.Client,
 	requestLog *Logging,
 ) (CompletionResponse, error) {
-	for i, key := range g.apiKeys {
-		requestLog.Events = append(requestLog.Events, Event{
-			Timestamp: time.Now(),
-			Description: fmt.Sprintf(
-				"attempting to complete request with key_number: %v",
-				i,
-			),
-		})
-		response, _, err := g.doRequest(ctx, req, client, key)
-		if err == nil {
-			return response, nil
+	switch req.Model {
+	case ModelVertexGemini20FlashLite,
+		ModelVertexGemini20Flash,
+		ModelVertexGemini10Pro,
+		ModelVertexGemini10ProVision,
+		ModelVertexGemini15Pro,
+		ModelVertexGemini15FlashThinking:
+		return g.completeResponseVertex(ctx, req, requestLog)
+	default:
+		for i, key := range g.apiKeys {
+			requestLog.Events = append(requestLog.Events, Event{
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"attempting to complete request with key_number: %v",
+					i,
+				),
+			})
+			response, _, err := g.doRequest(ctx, req, client, key)
+			if err == nil {
+				return response, nil
+			}
+			requestLog.Events = append(requestLog.Events, Event{
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"request could not be completed, err: %v",
+					err,
+				),
+			})
 		}
-		requestLog.Events = append(requestLog.Events, Event{
-			Timestamp: time.Now(),
-			Description: fmt.Sprintf(
-				"request could not be completed, err: %v",
-				err,
-			),
-		})
 	}
 
 	return g.tryWithBackup(ctx, req, client, requestLog)
+}
+
+func (g Google) completeResponseVertex(
+	ctx context.Context,
+	req CompletionRequest,
+	requestLog *Logging,
+) (CompletionResponse, error) {
+	var parts []genai.Part
+	for _, msg := range req.Messages {
+		if msg.Role == "system" {
+			parts = append(parts, genai.Text(msg.Content))
+		}
+		if msg.Role == "user" {
+			parts = append(parts, genai.Text(msg.Content))
+		}
+		if msg.Role == "file" {
+			parts = append(parts, genai.FileData{
+				MIMEType: string(msg.FileType),
+				FileURI:  msg.Content,
+			})
+		}
+	}
+
+	maxRetries := 5
+	initialBackoff := 100 * time.Millisecond
+	maxBackoff := 10 * time.Second
+
+	var lastErr error
+	for attempt := range maxRetries {
+		requestLog.Events = append(requestLog.Events, Event{
+			Timestamp: time.Now(),
+			Description: fmt.Sprintf(
+				"attempting to complete request with expoential backoff. attempt: %v",
+				attempt,
+			),
+		})
+
+		select {
+		case <-ctx.Done():
+			requestLog.Events = append(requestLog.Events, Event{
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"context was called with error: %v",
+					ctx.Err(),
+				),
+			})
+			return CompletionResponse{}, ctx.Err()
+		default:
+
+			model := g.vertexAIClient.GenerativeModel(req.Model.Name)
+
+			res, err := model.GenerateContent(ctx, parts...)
+			if err == nil {
+				rb, err := json.MarshalIndent(res, "", "  ")
+				if err != nil {
+					return CompletionResponse{
+						Content: string(rb),
+						Model:   req.Model,
+						Usage: Usage{
+							PromptTokens: int(
+								res.UsageMetadata.PromptTokenCount,
+							),
+							CompletionTokens: int(
+								res.UsageMetadata.CandidatesTokenCount,
+							),
+							TotalTokens: int(
+								res.UsageMetadata.TotalTokenCount,
+							),
+						},
+					}, nil
+				}
+			}
+
+			requestLog.Events = append(requestLog.Events, Event{
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"request could not be completed, err: %v",
+					err,
+				),
+			})
+
+			// if !isRetryableError(resCode) {
+			// 	requestLog.Events = append(requestLog.Events, Event{
+			// 		Timestamp: time.Now(),
+			// 		Description: fmt.Sprintf(
+			// 			"request was not retryable due to err: %v",
+			// 			err,
+			// 		),
+			// 	})
+			// 	return CompletionResponse{}, err
+			// }
+			//
+			lastErr = err
+
+			backoff := min(initialBackoff*time.Duration(
+				1<<attempt,
+			), maxBackoff)
+
+			jitter := time.Duration(
+				float64(backoff) * (0.8 + 0.4*rand.Float64()),
+			)
+
+			timer := time.NewTimer(jitter)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return CompletionResponse{}, ctx.Err()
+			case <-timer.C:
+				continue
+			}
+		}
+	}
+
+	return CompletionResponse{}, fmt.Errorf(
+		"max retries exceeded: %w",
+		lastErr,
+	)
 }
 
 func (g Google) tryWithBackup(
@@ -142,7 +306,7 @@ func (g Google) getApiKeys() []string {
 }
 
 func (g Google) name() string {
-	return string(ProviderGoogle)
+	return "google"
 }
 
 func (g Google) streamResponse(

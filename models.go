@@ -1,7 +1,7 @@
 package heimdall
 
 type Model struct {
-	Provider Provider
+	Provider LLMProvider
 	Name     string
 }
 
@@ -46,61 +46,61 @@ var ModelGPT4OMini Model = Model{
 }
 
 var ModelGemini15FlashThinking = Model{
-	Provider: ProviderGoogle,
+	Provider: Google{},
 	Name:     "gemini-1.5-flash-002",
 }
 
 var ModelGemini15Pro = Model{
-	Provider: ProviderGoogle,
+	Provider: Google{},
 	Name:     "gemini-1.5-pro-002",
 }
 
 var ModelGemini10ProVision = Model{
-	Provider: ProviderGoogle,
+	Provider: Google{},
 	Name:     "gemini-1.0-pro-vision-001",
 }
 
 var ModelGemini10Pro = Model{
-	Provider: ProviderGoogle,
+	Provider: Google{},
 	Name:     "gemini-1.0-pro-002",
 }
 
 var ModelGemini20Flash = Model{
-	Provider: ProviderGoogle,
+	Provider: Google{},
 	Name:     "gemini-2.0-flash-001",
 }
 
 var ModelGemini20FlashLite = Model{
-	Provider: ProviderGoogle,
+	Provider: Google{},
 	Name:     "gemini-2.0-flash-lite-001",
 }
 
 var ModelVertexGemini15FlashThinking = Model{
-	Provider: ProviderGoogleVertexAI,
+	Provider: Google{},
 	Name:     "gemini-1.5-flash-002",
 }
 
 var ModelVertexGemini15Pro = Model{
-	Provider: ProviderGoogleVertexAI,
+	Provider: Google{},
 	Name:     "gemini-1.5-pro-002",
 }
 
 var ModelVertexGemini10ProVision = Model{
-	Provider: ProviderGoogleVertexAI,
+	Provider: Google{},
 	Name:     "gemini-1.0-pro-vision-001",
 }
 
 var ModelVertexGemini10Pro = Model{
-	Provider: ProviderGoogleVertexAI,
+	Provider: Google{},
 	Name:     "gemini-1.0-pro-002",
 }
 
 var ModelVertexGemini20Flash = Model{
-	Provider: ProviderGoogleVertexAI,
+	Provider: Google{},
 	Name:     "gemini-2.0-flash-001",
 }
 
 var ModelVertexGemini20FlashLite = Model{
-	Provider: ProviderGoogleVertexAI,
+	Provider: Google{},
 	Name:     "gemini-2.0-flash-lite-001",
 }

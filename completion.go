@@ -38,6 +38,18 @@ func (r *Router) Complete(
 	resp := CompletionResponse{}
 
 	for _, model := range models {
+		if r.providers[model.Provider.name()] == nil {
+			requestLog.Events = append(requestLog.Events, Event{
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"attempting tryWithModel using model: %s but provider: %s not registered on router. attempting with next model.",
+					model.Name,
+					model.Provider.name(),
+				),
+			})
+
+			continue
+		}
 		requestLog.Events = append(requestLog.Events, Event{
 			Timestamp: time.Now(),
 			Description: fmt.Sprintf(
