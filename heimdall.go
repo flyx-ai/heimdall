@@ -34,9 +34,11 @@ type LLMProvider interface {
 	) (CompletionResponse, error)
 	streamResponse(
 		ctx context.Context,
+		client http.Client,
 		req CompletionRequest,
 		key APIKey,
 		chunkHandler func(chunk string) error,
+		requestLog *Logging,
 	) (CompletionResponse, error)
 	getApiKeys() []string
 	name() string

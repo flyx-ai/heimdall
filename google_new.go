@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand/v2"
@@ -74,6 +75,11 @@ func (g Google) completeResponse(
 		ModelVertexGemini10ProVision,
 		ModelVertexGemini15Pro,
 		ModelVertexGemini15FlashThinking:
+		if g.vertexAIClient == nil {
+			return CompletionResponse{}, errors.New(
+				"vertex ai model requested without having configured the client",
+			)
+		}
 		return g.completeResponseVertex(ctx, req, requestLog)
 	default:
 		for i, key := range g.apiKeys {
@@ -84,7 +90,7 @@ func (g Google) completeResponse(
 					i,
 				),
 			})
-			response, _, err := g.doRequest(ctx, req, client, key)
+			response, _, err := g.doRequest(ctx, req, client, nil, key)
 			if err == nil {
 				return response, nil
 			}
@@ -98,7 +104,7 @@ func (g Google) completeResponse(
 		}
 	}
 
-	return g.tryWithBackup(ctx, req, client, requestLog)
+	return g.tryWithBackup(ctx, req, client, nil, requestLog)
 }
 
 func (g Google) completeResponseVertex(
@@ -180,17 +186,6 @@ func (g Google) completeResponseVertex(
 				),
 			})
 
-			// if !isRetryableError(resCode) {
-			// 	requestLog.Events = append(requestLog.Events, Event{
-			// 		Timestamp: time.Now(),
-			// 		Description: fmt.Sprintf(
-			// 			"request was not retryable due to err: %v",
-			// 			err,
-			// 		),
-			// 	})
-			// 	return CompletionResponse{}, err
-			// }
-			//
 			lastErr = err
 
 			backoff := min(initialBackoff*time.Duration(
@@ -222,6 +217,7 @@ func (g Google) tryWithBackup(
 	ctx context.Context,
 	req CompletionRequest,
 	client http.Client,
+	chunkHandler func(chunk string) error,
 	requestLog *Logging,
 ) (CompletionResponse, error) {
 	key := g.apiKeys[0]
@@ -251,7 +247,13 @@ func (g Google) tryWithBackup(
 			})
 			return CompletionResponse{}, ctx.Err()
 		default:
-			response, resCode, err := g.doRequest(ctx, req, client, key)
+			response, resCode, err := g.doRequest(
+				ctx,
+				req,
+				client,
+				chunkHandler,
+				key,
+			)
 			if err == nil {
 				return response, nil
 			}
@@ -311,11 +313,49 @@ func (g Google) name() string {
 
 func (g Google) streamResponse(
 	ctx context.Context,
+	client http.Client,
 	req CompletionRequest,
 	key APIKey,
 	chunkHandler func(chunk string) error,
+	requestLog *Logging,
 ) (CompletionResponse, error) {
-	panic("unimplemented")
+	switch req.Model {
+	case ModelVertexGemini20FlashLite,
+		ModelVertexGemini20Flash,
+		ModelVertexGemini10Pro,
+		ModelVertexGemini10ProVision,
+		ModelVertexGemini15Pro,
+		ModelVertexGemini15FlashThinking:
+		if g.vertexAIClient == nil {
+			return CompletionResponse{}, errors.New(
+				"vertex ai model requested without having configured the client",
+			)
+		}
+		return g.completeResponseVertex(ctx, req, requestLog)
+	default:
+		for i, key := range g.apiKeys {
+			requestLog.Events = append(requestLog.Events, Event{
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"attempting to complete request with key_number: %v",
+					i,
+				),
+			})
+			response, _, err := g.doRequest(ctx, req, client, chunkHandler, key)
+			if err == nil {
+				return response, nil
+			}
+			requestLog.Events = append(requestLog.Events, Event{
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"request could not be completed, err: %v",
+					err,
+				),
+			})
+		}
+	}
+
+	return g.tryWithBackup(ctx, req, client, chunkHandler, requestLog)
 }
 
 func isRetryableError(resCode int) bool {
@@ -326,6 +366,7 @@ func (g *Google) doRequest(
 	ctx context.Context,
 	req CompletionRequest,
 	client http.Client,
+	chunkHandler func(chunk string) error,
 	key string,
 ) (CompletionResponse, int, error) {
 	geminiReq := geminiRequest{
@@ -415,6 +456,12 @@ func (g *Google) doRequest(
 			fullContent.WriteString(
 				responseChunk.Candidates[0].Content.Parts[0].Text,
 			)
+
+			if chunkHandler != nil {
+				if err := chunkHandler(responseChunk.Candidates[0].Content.Parts[0].Text); err != nil {
+					return CompletionResponse{}, 0, err
+				}
+			}
 		}
 
 		chunks++
