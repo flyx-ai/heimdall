@@ -11,11 +11,11 @@ func (r *Router) Stream(
 	req CompletionRequest,
 	chunkHandler func(chunk string) error,
 ) (CompletionResponse, error) {
+	now := time.Now()
+
 	if chunkHandler == nil {
 		return CompletionResponse{}, ErrNoChunkHandler
 	}
-
-	now := time.Now()
 
 	var systemMsg string
 	var userMsg string
