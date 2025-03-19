@@ -39,9 +39,7 @@ import (
 // 	TopP          float32                `json:"top_p,omitempty"`
 // }
 
-type Openai struct {
-	client http.Client
-}
+type Openai struct{}
 
 // doRequest implements LLMProvider.
 func (oa Openai) doRequest(
