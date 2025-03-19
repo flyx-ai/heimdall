@@ -28,6 +28,8 @@ func (r *Router) Stream(
 		}
 	}
 
+	req.Tags["request_type"] = "stream"
+
 	models := append([]Model{req.Model}, req.Fallback...)
 	var resp CompletionResponse
 	var err error
@@ -76,8 +78,6 @@ func (r *Router) Stream(
 			break
 		}
 	}
-
-	req.Tags["request_type"] = "stream"
 
 	return resp, err
 }

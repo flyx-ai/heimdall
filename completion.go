@@ -11,6 +11,7 @@ func (r *Router) Complete(
 	req CompletionRequest,
 ) (CompletionResponse, error) {
 	now := time.Now()
+
 	var systemMsg string
 	var userMsg string
 	for _, msg := range req.Messages {
@@ -21,6 +22,9 @@ func (r *Router) Complete(
 			userMsg = msg.Content
 		}
 	}
+
+	req.Tags["request_type"] = "completion"
+
 	requestLog := Logging{
 		Events: []Event{
 			{
