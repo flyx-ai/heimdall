@@ -6,11 +6,17 @@ import (
 	"time"
 )
 
-func (r *Router) Complete(
+func (r *Router) Stream(
 	ctx context.Context,
 	req CompletionRequest,
+	chunkHandler func(chunk string) error,
 ) (CompletionResponse, error) {
+	if chunkHandler == nil {
+		return CompletionResponse{}, ErrNoChunkHandler
+	}
+
 	now := time.Now()
+
 	var systemMsg string
 	var userMsg string
 	for _, msg := range req.Messages {
@@ -21,11 +27,16 @@ func (r *Router) Complete(
 			userMsg = msg.Content
 		}
 	}
+
+	models := append([]Model{req.Model}, req.Fallback...)
+	var resp CompletionResponse
+	var err error
+
 	requestLog := Logging{
 		Events: []Event{
 			{
 				Timestamp:   now,
-				Description: "start of call to Complete",
+				Description: "start of call to Stream",
 			},
 		},
 		SystemMsg: systemMsg,
@@ -33,16 +44,12 @@ func (r *Router) Complete(
 		Start:     now,
 	}
 
-	models := append([]Model{req.Model}, req.Fallback...)
-	var err error
-	resp := CompletionResponse{}
-
 	for _, model := range models {
 		if r.providers[model.Provider.name()] == nil {
 			requestLog.Events = append(requestLog.Events, Event{
 				Timestamp: time.Now(),
 				Description: fmt.Sprintf(
-					"attempting tryWithModel using model: %s but provider: %s not registered on router. attempting with next model.",
+					"attempting tryStreamWithModel using model: %s but provider: %s not registered on router. attempting with next model.",
 					model.Name,
 					model.Provider.name(),
 				),
@@ -50,44 +57,46 @@ func (r *Router) Complete(
 
 			continue
 		}
+
 		requestLog.Events = append(requestLog.Events, Event{
 			Timestamp: time.Now(),
 			Description: fmt.Sprintf(
-				"attempting tryWithModel using model: %s",
+				"attempting tryStreamWithModel using model: %s",
 				model.Name,
 			),
 		})
-		resp, err = r.tryWithModel(ctx, req, model, &requestLog)
+		resp, err = r.tryStreamWithModel(
+			ctx,
+			req,
+			model,
+			chunkHandler,
+			&requestLog,
+		)
 		if err == nil {
 			break
 		}
-
-		continue
 	}
 
-	if err == nil {
-		requestLog.Response = resp.Content
-		requestLog.Completed = true
-	}
-	if err != nil {
-		requestLog.Completed = false
-	}
-
-	requestLog.End = time.Now()
-
-	resp.RequestLog = requestLog
+	req.Tags["request_type"] = "stream"
 
 	return resp, err
 }
 
-func (r *Router) tryWithModel(
+func (r *Router) tryStreamWithModel(
 	ctx context.Context,
 	req CompletionRequest,
 	model Model,
+	chunkHandler func(chunk string) error,
 	requestLog *Logging,
 ) (CompletionResponse, error) {
 	provider := r.providers[model.Provider.name()]
-	res, err := provider.completeResponse(ctx, req, r.client, requestLog)
+	res, err := provider.streamResponse(
+		ctx,
+		r.client,
+		req,
+		chunkHandler,
+		requestLog,
+	)
 	if err != nil {
 		return CompletionResponse{}, err
 	}

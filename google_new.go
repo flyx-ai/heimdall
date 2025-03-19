@@ -315,7 +315,6 @@ func (g Google) streamResponse(
 	ctx context.Context,
 	client http.Client,
 	req CompletionRequest,
-	key APIKey,
 	chunkHandler func(chunk string) error,
 	requestLog *Logging,
 ) (CompletionResponse, error) {
@@ -331,6 +330,8 @@ func (g Google) streamResponse(
 				"vertex ai model requested without having configured the client",
 			)
 		}
+
+		// streaming response with the google sdk seems to not be working so we just do a regular completion request for now
 		return g.completeResponseVertex(ctx, req, requestLog)
 	default:
 		for i, key := range g.apiKeys {
