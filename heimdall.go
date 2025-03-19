@@ -25,6 +25,20 @@ type LLMProvider interface {
 		chunkHandler func(chunk string) error,
 		requestLog *Logging,
 	) (CompletionResponse, error)
+	tryWithBackup(
+		ctx context.Context,
+		req CompletionRequest,
+		client http.Client,
+		chunkHandler func(chunk string) error,
+		requestLog *Logging,
+	) (CompletionResponse, error)
+	doRequest(
+		ctx context.Context,
+		req CompletionRequest,
+		client http.Client,
+		chunkHandler func(chunk string) error,
+		key string,
+	) (CompletionResponse, int, error)
 	getApiKeys() []string
 	name() string
 }
