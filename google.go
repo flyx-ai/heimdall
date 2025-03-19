@@ -253,14 +253,12 @@ func (g Google) completeResponseVertex(
 				1<<attempt,
 			), maxBackoff)
 
-			// Generate cryptographically secure random number
 			var randomBytes [8]byte
 			var jitter time.Duration
 			if _, err := rand.Read(randomBytes[:]); err != nil {
 				// Fallback to 1.0 multiplier if random generation fails
 				jitter = backoff
 			} else {
-				// Convert to float64 between 0 and 1
 				randFloat := float64(binary.LittleEndian.Uint64(randomBytes[:])) / (1 << 64)
 				jitter = time.Duration(float64(backoff) * (0.8 + 0.4*randFloat))
 			}
@@ -351,14 +349,11 @@ func (g Google) tryWithBackup(
 				1<<attempt,
 			), maxBackoff)
 
-			// Generate cryptographically secure random number
 			var randomBytes [8]byte
 			var jitter time.Duration
 			if _, err := rand.Read(randomBytes[:]); err != nil {
-				// Fallback to 1.0 multiplier if random generation fails
 				jitter = backoff
 			} else {
-				// Convert to float64 between 0 and 1
 				randFloat := float64(binary.LittleEndian.Uint64(randomBytes[:])) / (1 << 64)
 				jitter = time.Duration(float64(backoff) * (0.8 + 0.4*randFloat))
 			}
