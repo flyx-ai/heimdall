@@ -6,38 +6,38 @@ import (
 	"time"
 )
 
-const openAIBaseURL = "https://api.openai.com/v1"
-
-type openAIRequestMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type openAIChunk struct {
-	Choices []struct {
-		Delta struct {
-			Content string `json:"content"`
-		} `json:"delta"`
-	} `json:"choices"`
-	Usage struct {
-		PromptTokens     int `json:"prompt_tokens"`
-		CompletionTokens int `json:"completion_tokens"`
-		TotalTokens      int `json:"total_tokens"`
-	} `json:"usage"`
-}
-
-type streamOptions struct {
-	IncludeUsage bool `json:"include_usage"`
-}
-
-type openAIRequest struct {
-	Model         string                 `json:"model"`
-	Messages      []openAIRequestMessage `json:"messages"`
-	Stream        bool                   `json:"stream"`
-	StreamOptions streamOptions          `json:"stream_options"`
-	Temperature   float32                `json:"temperature,omitempty"`
-	TopP          float32                `json:"top_p,omitempty"`
-}
+// const openAIBaseURL = "https://api.openai.com/v1"
+//
+// type openAIRequestMessage struct {
+// 	Role    string `json:"role"`
+// 	Content string `json:"content"`
+// }
+//
+// type openAIChunk struct {
+// 	Choices []struct {
+// 		Delta struct {
+// 			Content string `json:"content"`
+// 		} `json:"delta"`
+// 	} `json:"choices"`
+// 	Usage struct {
+// 		PromptTokens     int `json:"prompt_tokens"`
+// 		CompletionTokens int `json:"completion_tokens"`
+// 		TotalTokens      int `json:"total_tokens"`
+// 	} `json:"usage"`
+// }
+//
+// type streamOptions struct {
+// 	IncludeUsage bool `json:"include_usage"`
+// }
+//
+// type openAIRequest struct {
+// 	Model         string                 `json:"model"`
+// 	Messages      []openAIRequestMessage `json:"messages"`
+// 	Stream        bool                   `json:"stream"`
+// 	StreamOptions streamOptions          `json:"stream_options"`
+// 	Temperature   float32                `json:"temperature,omitempty"`
+// 	TopP          float32                `json:"top_p,omitempty"`
+// }
 
 type Openai struct {
 	client http.Client
