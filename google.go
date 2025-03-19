@@ -256,7 +256,6 @@ func (g Google) completeResponseVertex(
 			var randomBytes [8]byte
 			var jitter time.Duration
 			if _, err := rand.Read(randomBytes[:]); err != nil {
-				// Fallback to 1.0 multiplier if random generation fails
 				jitter = backoff
 			} else {
 				randFloat := float64(binary.LittleEndian.Uint64(randomBytes[:])) / (1 << 64)
