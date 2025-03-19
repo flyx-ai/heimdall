@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"math/rand/v2"
 	"net/http"
 	"strings"
 	"time"
@@ -218,22 +219,24 @@ func (g Google) completeResponseVertex(
 			if err == nil {
 				rb, err := json.MarshalIndent(res, "", "  ")
 				if err != nil {
-					return CompletionResponse{
-						Content: string(rb),
-						Model:   req.Model,
-						Usage: Usage{
-							PromptTokens: int(
-								res.UsageMetadata.PromptTokenCount,
-							),
-							CompletionTokens: int(
-								res.UsageMetadata.CandidatesTokenCount,
-							),
-							TotalTokens: int(
-								res.UsageMetadata.TotalTokenCount,
-							),
-						},
-					}, nil
+					return CompletionResponse{}, err
 				}
+
+				return CompletionResponse{
+					Content: string(rb),
+					Model:   req.Model,
+					Usage: Usage{
+						PromptTokens: int(
+							res.UsageMetadata.PromptTokenCount,
+						),
+						CompletionTokens: int(
+							res.UsageMetadata.CandidatesTokenCount,
+						),
+						TotalTokens: int(
+							res.UsageMetadata.TotalTokenCount,
+						),
+					},
+				}, nil
 			}
 
 			requestLog.Events = append(requestLog.Events, Event{
@@ -250,9 +253,17 @@ func (g Google) completeResponseVertex(
 				1<<attempt,
 			), maxBackoff)
 
-			jitter := time.Duration(
-				float64(backoff) * (0.8 + 0.4*rand.Float64()),
-			)
+			// Generate cryptographically secure random number
+			var randomBytes [8]byte
+			var jitter time.Duration
+			if _, err := rand.Read(randomBytes[:]); err != nil {
+				// Fallback to 1.0 multiplier if random generation fails
+				jitter = backoff
+			} else {
+				// Convert to float64 between 0 and 1
+				randFloat := float64(binary.LittleEndian.Uint64(randomBytes[:])) / (1 << 64)
+				jitter = time.Duration(float64(backoff) * (0.8 + 0.4*randFloat))
+			}
 
 			timer := time.NewTimer(jitter)
 			select {
