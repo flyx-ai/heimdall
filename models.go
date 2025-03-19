@@ -104,3 +104,18 @@ var ModelVertexGemini20FlashLite = Model{
 	Provider: Google{},
 	Name:     "gemini-2.0-flash-lite-001",
 }
+
+var ModelClaude3Opus Model = Model{
+	Provider: Anthropic{},
+	Name:     "claude-3-opus-latest",
+}
+
+var ModelClaude3Sonnet = Model{
+	Provider: Anthropic{},
+	Name:     "claude-3-sonnet-latest",
+}
+
+var ModelClaude3Haiku = Model{
+	Provider: Anthropic{},
+	Name:     "claude-3-haiku-latest",
+}
