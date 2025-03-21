@@ -119,3 +119,23 @@ var ModelClaude3Haiku = Model{
 	Provider: Anthropic{},
 	Name:     "claude-3-haiku-latest",
 }
+
+var ModelSonarReasoningPro = Model{
+	Provider: Perplexity{},
+	Name:     "sonar-reasoning-pro",
+}
+
+var ModelSonarReasoning = Model{
+	Provider: Perplexity{},
+	Name:     "sonar-reasoning",
+}
+
+var ModelSonarPro = Model{
+	Provider: Perplexity{},
+	Name:     "sonar-pro",
+}
+
+var ModelSonar = Model{
+	Provider: Perplexity{},
+	Name:     "sonar",
+}
