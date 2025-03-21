@@ -87,7 +87,7 @@ func (p Perplexity) doRequest(
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST",
-		fmt.Sprintf("%s/chat/completions", openAIBaseURL),
+		perplexityBaseUrl,
 		bytes.NewReader(body))
 	if err != nil {
 		return CompletionResponse{}, 0, fmt.Errorf("create request: %w", err)
