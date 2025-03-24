@@ -45,6 +45,40 @@ var ModelGPT4OMini Model = Model{
 	Name:     "gpt-4o-mini",
 }
 
+var GoogleSearchTool = map[string]map[string]any{
+	"google_search": {},
+}
+
+type DynamicRetrievalConf struct {
+	Mode             string `json:"mode"`
+	DynamicThreshold int64  `json:"dynamic_threshold"`
+}
+
+var GoogleSearchRetrievalTool = map[string]map[string]any{
+	"google_search_retrieval": {
+		"dynamic_retrieval_config": DynamicRetrievalConf{
+			Mode:             "MODE_DYNAMIC",
+			DynamicThreshold: 1,
+		},
+	},
+}
+
+type Gemini15FlashThink struct {
+	Tools []map[string]map[string]any
+}
+
+func (gm Gemini15FlashThink) GetProvider() LLMProvider {
+	return Google{}
+}
+
+func (gm Gemini15FlashThink) GetName() string {
+	return "gemini-1.5-flash-002"
+}
+
+func (gm Gemini15FlashThink) GetTools() GoogleTool {
+	return gm.Tools
+}
+
 var ModelGemini15FlashThinking = Model{
 	Provider: Google{},
 	Name:     "gemini-1.5-flash-002",

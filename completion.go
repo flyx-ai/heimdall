@@ -37,12 +37,12 @@ func (r *Router) Complete(
 		Start:     now,
 	}
 
-	models := append([]Model{req.Model}, req.Fallback...)
+	// models := append([]Model{req.Model}, req.Fallback...)
 	var err error
 	resp := CompletionResponse{}
 
-	for _, model := range models {
-		if r.providers[model.Provider.name()] == nil {
+	for _, model := range req.Models {
+		if r.providers[model.Provider().name()] == nil {
 			requestLog.Events = append(requestLog.Events, Event{
 				Timestamp: time.Now(),
 				Description: fmt.Sprintf(
@@ -58,7 +58,7 @@ func (r *Router) Complete(
 			Timestamp: time.Now(),
 			Description: fmt.Sprintf(
 				"attempting tryWithModel using model: %s",
-				model.Name,
+				// model.Name,
 			),
 		})
 		resp, err = r.tryWithModel(ctx, req, model, &requestLog)

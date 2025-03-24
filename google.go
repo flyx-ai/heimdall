@@ -68,6 +68,7 @@ func NewGoogle(apiKeys []string, opts ...GoogleOption) Google {
 type geminiRequest struct {
 	SystemInstruction systemInstruction `json:"system_instruction,omitzero"`
 	Contents          []content         `json:"contents"`
+	Tools             GoogleTool        `json:"tools"`
 }
 
 type content struct {
@@ -127,19 +128,19 @@ func (g Google) completeResponse(
 	client http.Client,
 	requestLog *Logging,
 ) (CompletionResponse, error) {
-	switch req.Model {
-	case ModelVertexGemini20FlashLite,
-		ModelVertexGemini20Flash,
-		ModelVertexGemini10Pro,
-		ModelVertexGemini10ProVision,
-		ModelVertexGemini15Pro,
-		ModelVertexGemini15FlashThinking:
-		if g.vertexAIClient == nil {
-			return CompletionResponse{}, errors.New(
-				"vertex ai model requested without having configured the client",
-			)
-		}
-		return g.completeResponseVertex(ctx, req, requestLog)
+	switch req.Model.GetName() {
+	// case ModelVertexGemini20FlashLite,
+	// 	ModelVertexGemini20Flash,
+	// 	ModelVertexGemini10Pro,
+	// 	ModelVertexGemini10ProVision,
+	// 	ModelVertexGemini15Pro,
+	// 	ModelVertexGemini15FlashThinking:
+	// 	if g.vertexAIClient == nil {
+	// 		return CompletionResponse{}, errors.New(
+	// 			"vertex ai model requested without having configured the client",
+	// 		)
+	// 	}
+	// 	return g.completeResponseVertex(ctx, req, requestLog)
 	default:
 		for i, key := range g.apiKeys {
 			requestLog.Events = append(requestLog.Events, Event{
@@ -444,6 +445,11 @@ func (g Google) doRequest(
 	geminiReq := geminiRequest{
 		Contents: make([]content, 1),
 	}
+	s := geminiRequest{
+		Tools: GoogleTool{
+			GoogleSearchRetrievalTool,
+		},
+	}
 	for _, msg := range req.Messages {
 		if msg.Role == "system" {
 			geminiReq.SystemInstruction.Parts = part{
@@ -471,13 +477,23 @@ func (g Google) doRequest(
 		}
 	}
 
+	googleModel, ok := req.Model.(GoogleArgs)
+	if !ok {
+		return CompletionResponse{}, 0, errors.New(
+			"Could not convert to google args",
+		)
+	}
+
+	if googleModel.GetTools() != nil {
+	}
+
 	body, err := json.Marshal(geminiReq)
 	if err != nil {
 		return CompletionResponse{}, 0, err
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		fmt.Sprintf(googleBaseUrl, req.Model.Name, key),
+		fmt.Sprintf(googleBaseUrl, req.Model.GetName(), key),
 		bytes.NewReader(body))
 	if err != nil {
 		return CompletionResponse{}, 0, err

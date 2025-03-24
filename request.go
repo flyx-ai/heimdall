@@ -24,10 +24,22 @@ const (
 	MimeTypeWebP MimeType = "image/webp"
 )
 
+type CmpArgs interface {
+	GetProvider() LLMProvider
+	GetName() string
+}
+
+type GoogleTool []map[string]map[string]any
+
+type GoogleArgs interface {
+	CmpArgs
+	GetTools() GoogleTool
+}
+
 type CompletionRequest struct {
-	Model       Model
+	Model       CmpArgs
 	Messages    []Message
-	Fallback    []Model
+	Fallback    []CmpArgs
 	Temperature float32
 	TopP        float32
 	Tags        map[string]string `json:"tags"`
