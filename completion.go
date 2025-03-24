@@ -4,12 +4,16 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/flyx-ai/heimdall/models"
+	"github.com/flyx-ai/heimdall/request"
+	"github.com/flyx-ai/heimdall/response"
 )
 
 func (r *Router) Complete(
 	ctx context.Context,
-	req CompletionRequest,
-) (CompletionResponse, error) {
+	req request.CompletionRequest,
+) (response.CompletionResponse, error) {
 	now := time.Now()
 
 	var systemMsg string
@@ -25,8 +29,8 @@ func (r *Router) Complete(
 
 	req.Tags["request_type"] = "completion"
 
-	requestLog := Logging{
-		Events: []Event{
+	requestLog := response.Logging{
+		Events: []response.Event{
 			{
 				Timestamp:   now,
 				Description: "start of call to Complete",
@@ -37,28 +41,28 @@ func (r *Router) Complete(
 		Start:     now,
 	}
 
-	// models := append([]Model{req.Model}, req.Fallback...)
+	models := append([]models.Model{req.Model}, req.Fallback...)
 	var err error
-	resp := CompletionResponse{}
+	resp := response.CompletionResponse{}
 
-	for _, model := range req.Models {
-		if r.providers[model.Provider().name()] == nil {
-			requestLog.Events = append(requestLog.Events, Event{
+	for _, model := range models {
+		if r.providers[model.GetProvider()] == nil {
+			requestLog.Events = append(requestLog.Events, response.Event{
 				Timestamp: time.Now(),
 				Description: fmt.Sprintf(
 					"attempting tryWithModel using model: %s but provider: %s not registered on router. attempting with next model.",
-					model.Name,
-					model.Provider.name(),
+					model.GetName(),
+					model.GetProvider(),
 				),
 			})
 
 			continue
 		}
-		requestLog.Events = append(requestLog.Events, Event{
+		requestLog.Events = append(requestLog.Events, response.Event{
 			Timestamp: time.Now(),
 			Description: fmt.Sprintf(
 				"attempting tryWithModel using model: %s",
-				// model.Name,
+				model.GetName(),
 			),
 		})
 		resp, err = r.tryWithModel(ctx, req, model, &requestLog)
@@ -86,14 +90,14 @@ func (r *Router) Complete(
 
 func (r *Router) tryWithModel(
 	ctx context.Context,
-	req CompletionRequest,
-	model Model,
-	requestLog *Logging,
-) (CompletionResponse, error) {
-	provider := r.providers[model.Provider.name()]
-	res, err := provider.completeResponse(ctx, req, r.client, requestLog)
+	req request.CompletionRequest,
+	model models.Model,
+	requestLog *response.Logging,
+) (response.CompletionResponse, error) {
+	provider := r.providers[model.GetProvider()]
+	res, err := provider.CompleteResponse(ctx, req, r.client, requestLog)
 	if err != nil {
-		return CompletionResponse{}, err
+		return response.CompletionResponse{}, err
 	}
 
 	return res, nil

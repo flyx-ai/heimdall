@@ -1,4 +1,6 @@
-package heimdall
+package request
+
+import "github.com/flyx-ai/heimdall/models"
 
 type MimeType string
 
@@ -24,22 +26,10 @@ const (
 	MimeTypeWebP MimeType = "image/webp"
 )
 
-type CmpArgs interface {
-	GetProvider() LLMProvider
-	GetName() string
-}
-
-type GoogleTool []map[string]map[string]any
-
-type GoogleArgs interface {
-	CmpArgs
-	GetTools() GoogleTool
-}
-
 type CompletionRequest struct {
-	Model       CmpArgs
+	Model       models.Model
 	Messages    []Message
-	Fallback    []CmpArgs
+	Fallback    []models.Model
 	Temperature float32
 	TopP        float32
 	Tags        map[string]string `json:"tags"`

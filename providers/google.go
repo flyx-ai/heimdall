@@ -1,4 +1,4 @@
-package heimdall
+package providers
 
 import (
 	"bufio"
@@ -15,6 +15,9 @@ import (
 	"time"
 
 	"cloud.google.com/go/vertexai/genai"
+	"github.com/flyx-ai/heimdall/models"
+	"github.com/flyx-ai/heimdall/request"
+	"github.com/flyx-ai/heimdall/response"
 	"google.golang.org/api/option"
 )
 
@@ -68,7 +71,7 @@ func NewGoogle(apiKeys []string, opts ...GoogleOption) Google {
 type geminiRequest struct {
 	SystemInstruction systemInstruction `json:"system_instruction,omitzero"`
 	Contents          []content         `json:"contents"`
-	Tools             GoogleTool        `json:"tools"`
+	Tools             models.GoogleTool `json:"tools"`
 }
 
 type content struct {
@@ -122,12 +125,12 @@ type tokensDetails struct {
 	TokenCount int    `json:"tokenCount"`
 }
 
-func (g Google) completeResponse(
+func (g Google) CompleteResponse(
 	ctx context.Context,
-	req CompletionRequest,
+	req request.CompletionRequest,
 	client http.Client,
-	requestLog *Logging,
-) (CompletionResponse, error) {
+	requestLog *response.Logging,
+) (response.CompletionResponse, error) {
 	switch req.Model.GetName() {
 	// case ModelVertexGemini20FlashLite,
 	// 	ModelVertexGemini20Flash,
@@ -143,18 +146,18 @@ func (g Google) completeResponse(
 	// 	return g.completeResponseVertex(ctx, req, requestLog)
 	default:
 		for i, key := range g.apiKeys {
-			requestLog.Events = append(requestLog.Events, Event{
+			requestLog.Events = append(requestLog.Events, response.Event{
 				Timestamp: time.Now(),
 				Description: fmt.Sprintf(
 					"attempting to complete request with key_number: %v",
 					i,
 				),
 			})
-			response, _, err := g.doRequest(ctx, req, client, nil, key)
+			res, _, err := g.doRequest(ctx, req, client, nil, key)
 			if err == nil {
-				return response, nil
+				return res, nil
 			}
-			requestLog.Events = append(requestLog.Events, Event{
+			requestLog.Events = append(requestLog.Events, response.Event{
 				Timestamp: time.Now(),
 				Description: fmt.Sprintf(
 					"request could not be completed, err: %v",
@@ -167,11 +170,22 @@ func (g Google) completeResponse(
 	return g.tryWithBackup(ctx, req, client, nil, requestLog)
 }
 
+// TODO figure out how to do tools with vertex sdk similar to the api
 func (g Google) completeResponseVertex(
 	ctx context.Context,
-	req CompletionRequest,
-	requestLog *Logging,
-) (CompletionResponse, error) {
+	req request.CompletionRequest,
+	requestLog *response.Logging,
+) (response.CompletionResponse, error) {
+	googleModel, ok := req.Model.(models.GoogleModel)
+	if !ok {
+		panic("Could not convert to google args")
+		// return CompletionResponse{}, 0, errors.New(
+		// "Could not convert to google args",
+		// )
+	}
+
+	model := g.vertexAIClient.GenerativeModel(googleModel.GetName())
+
 	var parts []genai.Part
 	for _, msg := range req.Messages {
 		if msg.Role == "system" {
@@ -194,7 +208,7 @@ func (g Google) completeResponseVertex(
 
 	var lastErr error
 	for attempt := range maxRetries {
-		requestLog.Events = append(requestLog.Events, Event{
+		requestLog.Events = append(requestLog.Events, response.Event{
 			Timestamp: time.Now(),
 			Description: fmt.Sprintf(
 				"attempting to complete request with expoential backoff. attempt: %v",
@@ -204,29 +218,26 @@ func (g Google) completeResponseVertex(
 
 		select {
 		case <-ctx.Done():
-			requestLog.Events = append(requestLog.Events, Event{
+			requestLog.Events = append(requestLog.Events, response.Event{
 				Timestamp: time.Now(),
 				Description: fmt.Sprintf(
 					"context was called with error: %v",
 					ctx.Err(),
 				),
 			})
-			return CompletionResponse{}, ctx.Err()
+			return response.CompletionResponse{}, ctx.Err()
 		default:
-
-			model := g.vertexAIClient.GenerativeModel(req.Model.Name)
-
 			res, err := model.GenerateContent(ctx, parts...)
 			if err == nil {
 				rb, err := json.MarshalIndent(res, "", "  ")
 				if err != nil {
-					return CompletionResponse{}, err
+					return response.CompletionResponse{}, err
 				}
 
-				return CompletionResponse{
+				return response.CompletionResponse{
 					Content: string(rb),
-					Model:   req.Model,
-					Usage: Usage{
+					Model:   req.Model.GetName(),
+					Usage: response.Usage{
 						PromptTokens: int(
 							res.UsageMetadata.PromptTokenCount,
 						),
@@ -240,7 +251,7 @@ func (g Google) completeResponseVertex(
 				}, nil
 			}
 
-			requestLog.Events = append(requestLog.Events, Event{
+			requestLog.Events = append(requestLog.Events, response.Event{
 				Timestamp: time.Now(),
 				Description: fmt.Sprintf(
 					"request could not be completed, err: %v",
@@ -267,14 +278,14 @@ func (g Google) completeResponseVertex(
 			select {
 			case <-ctx.Done():
 				timer.Stop()
-				return CompletionResponse{}, ctx.Err()
+				return response.CompletionResponse{}, ctx.Err()
 			case <-timer.C:
 				continue
 			}
 		}
 	}
 
-	return CompletionResponse{}, fmt.Errorf(
+	return response.CompletionResponse{}, fmt.Errorf(
 		"max retries exceeded: %w",
 		lastErr,
 	)
@@ -282,11 +293,11 @@ func (g Google) completeResponseVertex(
 
 func (g Google) tryWithBackup(
 	ctx context.Context,
-	req CompletionRequest,
+	req request.CompletionRequest,
 	client http.Client,
 	chunkHandler func(chunk string) error,
-	requestLog *Logging,
-) (CompletionResponse, error) {
+	requestLog *response.Logging,
+) (response.CompletionResponse, error) {
 	key := g.apiKeys[0]
 
 	maxRetries := 5
@@ -295,7 +306,7 @@ func (g Google) tryWithBackup(
 
 	var lastErr error
 	for attempt := range maxRetries {
-		requestLog.Events = append(requestLog.Events, Event{
+		requestLog.Events = append(requestLog.Events, response.Event{
 			Timestamp: time.Now(),
 			Description: fmt.Sprintf(
 				"attempting to complete request with expoential backoff. attempt: %v",
@@ -305,16 +316,16 @@ func (g Google) tryWithBackup(
 
 		select {
 		case <-ctx.Done():
-			requestLog.Events = append(requestLog.Events, Event{
+			requestLog.Events = append(requestLog.Events, response.Event{
 				Timestamp: time.Now(),
 				Description: fmt.Sprintf(
 					"context was called with error: %v",
 					ctx.Err(),
 				),
 			})
-			return CompletionResponse{}, ctx.Err()
+			return response.CompletionResponse{}, ctx.Err()
 		default:
-			response, resCode, err := g.doRequest(
+			res, resCode, err := g.doRequest(
 				ctx,
 				req,
 				client,
@@ -322,9 +333,9 @@ func (g Google) tryWithBackup(
 				key,
 			)
 			if err == nil {
-				return response, nil
+				return res, nil
 			}
-			requestLog.Events = append(requestLog.Events, Event{
+			requestLog.Events = append(requestLog.Events, response.Event{
 				Timestamp: time.Now(),
 				Description: fmt.Sprintf(
 					"request could not be completed, err: %v",
@@ -333,14 +344,14 @@ func (g Google) tryWithBackup(
 			})
 
 			if !isRetryableError(resCode) {
-				requestLog.Events = append(requestLog.Events, Event{
+				requestLog.Events = append(requestLog.Events, response.Event{
 					Timestamp: time.Now(),
 					Description: fmt.Sprintf(
 						"request was not retryable due to err: %v",
 						err,
 					),
 				})
-				return CompletionResponse{}, err
+				return response.CompletionResponse{}, err
 			}
 
 			lastErr = err
@@ -362,43 +373,44 @@ func (g Google) tryWithBackup(
 			select {
 			case <-ctx.Done():
 				timer.Stop()
-				return CompletionResponse{}, ctx.Err()
+				return response.CompletionResponse{}, ctx.Err()
 			case <-timer.C:
 				continue
 			}
 		}
 	}
 
-	return CompletionResponse{}, fmt.Errorf(
+	return response.CompletionResponse{}, fmt.Errorf(
 		"max retries exceeded: %w",
 		lastErr,
 	)
 }
 
-func (g Google) getApiKeys() []string {
+func (g Google) GetApiKeys() []string {
 	return g.apiKeys
 }
 
-func (g Google) name() string {
+func (g Google) Name() string {
 	return "google"
 }
 
 func (g Google) streamResponse(
 	ctx context.Context,
 	client http.Client,
-	req CompletionRequest,
+	req request.CompletionRequest,
 	chunkHandler func(chunk string) error,
-	requestLog *Logging,
-) (CompletionResponse, error) {
-	switch req.Model {
-	case ModelVertexGemini20FlashLite,
-		ModelVertexGemini20Flash,
-		ModelVertexGemini10Pro,
-		ModelVertexGemini10ProVision,
-		ModelVertexGemini15Pro,
-		ModelVertexGemini15FlashThinking:
+	requestLog *response.Logging,
+) (response.CompletionResponse, error) {
+	switch req.Model.GetName() {
+	case "":
+		// ModelVertexGemini20FlashLite,
+		// ModelVertexGemini20Flash,
+		// ModelVertexGemini10Pro,
+		// ModelVertexGemini10ProVision,
+		// ModelVertexGemini15Pro,
+		// ModelVertexGemini15FlashThinking:
 		if g.vertexAIClient == nil {
-			return CompletionResponse{}, errors.New(
+			return response.CompletionResponse{}, errors.New(
 				"vertex ai model requested without having configured the client",
 			)
 		}
@@ -407,18 +419,18 @@ func (g Google) streamResponse(
 		return g.completeResponseVertex(ctx, req, requestLog)
 	default:
 		for i, key := range g.apiKeys {
-			requestLog.Events = append(requestLog.Events, Event{
+			requestLog.Events = append(requestLog.Events, response.Event{
 				Timestamp: time.Now(),
 				Description: fmt.Sprintf(
 					"attempting to complete request with key_number: %v",
 					i,
 				),
 			})
-			response, _, err := g.doRequest(ctx, req, client, chunkHandler, key)
+			res, _, err := g.doRequest(ctx, req, client, chunkHandler, key)
 			if err == nil {
-				return response, nil
+				return res, nil
 			}
-			requestLog.Events = append(requestLog.Events, Event{
+			requestLog.Events = append(requestLog.Events, response.Event{
 				Timestamp: time.Now(),
 				Description: fmt.Sprintf(
 					"request could not be completed, err: %v",
@@ -437,19 +449,27 @@ func isRetryableError(resCode int) bool {
 
 func (g Google) doRequest(
 	ctx context.Context,
-	req CompletionRequest,
+	req request.CompletionRequest,
 	client http.Client,
 	chunkHandler func(chunk string) error,
 	key string,
-) (CompletionResponse, int, error) {
+) (response.CompletionResponse, int, error) {
+	googleModel, ok := req.Model.(models.GoogleModel)
+	if !ok {
+		panic("Could not convert to google args")
+		// return CompletionResponse{}, 0, errors.New(
+		// "Could not convert to google args",
+		// )
+	}
+
 	geminiReq := geminiRequest{
 		Contents: make([]content, 1),
 	}
-	s := geminiRequest{
-		Tools: GoogleTool{
-			GoogleSearchRetrievalTool,
-		},
+
+	if googleModel.GetTools() != nil {
+		geminiReq.Tools = googleModel.GetTools()
 	}
+
 	for _, msg := range req.Messages {
 		if msg.Role == "system" {
 			geminiReq.SystemInstruction.Parts = part{
@@ -477,56 +497,46 @@ func (g Google) doRequest(
 		}
 	}
 
-	googleModel, ok := req.Model.(GoogleArgs)
-	if !ok {
-		return CompletionResponse{}, 0, errors.New(
-			"Could not convert to google args",
-		)
-	}
-
-	if googleModel.GetTools() != nil {
-	}
-
 	body, err := json.Marshal(geminiReq)
 	if err != nil {
-		return CompletionResponse{}, 0, err
+		return response.CompletionResponse{}, 0, err
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		fmt.Sprintf(googleBaseUrl, req.Model.GetName(), key),
 		bytes.NewReader(body))
 	if err != nil {
-		return CompletionResponse{}, 0, err
+		return response.CompletionResponse{}, 0, err
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(httpReq)
 	if err != nil {
-		return CompletionResponse{}, 0, err
+		return response.CompletionResponse{}, 0, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return CompletionResponse{}, resp.StatusCode, err
+		return response.CompletionResponse{}, resp.StatusCode, err
 	}
 
 	reader := bufio.NewReader(resp.Body)
 	var fullContent strings.Builder
-	var usage Usage
+	var usage response.Usage
 	chunks := 0
 	now := time.Now()
 
 	for {
 		if chunks == 0 && time.Since(now).Seconds() > 3.0 {
-			return CompletionResponse{}, 0, context.Canceled
+			return response.CompletionResponse{}, 0, context.Canceled
 		}
 		line, err := reader.ReadString('\n')
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return CompletionResponse{}, 0, err
+			return response.CompletionResponse{}, 0, err
 		}
 
 		line = strings.TrimPrefix(line, "data: ")
@@ -537,7 +547,7 @@ func (g Google) doRequest(
 
 		var responseChunk geminiResponse
 		if err := json.Unmarshal([]byte(line), &responseChunk); err != nil {
-			return CompletionResponse{}, 0, err
+			return response.CompletionResponse{}, 0, err
 		}
 
 		if len(responseChunk.Candidates) > 0 {
@@ -547,7 +557,7 @@ func (g Google) doRequest(
 
 			if chunkHandler != nil {
 				if err := chunkHandler(responseChunk.Candidates[0].Content.Parts[0].Text); err != nil {
-					return CompletionResponse{}, 0, err
+					return response.CompletionResponse{}, 0, err
 				}
 			}
 		}
@@ -555,7 +565,7 @@ func (g Google) doRequest(
 		chunks++
 
 		if responseChunk.Candidates[0].FinishReason == "STOP" {
-			usage = Usage{
+			usage = response.Usage{
 				PromptTokens:     responseChunk.UsageMetadata.PromptTokenCount,
 				CompletionTokens: responseChunk.UsageMetadata.CandidatesTokenCount,
 				TotalTokens:      responseChunk.UsageMetadata.TotalTokenCount,
@@ -563,9 +573,9 @@ func (g Google) doRequest(
 		}
 	}
 
-	return CompletionResponse{
+	return response.CompletionResponse{
 		Content: fullContent.String(),
-		Model:   req.Model,
+		Model:   req.Model.GetName(),
 		Usage:   usage,
 	}, 0, nil
 }
