@@ -178,8 +178,8 @@ func (p Perplexity) Name() string {
 	panic("unimplemented")
 }
 
-// streamResponse implements LLMProvider.
-func (p Perplexity) streamResponse(
+// StreamResponse implements LLMProvider.
+func (p Perplexity) StreamResponse(
 	ctx context.Context,
 	client http.Client,
 	req request.CompletionRequest,

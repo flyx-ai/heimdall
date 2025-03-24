@@ -15,7 +15,7 @@ type LLMProvider interface {
 		client http.Client,
 		requestLog *response.Logging,
 	) (response.CompletionResponse, error)
-	streamResponse(
+	StreamResponse(
 		ctx context.Context,
 		client http.Client,
 		req request.CompletionRequest,

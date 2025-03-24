@@ -241,8 +241,8 @@ func (a Anthropic) Name() string {
 	return "anthropic"
 }
 
-// streamResponse implements LLMProvider.
-func (a Anthropic) streamResponse(
+// StreamResponse implements LLMProvider.
+func (a Anthropic) StreamResponse(
 	ctx context.Context,
 	client http.Client,
 	req request.CompletionRequest,

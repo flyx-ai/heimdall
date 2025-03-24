@@ -394,7 +394,7 @@ func (g Google) Name() string {
 	return "google"
 }
 
-func (g Google) streamResponse(
+func (g Google) StreamResponse(
 	ctx context.Context,
 	client http.Client,
 	req request.CompletionRequest,

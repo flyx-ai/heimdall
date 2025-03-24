@@ -296,7 +296,7 @@ func (oa Openai) CompleteResponse(
 	return oa.tryWithBackup(ctx, req, client, nil, requestLog)
 }
 
-func (oa Openai) streamResponse(
+func (oa Openai) StreamResponse(
 	ctx context.Context,
 	client http.Client,
 	req request.CompletionRequest,
