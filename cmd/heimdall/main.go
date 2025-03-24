@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/flyx-ai/heimdall"
+	"github.com/flyx-ai/heimdall/models"
+	"github.com/flyx-ai/heimdall/providers"
+	"github.com/flyx-ai/heimdall/request"
 )
 
 func main() {
@@ -14,41 +17,13 @@ func main() {
 
 	gApiKey := os.Getenv("GOOGLE_API_KEY")
 
-	// router := heimdall.New(heimdall.RouterConfig{
-	// 	ProviderAPIKeys: map[heimdall.Provider][]heimdall.APIKey{
-	// 		heimdall.ProviderOpenAI: {
-	// 			heimdall.APIKey{
-	// 				Name:             "ONE",
-	// 				Key:              os.Getenv("OPENAI_API_KEY"),
-	// 				RequestsLimit:    500,
-	// 				RequestRemaining: 500,
-	// 			},
-	// 			heimdall.APIKey{
-	// 				Name:             "ONE",
-	// 				Key:              os.Getenv("OPENAI_API_KEY_TWO"),
-	// 				RequestsLimit:    10000,
-	// 				RequestRemaining: 10000,
-	// 			},
-	// 		},
-	// 		heimdall.ProviderGoogle: {
-	// 			heimdall.APIKey{
-	// 				Name:             "ONE",
-	// 				Key:              gApiKey,
-	// 				RequestsLimit:    10000,
-	// 				RequestRemaining: 10000,
-	// 			},
-	// 		},
-	// 	},
-	// 	Timeout: 0,
-	// })
-
 	timeout := 1 * time.Minute
-	g := heimdall.NewGoogle([]string{gApiKey})
-	router := heimdall.New(timeout, []heimdall.LLMProvider{g})
+	g := providers.NewGoogle([]string{gApiKey})
+	router := heimdall.New(timeout, []providers.LLMProvider{g})
 
-	req := heimdall.CompletionRequest{
-		Model: heimdall.ModelGemini20Flash,
-		Messages: []heimdall.Message{
+	req := request.CompletionRequest{
+		Model: models.Gemini15FlashThink{},
+		Messages: []request.Message{
 			{
 				Role:    "system",
 				Content: "you are a helpful assistant.",
@@ -58,7 +33,9 @@ func main() {
 				Content: "please make a detailed analysis of the NVIDIA's current valuation.",
 			},
 		},
-		Fallback:    []heimdall.Model{},
+		Fallback: []models.Model{
+			models.Gemini15FlashThink{},
+		},
 		Temperature: 1,
 		Tags: map[string]string{
 			"env":  "test",
