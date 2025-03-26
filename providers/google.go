@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -325,10 +326,9 @@ func (g Google) doRequest(
 ) (response.Completion, int, error) {
 	googleModel, ok := req.Model.(models.GoogleModel)
 	if !ok {
-		panic("Could not convert to google args")
-		// return CompletionResponse{}, 0, errors.New(
-		// "Could not convert to google args",
-		// )
+		return response.Completion{}, 0, errors.New(
+			"could not convert to google args",
+		)
 	}
 
 	geminiReq := geminiRequest{

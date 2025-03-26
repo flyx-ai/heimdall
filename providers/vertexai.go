@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -96,10 +97,9 @@ func (v *VertexAI) tryWithBackup(
 ) (response.Completion, error) {
 	googleModel, ok := req.Model.(models.GoogleModel)
 	if !ok {
-		panic("Could not convert to google args")
-		// return CompletionResponse{}, 0, errors.New(
-		// "Could not convert to google args",
-		// )
+		return response.Completion{}, errors.New(
+			"could not convert to google args",
+		)
 	}
 
 	model := v.vertexAIClient.GenerativeModel(googleModel.GetName())
@@ -213,7 +213,7 @@ func NewVertexAI(
 	projectID,
 	location,
 	credentialsJSON string,
-) VertexAI {
+) (VertexAI, error) {
 	client, err := genai.NewClient(
 		ctx,
 		projectID,
@@ -221,12 +221,12 @@ func NewVertexAI(
 		option.WithCredentialsJSON([]byte(credentialsJSON)),
 	)
 	if err != nil {
-		panic("could not setup new genai client")
+		return VertexAI{}, errors.New("could not setup new genai client")
 	}
 
 	return VertexAI{
 		client,
-	}
+	}, nil
 }
 
 var _ LLMProvider = new(VertexAI)
