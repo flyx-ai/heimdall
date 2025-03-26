@@ -11,31 +11,30 @@ import (
 type LLMProvider interface {
 	CompleteResponse(
 		ctx context.Context,
-		req request.CompletionRequest,
+		req request.Completion,
 		client http.Client,
 		requestLog *response.Logging,
-	) (response.CompletionResponse, error)
+	) (response.Completion, error)
 	StreamResponse(
 		ctx context.Context,
 		client http.Client,
-		req request.CompletionRequest,
+		req request.Completion,
 		chunkHandler func(chunk string) error,
 		requestLog *response.Logging,
-	) (response.CompletionResponse, error)
+	) (response.Completion, error)
 	tryWithBackup(
 		ctx context.Context,
-		req request.CompletionRequest,
+		req request.Completion,
 		client http.Client,
 		chunkHandler func(chunk string) error,
 		requestLog *response.Logging,
-	) (response.CompletionResponse, error)
+	) (response.Completion, error)
 	doRequest(
 		ctx context.Context,
-		req request.CompletionRequest,
+		req request.Completion,
 		client http.Client,
 		chunkHandler func(chunk string) error,
 		key string,
-	) (response.CompletionResponse, int, error)
-	GetApiKeys() []string
+	) (response.Completion, int, error)
 	Name() string
 }

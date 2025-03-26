@@ -1,6 +1,6 @@
 package models
 
-const googleProvider = "google"
+const GoogleProvider = "google"
 
 type GoogleTool []map[string]map[string]any
 
@@ -30,7 +30,7 @@ var GoogleSearchRetrievalTool = map[string]map[string]any{
 type Gemini15FlashThink struct{}
 
 func (gm Gemini15FlashThink) GetProvider() string {
-	return googleProvider
+	return GoogleProvider
 }
 
 func (gm Gemini15FlashThink) GetName() string {
@@ -48,7 +48,7 @@ func (g *Gemini15Pro) GetName() string {
 
 // GetProvider implements Model.
 func (g *Gemini15Pro) GetProvider() string {
-	return googleProvider
+	return GoogleProvider
 }
 
 var _ Model = new(Gemini15Pro)
@@ -62,7 +62,7 @@ func (g *Gemini10ProVision) GetName() string {
 
 // GetProvider implements Model.
 func (g *Gemini10ProVision) GetProvider() string {
-	return googleProvider
+	return GoogleProvider
 }
 
 var _ Model = new(Gemini10ProVision)
@@ -76,7 +76,7 @@ func (g *Gemini10Pro) GetName() string {
 
 // GetProvider implements Model.
 func (g *Gemini10Pro) GetProvider() string {
-	return googleProvider
+	return GoogleProvider
 }
 
 var _ Model = new(Gemini10Pro)
@@ -92,7 +92,7 @@ func (g *Gemini20Flash) GetName() string {
 
 // GetProvider implements GoogleModel.
 func (g *Gemini20Flash) GetProvider() string {
-	return googleProvider
+	return GoogleProvider
 }
 
 // GetTools implements GoogleModel.
@@ -113,7 +113,7 @@ func (g *Gemini20FlashLite) GetName() string {
 
 // GetProvider implements GoogleModel.
 func (g *Gemini20FlashLite) GetProvider() string {
-	return googleProvider
+	return GoogleProvider
 }
 
 // GetTools implements GoogleModel.

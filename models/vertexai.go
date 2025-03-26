@@ -1,6 +1,6 @@
 package models
 
-const vertexProvider = "google"
+const VertexProvider = "vertexai"
 
 type VertexGemini15FlashThinking struct{}
 
@@ -11,7 +11,7 @@ func (v *VertexGemini15FlashThinking) GetName() string {
 
 // GetProvider implements Model.
 func (v *VertexGemini15FlashThinking) GetProvider() string {
-	return vertexProvider
+	return VertexProvider
 }
 
 var _ Model = new(VertexGemini15FlashThinking)
@@ -25,7 +25,7 @@ func (v *VertexGemini15Pro) GetName() string {
 
 // GetProvider implements Model.
 func (v *VertexGemini15Pro) GetProvider() string {
-	return vertexProvider
+	return VertexProvider
 }
 
 var _ Model = new(VertexGemini15Pro)
@@ -39,7 +39,7 @@ func (v *VertexGemini10ProVision) GetName() string {
 
 // GetProvider implements Model.
 func (v *VertexGemini10ProVision) GetProvider() string {
-	return vertexProvider
+	return VertexProvider
 }
 
 var _ Model = new(VertexGemini10ProVision)
@@ -53,7 +53,7 @@ func (v *VertexGemini10Pro) GetName() string {
 
 // GetProvider implements Model.
 func (v *VertexGemini10Pro) GetProvider() string {
-	return vertexProvider
+	return VertexProvider
 }
 
 var _ Model = new(VertexGemini10Pro)
@@ -67,7 +67,7 @@ func (v *VertexGemini20Flash) GetName() string {
 
 // GetProvider implements Model.
 func (v *VertexGemini20Flash) GetProvider() string {
-	return vertexProvider
+	return VertexProvider
 }
 
 var _ Model = new(VertexGemini20Flash)
@@ -81,7 +81,7 @@ func (v *VertexGemini20FlashLite) GetName() string {
 
 // GetProvider implements Model.
 func (v *VertexGemini20FlashLite) GetProvider() string {
-	return vertexProvider
+	return VertexProvider
 }
 
 var _ Model = new(VertexGemini20FlashLite)

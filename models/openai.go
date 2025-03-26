@@ -1,6 +1,6 @@
 package models
 
-const openaiProvider = "openai"
+const OpenaiProvider = "openai"
 
 type O3Mini struct{}
 
@@ -11,7 +11,7 @@ func (o *O3Mini) GetName() string {
 
 // GetProvider implements Model.
 func (o *O3Mini) GetProvider() string {
-	return openaiProvider
+	return OpenaiProvider
 }
 
 var _ Model = new(O3Mini)
@@ -25,7 +25,7 @@ func (o *O1) GetName() string {
 
 // GetProvider implements Model.
 func (o *O1) GetProvider() string {
-	return openaiProvider
+	return OpenaiProvider
 }
 
 var _ Model = new(O1)
@@ -39,7 +39,7 @@ func (o *O1Mini) GetName() string {
 
 // GetProvider implements Model.
 func (o *O1Mini) GetProvider() string {
-	return openaiProvider
+	return OpenaiProvider
 }
 
 var _ Model = new(O1Mini)
@@ -53,7 +53,7 @@ func (o *O1Preview) GetName() string {
 
 // GetProvider implements Model.
 func (o *O1Preview) GetProvider() string {
-	return openaiProvider
+	return OpenaiProvider
 }
 
 var _ Model = new(O1Preview)
@@ -67,7 +67,7 @@ func (g *GPT4) GetName() string {
 
 // GetProvider implements Model.
 func (g *GPT4) GetProvider() string {
-	return openaiProvider
+	return OpenaiProvider
 }
 
 var _ Model = new(GPT4)
@@ -81,7 +81,7 @@ func (g *GPT4Turbo) GetName() string {
 
 // GetProvider implements Model.
 func (g *GPT4Turbo) GetProvider() string {
-	return openaiProvider
+	return OpenaiProvider
 }
 
 var _ Model = new(GPT4Turbo)
@@ -95,7 +95,7 @@ func (g *GPT4O) GetName() string {
 
 // GetProvider implements Model.
 func (g *GPT4O) GetProvider() string {
-	return openaiProvider
+	return OpenaiProvider
 }
 
 var _ Model = new(GPT4O)
@@ -109,7 +109,7 @@ func (g *GPT4OMini) GetName() string {
 
 // GetProvider implements Model.
 func (g *GPT4OMini) GetProvider() string {
-	return openaiProvider
+	return OpenaiProvider
 }
 
 var _ Model = new(GPT4OMini)

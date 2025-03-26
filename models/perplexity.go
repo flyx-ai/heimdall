@@ -1,6 +1,6 @@
 package models
 
-const perplexityProvider = "perplexity"
+const PerplexityProvider = "perplexity"
 
 type SonarReasoningPro struct{}
 
@@ -11,7 +11,7 @@ func (s *SonarReasoningPro) GetName() string {
 
 // GetProvider implements Model.
 func (s *SonarReasoningPro) GetProvider() string {
-	return perplexityProvider
+	return PerplexityProvider
 }
 
 var _ Model = new(SonarReasoningPro)
@@ -25,7 +25,7 @@ func (s *SonarReasoning) GetName() string {
 
 // GetProvider implements Model.
 func (s *SonarReasoning) GetProvider() string {
-	return perplexityProvider
+	return PerplexityProvider
 }
 
 var _ Model = new(SonarReasoning)
@@ -39,7 +39,7 @@ func (s *SonarPro) GetName() string {
 
 // GetProvider implements Model.
 func (s *SonarPro) GetProvider() string {
-	return perplexityProvider
+	return PerplexityProvider
 }
 
 var _ Model = new(SonarPro)
@@ -53,7 +53,7 @@ func (s *Sonar) GetName() string {
 
 // GetProvider implements Model.
 func (s *Sonar) GetProvider() string {
-	return perplexityProvider
+	return PerplexityProvider
 }
 
 var _ Model = new(Sonar)

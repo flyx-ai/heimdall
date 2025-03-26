@@ -21,7 +21,7 @@ func main() {
 	g := providers.NewGoogle([]string{gApiKey})
 	router := heimdall.New(timeout, []providers.LLMProvider{g})
 
-	req := request.CompletionRequest{
+	req := request.Completion{
 		Model: models.Gemini15FlashThink{},
 		Messages: []request.Message{
 			{

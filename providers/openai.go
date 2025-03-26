@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/flyx-ai/heimdall/models"
 	"github.com/flyx-ai/heimdall/request"
 	"github.com/flyx-ai/heimdall/response"
 )
@@ -57,11 +58,11 @@ type Openai struct {
 // doRequest implements LLMProvider.
 func (oa Openai) doRequest(
 	ctx context.Context,
-	req request.CompletionRequest,
+	req request.Completion,
 	client http.Client,
 	chunkHandler func(chunk string) error,
 	key string,
-) (response.CompletionResponse, int, error) {
+) (response.Completion, int, error) {
 	messages := make([]openAIRequestMessage, len(req.Messages))
 	for i, msg := range req.Messages {
 		messages[i] = openAIRequestMessage(openAIRequestMessage{
@@ -80,14 +81,14 @@ func (oa Openai) doRequest(
 
 	body, err := json.Marshal(apiReq)
 	if err != nil {
-		return response.CompletionResponse{}, 0, err
+		return response.Completion{}, 0, err
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST",
 		fmt.Sprintf("%s/chat/completions", openAIBaseURL),
 		bytes.NewReader(body))
 	if err != nil {
-		return response.CompletionResponse{}, 0, fmt.Errorf(
+		return response.Completion{}, 0, fmt.Errorf(
 			"create request: %w",
 			err,
 		)
@@ -98,12 +99,12 @@ func (oa Openai) doRequest(
 
 	resp, err := client.Do(httpReq)
 	if err != nil {
-		return response.CompletionResponse{}, 0, err
+		return response.Completion{}, 0, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return response.CompletionResponse{}, resp.StatusCode, err
+		return response.Completion{}, resp.StatusCode, err
 	}
 
 	reader := bufio.NewReader(resp.Body)
@@ -114,14 +115,14 @@ func (oa Openai) doRequest(
 
 	for {
 		if chunks == 0 && time.Since(now).Seconds() > 3.0 {
-			return response.CompletionResponse{}, 0, context.Canceled
+			return response.Completion{}, 0, context.Canceled
 		}
 		line, err := reader.ReadString('\n')
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return response.CompletionResponse{}, 0, fmt.Errorf(
+			return response.Completion{}, 0, fmt.Errorf(
 				"read line: %w",
 				err,
 			)
@@ -135,7 +136,7 @@ func (oa Openai) doRequest(
 
 		var chunk openAIChunk
 		if err := json.Unmarshal([]byte(line), &chunk); err != nil {
-			return response.CompletionResponse{}, 0, fmt.Errorf(
+			return response.Completion{}, 0, fmt.Errorf(
 				"unmarshal chunk: %w",
 				err,
 			)
@@ -155,29 +156,25 @@ func (oa Openai) doRequest(
 		}
 	}
 
-	return response.CompletionResponse{
+	return response.Completion{
 		Content: fullContent.String(),
 		Model:   req.Model.GetName(),
 		Usage:   usage,
 	}, 0, nil
 }
 
-func (oa Openai) GetApiKeys() []string {
-	return oa.apiKeys
-}
-
 func (oa Openai) Name() string {
-	return "openai"
+	return models.OpenaiProvider
 }
 
 // tryWithBackup implements LLMProvider.
 func (oa Openai) tryWithBackup(
 	ctx context.Context,
-	req request.CompletionRequest,
+	req request.Completion,
 	client http.Client,
 	chunkHandler func(chunk string) error,
 	requestLog *response.Logging,
-) (response.CompletionResponse, error) {
+) (response.Completion, error) {
 	key := oa.apiKeys[0]
 
 	maxRetries := 5
@@ -203,7 +200,7 @@ func (oa Openai) tryWithBackup(
 					ctx.Err(),
 				),
 			})
-			return response.CompletionResponse{}, ctx.Err()
+			return response.Completion{}, ctx.Err()
 		default:
 			res, resCode, err := oa.doRequest(
 				ctx,
@@ -231,7 +228,7 @@ func (oa Openai) tryWithBackup(
 						err,
 					),
 				})
-				return response.CompletionResponse{}, err
+				return response.Completion{}, err
 			}
 
 			lastErr = err
@@ -253,14 +250,14 @@ func (oa Openai) tryWithBackup(
 			select {
 			case <-ctx.Done():
 				timer.Stop()
-				return response.CompletionResponse{}, ctx.Err()
+				return response.Completion{}, ctx.Err()
 			case <-timer.C:
 				continue
 			}
 		}
 	}
 
-	return response.CompletionResponse{}, fmt.Errorf(
+	return response.Completion{}, fmt.Errorf(
 		"max retries exceeded: %w",
 		lastErr,
 	)
@@ -268,12 +265,43 @@ func (oa Openai) tryWithBackup(
 
 func (oa Openai) CompleteResponse(
 	ctx context.Context,
-	req request.CompletionRequest,
+	req request.Completion,
 	client http.Client,
 	requestLog *response.Logging,
-) (response.CompletionResponse, error) {
+) (response.Completion, error) {
+	reqLog := &response.Logging{}
+	if requestLog == nil {
+		var systemMsg string
+		var userMsg string
+		for _, msg := range req.Messages {
+			if msg.Role == "system" {
+				systemMsg = msg.Content
+			}
+			if msg.Role == "user" {
+				userMsg = msg.Content
+			}
+		}
+
+		req.Tags["request_type"] = "streaming"
+
+		reqLog = &response.Logging{
+			Events: []response.Event{
+				{
+					Timestamp:   time.Now(),
+					Description: "start of call to StreamResponse",
+				},
+			},
+			SystemMsg: systemMsg,
+			UserMsg:   userMsg,
+			Start:     time.Now(),
+		}
+	}
+	if requestLog != nil {
+		reqLog = requestLog
+	}
+
 	for i, key := range oa.apiKeys {
-		requestLog.Events = append(requestLog.Events, response.Event{
+		reqLog.Events = append(reqLog.Events, response.Event{
 			Timestamp: time.Now(),
 			Description: fmt.Sprintf(
 				"attempting to complete request with key_number: %v",
@@ -284,7 +312,8 @@ func (oa Openai) CompleteResponse(
 		if err == nil {
 			return res, nil
 		}
-		requestLog.Events = append(requestLog.Events, response.Event{
+
+		reqLog.Events = append(reqLog.Events, response.Event{
 			Timestamp: time.Now(),
 			Description: fmt.Sprintf(
 				"request could not be completed, err: %v",
@@ -293,18 +322,49 @@ func (oa Openai) CompleteResponse(
 		})
 	}
 
-	return oa.tryWithBackup(ctx, req, client, nil, requestLog)
+	return oa.tryWithBackup(ctx, req, client, nil, reqLog)
 }
 
 func (oa Openai) StreamResponse(
 	ctx context.Context,
 	client http.Client,
-	req request.CompletionRequest,
+	req request.Completion,
 	chunkHandler func(chunk string) error,
 	requestLog *response.Logging,
-) (response.CompletionResponse, error) {
+) (response.Completion, error) {
+	reqLog := &response.Logging{}
+	if requestLog == nil {
+		var systemMsg string
+		var userMsg string
+		for _, msg := range req.Messages {
+			if msg.Role == "system" {
+				systemMsg = msg.Content
+			}
+			if msg.Role == "user" {
+				userMsg = msg.Content
+			}
+		}
+
+		req.Tags["request_type"] = "streaming"
+
+		reqLog = &response.Logging{
+			Events: []response.Event{
+				{
+					Timestamp:   time.Now(),
+					Description: "start of call to StreamResponse",
+				},
+			},
+			SystemMsg: systemMsg,
+			UserMsg:   userMsg,
+			Start:     time.Now(),
+		}
+	}
+	if requestLog != nil {
+		reqLog = requestLog
+	}
+
 	for i, key := range oa.apiKeys {
-		requestLog.Events = append(requestLog.Events, response.Event{
+		reqLog.Events = append(reqLog.Events, response.Event{
 			Timestamp: time.Now(),
 			Description: fmt.Sprintf(
 				"attempting to complete request with key_number: %v",
@@ -315,7 +375,8 @@ func (oa Openai) StreamResponse(
 		if err == nil {
 			return res, nil
 		}
-		requestLog.Events = append(requestLog.Events, response.Event{
+
+		reqLog.Events = append(reqLog.Events, response.Event{
 			Timestamp: time.Now(),
 			Description: fmt.Sprintf(
 				"request could not be completed, err: %v",
@@ -324,7 +385,7 @@ func (oa Openai) StreamResponse(
 		})
 	}
 
-	return oa.tryWithBackup(ctx, req, client, chunkHandler, requestLog)
+	return oa.tryWithBackup(ctx, req, client, chunkHandler, reqLog)
 }
 
 var _ LLMProvider = new(Openai)

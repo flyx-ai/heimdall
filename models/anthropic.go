@@ -1,6 +1,6 @@
 package models
 
-const anthropicProvider = "anthropic"
+const AnthropicProvider = "anthropic"
 
 type Claude3Opus struct{}
 
@@ -11,7 +11,7 @@ func (c *Claude3Opus) GetName() string {
 
 // GetProvider implements Model.
 func (c *Claude3Opus) GetProvider() string {
-	return anthropicProvider
+	return AnthropicProvider
 }
 
 var _ Model = new(Claude3Opus)
@@ -25,7 +25,7 @@ func (c *Claude3Sonnet) GetName() string {
 
 // GetProvider implements Model.
 func (c *Claude3Sonnet) GetProvider() string {
-	return anthropicProvider
+	return AnthropicProvider
 }
 
 var _ Model = new(Claude3Sonnet)
@@ -39,7 +39,7 @@ func (c *Claude3Haiku) GetName() string {
 
 // GetProvider implements Model.
 func (c *Claude3Haiku) GetProvider() string {
-	return anthropicProvider
+	return AnthropicProvider
 }
 
 var _ Model = new(Claude3Haiku)

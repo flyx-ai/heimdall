@@ -12,8 +12,8 @@ import (
 
 func (r *Router) Complete(
 	ctx context.Context,
-	req request.CompletionRequest,
-) (response.CompletionResponse, error) {
+	req request.Completion,
+) (response.Completion, error) {
 	now := time.Now()
 
 	var systemMsg string
@@ -43,7 +43,7 @@ func (r *Router) Complete(
 
 	models := append([]models.Model{req.Model}, req.Fallback...)
 	var err error
-	resp := response.CompletionResponse{}
+	resp := response.Completion{}
 
 	for _, model := range models {
 		if r.providers[model.GetProvider()] == nil {
@@ -90,14 +90,14 @@ func (r *Router) Complete(
 
 func (r *Router) tryWithModel(
 	ctx context.Context,
-	req request.CompletionRequest,
+	req request.Completion,
 	model models.Model,
 	requestLog *response.Logging,
-) (response.CompletionResponse, error) {
+) (response.Completion, error) {
 	provider := r.providers[model.GetProvider()]
 	res, err := provider.CompleteResponse(ctx, req, r.client, requestLog)
 	if err != nil {
-		return response.CompletionResponse{}, err
+		return response.Completion{}, err
 	}
 
 	return res, nil

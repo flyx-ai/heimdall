@@ -12,13 +12,13 @@ import (
 
 func (r *Router) Stream(
 	ctx context.Context,
-	req request.CompletionRequest,
+	req request.Completion,
 	chunkHandler func(chunk string) error,
-) (response.CompletionResponse, error) {
+) (response.Completion, error) {
 	now := time.Now()
 
 	if chunkHandler == nil {
-		return response.CompletionResponse{}, ErrNoChunkHandler
+		return response.Completion{}, ErrNoChunkHandler
 	}
 
 	var systemMsg string
@@ -35,7 +35,7 @@ func (r *Router) Stream(
 	req.Tags["request_type"] = "stream"
 
 	models := append([]models.Model{req.Model}, req.Fallback...)
-	var resp response.CompletionResponse
+	var resp response.Completion
 	var err error
 
 	requestLog := response.Logging{
@@ -88,11 +88,11 @@ func (r *Router) Stream(
 
 func (r *Router) tryStreamWithModel(
 	ctx context.Context,
-	req request.CompletionRequest,
+	req request.Completion,
 	model models.Model,
 	chunkHandler func(chunk string) error,
 	requestLog *response.Logging,
-) (response.CompletionResponse, error) {
+) (response.Completion, error) {
 	provider := r.providers[model.GetProvider()]
 	res, err := provider.StreamResponse(
 		ctx,
@@ -102,7 +102,7 @@ func (r *Router) tryStreamWithModel(
 		requestLog,
 	)
 	if err != nil {
-		return response.CompletionResponse{}, err
+		return response.Completion{}, err
 	}
 
 	return res, nil

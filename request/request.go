@@ -26,7 +26,7 @@ const (
 	MimeTypeWebP MimeType = "image/webp"
 )
 
-type CompletionRequest struct {
+type Completion struct {
 	Model       models.Model
 	Messages    []Message
 	Fallback    []models.Model

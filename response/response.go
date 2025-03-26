@@ -27,7 +27,7 @@ type Usage struct {
 	CompletionTokens int
 	TotalTokens      int
 }
-type CompletionResponse struct {
+type Completion struct {
 	Content    string
 	Model      string
 	Usage      Usage
