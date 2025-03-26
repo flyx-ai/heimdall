@@ -11,6 +11,7 @@ import (
 	"github.com/flyx-ai/heimdall/providers"
 	"github.com/flyx-ai/heimdall/request"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TODO: test with tools as well
@@ -33,7 +34,6 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, nil)
 	tests := []struct {
 		name string
 		req  request.Completion
@@ -92,7 +92,7 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 				client,
 				nil,
 			)
-			assert.NoError(
+			require.NoError(
 				t,
 				err,
 				"CompleteResponse returned an unexpected error",
