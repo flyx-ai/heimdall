@@ -1,6 +1,6 @@
 set dotenv-load
 
-alias hs := heimdall-stream
+alias ta := test-all
 
-heimdall-stream:
-	go run cmd/heimdall/main.go
+test-all:
+	go test -v ./...

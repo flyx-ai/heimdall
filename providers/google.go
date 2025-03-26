@@ -324,129 +324,243 @@ func (g Google) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
-	googleModel, ok := req.Model.(models.GoogleModel)
-	if !ok {
-		return response.Completion{}, 0, errors.New(
-			"could not convert to google args",
-		)
-	}
-
 	geminiReq := geminiRequest{
 		Contents: make([]content, 1),
 	}
 
-	if googleModel.GetTools() != nil {
-		geminiReq.Tools = googleModel.GetTools()
-	}
-
-	for _, msg := range req.Messages {
-		if msg.Role == "system" {
-			geminiReq.SystemInstruction.Parts = part{
-				Text: msg.Content,
+	switch req.Model.GetName() {
+	case string(models.Gemini15FlashModel),
+		string(models.Gemini15ProModel):
+		for _, msg := range req.Messages {
+			if msg.Role == "system" {
+				geminiReq.SystemInstruction.Parts = part{
+					Text: msg.Content,
+				}
+			}
+			if msg.Role == "user" {
+				geminiReq.Contents[0].Parts = append(
+					geminiReq.Contents[0].Parts,
+					part{
+						Text: msg.Content,
+					},
+				)
+			}
+			if msg.Role == "file" {
+				geminiReq.Contents[0].Parts = append(
+					geminiReq.Contents[0].Parts,
+					part{
+						FileData: fileData{
+							MimeType: string(msg.FileType),
+							FileURI:  msg.Content,
+						},
+					},
+				)
 			}
 		}
-		if msg.Role == "user" {
-			geminiReq.Contents[0].Parts = append(
-				geminiReq.Contents[0].Parts,
-				part{
-					Text: msg.Content,
-				},
-			)
-		}
-		if msg.Role == "file" {
-			geminiReq.Contents[0].Parts = append(
-				geminiReq.Contents[0].Parts,
-				part{
-					FileData: fileData{
-						MimeType: string(msg.FileType),
-						FileURI:  msg.Content,
-					},
-				},
-			)
-		}
-	}
 
-	body, err := json.Marshal(geminiReq)
-	if err != nil {
-		return response.Completion{}, 0, err
-	}
-
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		fmt.Sprintf(googleBaseUrl, req.Model.GetName(), key),
-		bytes.NewReader(body))
-	if err != nil {
-		return response.Completion{}, 0, err
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return response.Completion{}, 0, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return response.Completion{}, resp.StatusCode, err
-	}
-
-	reader := bufio.NewReader(resp.Body)
-	var fullContent strings.Builder
-	var usage response.Usage
-	chunks := 0
-	now := time.Now()
-
-	for {
-		if chunks == 0 && time.Since(now).Seconds() > 3.0 {
-			return response.Completion{}, 0, context.Canceled
-		}
-		line, err := reader.ReadString('\n')
-		if err == io.EOF {
-			break
-		}
+		body, err := json.Marshal(geminiReq)
 		if err != nil {
 			return response.Completion{}, 0, err
 		}
 
-		line = strings.TrimPrefix(line, "data: ")
-		line = strings.TrimSpace(line)
-		if line == "" || line == "[DONE]" {
-			continue
-		}
-
-		var responseChunk geminiResponse
-		if err := json.Unmarshal([]byte(line), &responseChunk); err != nil {
+		httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
+			fmt.Sprintf(googleBaseUrl, req.Model.GetName(), key),
+			bytes.NewReader(body))
+		if err != nil {
 			return response.Completion{}, 0, err
 		}
 
-		if len(responseChunk.Candidates) > 0 {
-			fullContent.WriteString(
-				responseChunk.Candidates[0].Content.Parts[0].Text,
-			)
+		resp, err := client.Do(httpReq)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		defer resp.Body.Close()
 
-			if chunkHandler != nil {
-				if err := chunkHandler(responseChunk.Candidates[0].Content.Parts[0].Text); err != nil {
-					return response.Completion{}, 0, err
+		if resp.StatusCode != http.StatusOK {
+			return response.Completion{}, 0, err
+		}
+
+		reader := bufio.NewReader(resp.Body)
+		var fullContent strings.Builder
+		var usage response.Usage
+		chunks := 0
+		now := time.Now()
+
+		for {
+			if chunks == 0 && time.Since(now).Seconds() > 3.0 {
+				return response.Completion{}, 0, err
+			}
+			line, err := reader.ReadString('\n')
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return response.Completion{}, 0, err
+			}
+
+			line = strings.TrimPrefix(line, "data: ")
+			line = strings.TrimSpace(line)
+			if line == "" || line == "[DONE]" {
+				continue
+			}
+
+			var responseChunk geminiResponse
+			if err := json.Unmarshal([]byte(line), &responseChunk); err != nil {
+				return response.Completion{}, 0, err
+			}
+
+			if len(responseChunk.Candidates) > 0 {
+				fullContent.WriteString(
+					responseChunk.Candidates[0].Content.Parts[0].Text,
+				)
+
+				if chunkHandler != nil {
+					if err := chunkHandler(responseChunk.Candidates[0].Content.Parts[0].Text); err != nil {
+						return response.Completion{}, 0, err
+					}
+				}
+			}
+
+			chunks++
+
+			if responseChunk.Candidates[0].FinishReason == "STOP" {
+				usage = response.Usage{
+					PromptTokens:     responseChunk.UsageMetadata.PromptTokenCount,
+					CompletionTokens: responseChunk.UsageMetadata.CandidatesTokenCount,
+					TotalTokens:      responseChunk.UsageMetadata.TotalTokenCount,
 				}
 			}
 		}
 
-		chunks++
+		return response.Completion{
+			Content: fullContent.String(),
+			Model:   req.Model.GetName(),
+			Usage:   usage,
+		}, 0, nil
+	case string(models.Gemini20FlashModel),
+		string(models.Gemini20FlashLiteModel):
+		googleModel, ok := req.Model.(models.GoogleModel)
+		if !ok {
+			return response.Completion{}, 0, errors.New(
+				"could not convert to google args",
+			)
+		}
 
-		if responseChunk.Candidates[0].FinishReason == "STOP" {
-			usage = response.Usage{
-				PromptTokens:     responseChunk.UsageMetadata.PromptTokenCount,
-				CompletionTokens: responseChunk.UsageMetadata.CandidatesTokenCount,
-				TotalTokens:      responseChunk.UsageMetadata.TotalTokenCount,
+		if googleModel.GetTools() != nil {
+			geminiReq.Tools = googleModel.GetTools()
+		}
+
+		for _, msg := range req.Messages {
+			if msg.Role == "system" {
+				geminiReq.SystemInstruction.Parts = part{
+					Text: msg.Content,
+				}
+			}
+			if msg.Role == "user" {
+				geminiReq.Contents[0].Parts = append(
+					geminiReq.Contents[0].Parts,
+					part{
+						Text: msg.Content,
+					},
+				)
+			}
+			if msg.Role == "file" {
+				geminiReq.Contents[0].Parts = append(
+					geminiReq.Contents[0].Parts,
+					part{
+						FileData: fileData{
+							MimeType: string(msg.FileType),
+							FileURI:  msg.Content,
+						},
+					},
+				)
 			}
 		}
+
+		body, err := json.Marshal(geminiReq)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
+			fmt.Sprintf(googleBaseUrl, googleModel.GetName(), key),
+			bytes.NewReader(body))
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		httpReq.Header.Set("Content-Type", "application/json")
+
+		resp, err := client.Do(httpReq)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return response.Completion{}, 0, err
+		}
+
+		reader := bufio.NewReader(resp.Body)
+		var fullContent strings.Builder
+		var usage response.Usage
+		chunks := 0
+		now := time.Now()
+
+		for {
+			if chunks == 0 && time.Since(now).Seconds() > 3.0 {
+				return response.Completion{}, 0, err
+			}
+			line, err := reader.ReadString('\n')
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return response.Completion{}, 0, err
+			}
+
+			line = strings.TrimPrefix(line, "data: ")
+			line = strings.TrimSpace(line)
+			if line == "" || line == "[DONE]" {
+				continue
+			}
+
+			var responseChunk geminiResponse
+			if err := json.Unmarshal([]byte(line), &responseChunk); err != nil {
+				return response.Completion{}, 0, err
+			}
+
+			if len(responseChunk.Candidates) > 0 {
+				fullContent.WriteString(
+					responseChunk.Candidates[0].Content.Parts[0].Text,
+				)
+
+				if chunkHandler != nil {
+					if err := chunkHandler(responseChunk.Candidates[0].Content.Parts[0].Text); err != nil {
+						return response.Completion{}, 0, err
+					}
+				}
+			}
+
+			chunks++
+
+			if responseChunk.Candidates[0].FinishReason == "STOP" {
+				usage = response.Usage{
+					PromptTokens:     responseChunk.UsageMetadata.PromptTokenCount,
+					CompletionTokens: responseChunk.UsageMetadata.CandidatesTokenCount,
+					TotalTokens:      responseChunk.UsageMetadata.TotalTokenCount,
+				}
+			}
+		}
+
+		return response.Completion{
+			Content: fullContent.String(),
+			Model:   req.Model.GetName(),
+			Usage:   usage,
+		}, 0, nil
 	}
 
-	return response.Completion{
-		Content: fullContent.String(),
-		Model:   req.Model.GetName(),
-		Usage:   usage,
-	}, 0, nil
+	return response.Completion{}, 0, errors.New("could no complete request")
 }
 
 var _ LLMProvider = new(Google)
