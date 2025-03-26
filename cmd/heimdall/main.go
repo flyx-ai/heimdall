@@ -22,7 +22,7 @@ func main() {
 	router := heimdall.New(timeout, []providers.LLMProvider{g})
 
 	req := request.Completion{
-		Model: models.Gemini15FlashThink{},
+		Model: models.Gemini15Flash{},
 		Messages: []request.Message{
 			{
 				Role:    "system",
@@ -34,7 +34,7 @@ func main() {
 			},
 		},
 		Fallback: []models.Model{
-			models.Gemini15FlashThink{},
+			models.Gemini15Flash{},
 		},
 		Temperature: 1,
 		Tags: map[string]string{

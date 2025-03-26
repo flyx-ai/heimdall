@@ -1,6 +1,10 @@
 set dotenv-load
 
-alias hs := heimdall-stream
+alias ta := test-all
+alias ci := golangci-lint
 
-heimdall-stream:
-	go run cmd/heimdall/main.go
+test-all:
+	go test -v ./...
+
+golangci-lint:
+	golangci-lint run

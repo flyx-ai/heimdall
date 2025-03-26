@@ -2,6 +2,15 @@ package models
 
 const GoogleProvider = "google"
 
+type GoogleModelName string
+
+const (
+	Gemini15ProModel       GoogleModelName = "gemini-1.5-pro-002"
+	Gemini15FlashModel     GoogleModelName = "gemini-1.5-flash-002"
+	Gemini20FlashModel     GoogleModelName = "gemini-2.0-flash-001"
+	Gemini20FlashLiteModel GoogleModelName = "gemini-2.0-flash-lite-001"
+)
+
 type GoogleTool []map[string]map[string]any
 
 type GoogleModel interface {
@@ -27,76 +36,43 @@ var GoogleSearchRetrievalTool = map[string]map[string]any{
 	},
 }
 
-type Gemini15FlashThink struct{}
-
-func (gm Gemini15FlashThink) GetProvider() string {
-	return GoogleProvider
-}
-
-func (gm Gemini15FlashThink) GetName() string {
-	return "gemini-1.5-flash-002"
-}
-
-var _ Model = new(Gemini15FlashThink)
-
 type Gemini15Pro struct{}
 
-// GetName implements Model.
-func (g *Gemini15Pro) GetName() string {
-	return "gemini-1.5-pro-002"
+func (g Gemini15Pro) GetName() string {
+	return string(Gemini15ProModel)
 }
 
-// GetProvider implements Model.
-func (g *Gemini15Pro) GetProvider() string {
+func (g Gemini15Pro) GetProvider() string {
 	return GoogleProvider
 }
 
 var _ Model = new(Gemini15Pro)
 
-type Gemini10ProVision struct{}
+type Gemini15Flash struct{}
 
-// GetName implements Model.
-func (g *Gemini10ProVision) GetName() string {
-	return "gemini-1.0-pro-vision-001"
+func (g Gemini15Flash) GetName() string {
+	return string(Gemini15FlashModel)
 }
 
-// GetProvider implements Model.
-func (g *Gemini10ProVision) GetProvider() string {
+func (g Gemini15Flash) GetProvider() string {
 	return GoogleProvider
 }
 
-var _ Model = new(Gemini10ProVision)
-
-type Gemini10Pro struct{}
-
-// GetName implements Model.
-func (g *Gemini10Pro) GetName() string {
-	return "gemini-1.0-pro-002"
-}
-
-// GetProvider implements Model.
-func (g *Gemini10Pro) GetProvider() string {
-	return GoogleProvider
-}
-
-var _ Model = new(Gemini10Pro)
+var _ Model = new(Gemini15Flash)
 
 type Gemini20Flash struct {
 	Tools GoogleTool
 }
 
-// GetName implements GoogleModel.
-func (g *Gemini20Flash) GetName() string {
-	return "gemini-2.0-flash-001"
+func (g Gemini20Flash) GetName() string {
+	return string(Gemini20FlashModel)
 }
 
-// GetProvider implements GoogleModel.
-func (g *Gemini20Flash) GetProvider() string {
+func (g Gemini20Flash) GetProvider() string {
 	return GoogleProvider
 }
 
-// GetTools implements GoogleModel.
-func (g *Gemini20Flash) GetTools() GoogleTool {
+func (g Gemini20Flash) GetTools() GoogleTool {
 	return g.Tools
 }
 
@@ -106,18 +82,15 @@ type Gemini20FlashLite struct {
 	Tools GoogleTool
 }
 
-// GetName implements GoogleModel.
-func (g *Gemini20FlashLite) GetName() string {
-	return "gemini-2.0-flash-lite-001"
+func (g Gemini20FlashLite) GetName() string {
+	return string(Gemini20FlashLiteModel)
 }
 
-// GetProvider implements GoogleModel.
-func (g *Gemini20FlashLite) GetProvider() string {
+func (g Gemini20FlashLite) GetProvider() string {
 	return GoogleProvider
 }
 
-// GetTools implements GoogleModel.
-func (g *Gemini20FlashLite) GetTools() GoogleTool {
+func (g Gemini20FlashLite) GetTools() GoogleTool {
 	return g.Tools
 }
 
