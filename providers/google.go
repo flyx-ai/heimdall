@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/vertexai/genai"
 	"github.com/flyx-ai/heimdall/models"
 	"github.com/flyx-ai/heimdall/request"
 	"github.com/flyx-ai/heimdall/response"
@@ -22,8 +21,7 @@ import (
 const googleBaseUrl = "https://generativelanguage.googleapis.com/v1beta/models/%s:streamGenerateContent?alt=sse&key=%s"
 
 type Google struct {
-	apiKeys        []string
-	vertexAIClient *genai.Client
+	apiKeys []string
 }
 
 // NewGoogle register google as a provider on the router.
