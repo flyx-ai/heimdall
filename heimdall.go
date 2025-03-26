@@ -1,61 +1,30 @@
 package heimdall
 
 import (
-	"context"
 	"net/http"
 	"time"
+
+	"github.com/flyx-ai/heimdall/providers"
 )
 
 type RouterConfig struct {
-	Providers []LLMProvider
+	Providers []providers.LLMProvider
 	Timeout   time.Duration
 }
 
-type LLMProvider interface {
-	completeResponse(
-		ctx context.Context,
-		req CompletionRequest,
-		client http.Client,
-		requestLog *Logging,
-	) (CompletionResponse, error)
-	streamResponse(
-		ctx context.Context,
-		client http.Client,
-		req CompletionRequest,
-		chunkHandler func(chunk string) error,
-		requestLog *Logging,
-	) (CompletionResponse, error)
-	tryWithBackup(
-		ctx context.Context,
-		req CompletionRequest,
-		client http.Client,
-		chunkHandler func(chunk string) error,
-		requestLog *Logging,
-	) (CompletionResponse, error)
-	doRequest(
-		ctx context.Context,
-		req CompletionRequest,
-		client http.Client,
-		chunkHandler func(chunk string) error,
-		key string,
-	) (CompletionResponse, int, error)
-	getApiKeys() []string
-	name() string
-}
-
 type Router struct {
-	providers map[string]LLMProvider
+	providers map[string]providers.LLMProvider
 	client    http.Client
 }
 
-func New(timeout time.Duration, llmProviders []LLMProvider) *Router {
+func New(timeout time.Duration, llmProviders []providers.LLMProvider) *Router {
 	c := http.Client{
 		Timeout: timeout,
 	}
 
-	providers := make(map[string]LLMProvider, len(llmProviders))
+	providers := make(map[string]providers.LLMProvider, len(llmProviders))
 	for _, provider := range llmProviders {
-		providers[provider.name()] = provider
+		providers[provider.Name()] = provider
 	}
 
 	return &Router{

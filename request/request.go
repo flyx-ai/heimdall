@@ -1,4 +1,6 @@
-package heimdall
+package request
+
+import "github.com/flyx-ai/heimdall/models"
 
 type MimeType string
 
@@ -24,10 +26,10 @@ const (
 	MimeTypeWebP MimeType = "image/webp"
 )
 
-type CompletionRequest struct {
-	Model       Model
+type Completion struct {
+	Model       models.Model
 	Messages    []Message
-	Fallback    []Model
+	Fallback    []models.Model
 	Temperature float32
 	TopP        float32
 	Tags        map[string]string `json:"tags"`
