@@ -95,14 +95,7 @@ func (v *VertexAI) tryWithBackup(
 	chunkHandler func(chunk string) error,
 	requestLog *response.Logging,
 ) (response.Completion, error) {
-	googleModel, ok := req.Model.(models.GoogleModel)
-	if !ok {
-		return response.Completion{}, errors.New(
-			"could not convert to google args",
-		)
-	}
-
-	model := v.vertexAIClient.GenerativeModel(googleModel.GetName())
+	model := v.vertexAIClient.GenerativeModel(req.Model.GetName())
 
 	var parts []genai.Part
 	for _, msg := range req.Messages {
