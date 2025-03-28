@@ -55,7 +55,12 @@ type Openai struct {
 	apiKeys []string
 }
 
-// doRequest implements LLMProvider.
+func NewOpenAI(apiKeys []string) Openai {
+	return Openai{
+		apiKeys: apiKeys,
+	}
+}
+
 func (oa Openai) doRequest(
 	ctx context.Context,
 	req request.Completion,

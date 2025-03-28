@@ -24,6 +24,13 @@ type Anthropic struct {
 	apiKeys []string
 }
 
+// NewAnthropicClient creates a new Anthropic LLM provider with the given API keys.
+func NewAnthropicClient(apiKeys []string) Anthropic {
+	return Anthropic{
+		apiKeys: apiKeys,
+	}
+}
+
 type anthropicMsg struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
