@@ -1,16 +1,12 @@
 name: heimdall test suit
 
-# on:
-#   push:
-#     branches:
-#       - 'master'
-
 on:
-  pull_request:
+  push:
+    branches:
+      - 'master'
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
   direct:
