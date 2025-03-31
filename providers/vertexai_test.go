@@ -92,6 +92,17 @@ func TestVertexAIModelsWithCompletion(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "should complete request with VertexGemini25ProExp",
+			req: request.Completion{
+				Model:       models.VertexGemini25ProExp{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -185,6 +196,17 @@ func TestVertexAIModelsWithStreaming(t *testing.T) {
 			name: "should stream request with VertexGemini20FlashLite",
 			req: request.Completion{
 				Model:       models.VertexGemini20FlashLite{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with VertexGemini25ProExp",
+			req: request.Completion{
+				Model:       models.VertexGemini25ProExp{},
 				Messages:    msgs,
 				Temperature: 1,
 				Tags: map[string]string{

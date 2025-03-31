@@ -49,3 +49,15 @@ func (v VertexGemini20FlashLite) GetProvider() string {
 }
 
 var _ Model = new(VertexGemini20FlashLite)
+
+type VertexGemini25ProExp struct{}
+
+func (v VertexGemini25ProExp) GetName() string {
+	return "gemini-2.5-pro-exp-03-25"
+}
+
+func (v VertexGemini25ProExp) GetProvider() string {
+	return GoogleProvider
+}
+
+var _ Model = new(VertexGemini25ProExp)
