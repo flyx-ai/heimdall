@@ -182,6 +182,12 @@ func (p Perplexity) doRequest(
 
 		if len(chunk.Choices) > 0 {
 			fullContent.WriteString(chunk.Choices[0].Delta.Content)
+
+			if chunkHandler != nil {
+				if err := chunkHandler(chunk.Choices[0].Delta.Content); err != nil {
+					return response.Completion{}, 0, err
+				}
+			}
 		}
 
 		chunks++

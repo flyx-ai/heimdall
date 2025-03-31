@@ -327,6 +327,7 @@ func (a Anthropic) StreamResponse(
 		if err == nil {
 			return res, nil
 		}
+
 		reqLog.Events = append(reqLog.Events, response.Event{
 			Timestamp: time.Now(),
 			Description: fmt.Sprintf(
