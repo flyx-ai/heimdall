@@ -23,10 +23,6 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 	openai := providers.NewOpenAI([]string{os.Getenv("OPENAI_API_KEY")})
 
 	msgs := []request.Message{
-		// {
-		// 	Role:    "developer",
-		// 	Content: "you are a helpful assistant.",
-		// },
 		{
 			Role:    "user",
 			Content: "please make a detailed analysis of the NVIDIA's current valuation.",

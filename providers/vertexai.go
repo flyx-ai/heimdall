@@ -67,7 +67,6 @@ func (v *VertexAI) Name() string {
 	return models.VertexProvider
 }
 
-// StreamResponse implements LLMProvider.
 func (v *VertexAI) StreamResponse(
 	ctx context.Context,
 	client http.Client,
@@ -88,7 +87,6 @@ func (v *VertexAI) doRequest(
 	return response.Completion{}, 0, nil
 }
 
-// tryWithBackup implements LLMProvider.
 func (v *VertexAI) tryWithBackup(
 	ctx context.Context,
 	req request.Completion,
@@ -104,13 +102,14 @@ func (v *VertexAI) tryWithBackup(
 		if msg.Role == "user" {
 			parts = append(parts, genai.NewUserContentFromText(msg.Content))
 		}
-		// if msg.Role == "file" {
-		// 	parts = append(parts, genai.FileData{
-		// 		MIMEType: string(msg.FileType),
-		// 		FileURI:  msg.Content,
-		// 	})
-		// }
+		if msg.Role == "file" {
+			parts = append(
+				parts,
+				genai.NewUserContentFromURI(msg.Content, string(msg.FileType)),
+			)
+		}
 	}
+
 	maxRetries := 5
 	initialBackoff := 100 * time.Millisecond
 	maxBackoff := 10 * time.Second
