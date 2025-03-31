@@ -4,10 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2/google"
@@ -74,7 +74,58 @@ func (v *VertexAI) StreamResponse(
 	chunkHandler func(chunk string) error,
 	requestLog *response.Logging,
 ) (response.Completion, error) {
-	return response.Completion{}, nil
+	reqLog := &response.Logging{}
+	if requestLog == nil {
+		var systemMsg string
+		var userMsg string
+		for _, msg := range req.Messages {
+			if msg.Role == "system" {
+				systemMsg = msg.Content
+			}
+			if msg.Role == "user" {
+				userMsg = msg.Content
+			}
+		}
+
+		req.Tags["request_type"] = "streaming"
+
+		reqLog = &response.Logging{
+			Events: []response.Event{
+				{
+					Timestamp:   time.Now(),
+					Description: "start of call to StreamResponse",
+				},
+			},
+			SystemMsg: systemMsg,
+			UserMsg:   userMsg,
+			Start:     time.Now(),
+		}
+	}
+	if requestLog != nil {
+		reqLog = requestLog
+	}
+
+	reqLog.Events = append(reqLog.Events, response.Event{
+		Timestamp: time.Now(),
+		Description: fmt.Sprintf(
+			"attempting to complete request with key_number: %v",
+			1,
+		),
+	})
+	res, _, err := v.doRequest(ctx, req, client, chunkHandler, "")
+	if err == nil {
+		return res, nil
+	}
+
+	reqLog.Events = append(reqLog.Events, response.Event{
+		Timestamp: time.Now(),
+		Description: fmt.Sprintf(
+			"request could not be completed, err: %v",
+			err,
+		),
+	})
+
+	return v.tryWithBackup(ctx, req, client, chunkHandler, requestLog)
 }
 
 func (v *VertexAI) doRequest(
@@ -84,16 +135,6 @@ func (v *VertexAI) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
-	return response.Completion{}, 0, nil
-}
-
-func (v *VertexAI) tryWithBackup(
-	ctx context.Context,
-	req request.Completion,
-	client http.Client,
-	chunkHandler func(chunk string) error,
-	requestLog *response.Logging,
-) (response.Completion, error) {
 	var parts []*genai.Content
 	for _, msg := range req.Messages {
 		if msg.Role == "system" {
@@ -110,6 +151,77 @@ func (v *VertexAI) tryWithBackup(
 		}
 	}
 
+	stream := v.vertexAIClient.Models.GenerateContentStream(
+		ctx,
+		req.Model.GetName(),
+		parts,
+		nil,
+	)
+
+	var fullContent strings.Builder
+	var usage response.Usage
+
+	now := time.Now()
+	isAnalyzing := true
+
+	for isAnalyzing {
+		for streamPart, err := range stream {
+			if err != nil {
+				return response.Completion{}, 0, err
+			}
+			if len(streamPart.Candidates) == 0 &&
+				time.Since(now).Seconds() > 3.0 {
+				return response.Completion{}, 0, context.Canceled
+			}
+
+			if streamPart.Candidates[0].Content.Parts[0].Text != "Analyzing" {
+				_, err := fullContent.WriteString(
+					streamPart.Candidates[0].Content.Parts[0].Text,
+				)
+				if err != nil {
+					return response.Completion{}, 0, err
+				}
+
+				if chunkHandler != nil {
+					if err := chunkHandler(streamPart.Candidates[0].Content.Parts[0].Text); err != nil {
+						return response.Completion{}, 0, err
+					}
+				}
+			}
+
+			if streamPart.Candidates[0].FinishReason == "STOP" {
+				isAnalyzing = false
+
+				usage = response.Usage{
+					PromptTokens: int(
+						*streamPart.UsageMetadata.PromptTokenCount,
+					),
+					CompletionTokens: int(
+						*streamPart.UsageMetadata.CandidatesTokenCount,
+					),
+					TotalTokens: int(
+						streamPart.UsageMetadata.TotalTokenCount,
+					),
+				}
+			}
+
+		}
+	}
+
+	return response.Completion{
+		Content: fullContent.String(),
+		Model:   req.Model.GetName(),
+		Usage:   usage,
+	}, 0, nil
+}
+
+func (v *VertexAI) tryWithBackup(
+	ctx context.Context,
+	req request.Completion,
+	client http.Client,
+	chunkHandler func(chunk string) error,
+	requestLog *response.Logging,
+) (response.Completion, error) {
 	maxRetries := 5
 	initialBackoff := 100 * time.Millisecond
 	maxBackoff := 10 * time.Second
@@ -135,34 +247,33 @@ func (v *VertexAI) tryWithBackup(
 			})
 			return response.Completion{}, ctx.Err()
 		default:
-			res, err := v.vertexAIClient.Models.GenerateContent(
+			res, resCode, err := v.doRequest(
 				ctx,
-				req.Model.GetName(),
-				parts,
-				nil,
+				req,
+				client,
+				chunkHandler,
+				"",
 			)
-
 			if err == nil {
-				rb, err := json.MarshalIndent(res, "", "  ")
-				if err != nil {
-					return response.Completion{}, err
-				}
+				return res, nil
+			}
+			requestLog.Events = append(requestLog.Events, response.Event{
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"request could not be completed, err: %v",
+					err,
+				),
+			})
 
-				return response.Completion{
-					Content: string(rb),
-					Model:   req.Model.GetName(),
-					Usage: response.Usage{
-						PromptTokens: int(
-							*res.UsageMetadata.PromptTokenCount,
-						),
-						CompletionTokens: int(
-							*res.UsageMetadata.CandidatesTokenCount,
-						),
-						TotalTokens: int(
-							res.UsageMetadata.TotalTokenCount,
-						),
-					},
-				}, nil
+			if !isRetryableError(resCode) {
+				requestLog.Events = append(requestLog.Events, response.Event{
+					Timestamp: time.Now(),
+					Description: fmt.Sprintf(
+						"request was not retryable due to err: %v",
+						err,
+					),
+				})
+				return response.Completion{}, err
 			}
 
 			requestLog.Events = append(requestLog.Events, response.Event{

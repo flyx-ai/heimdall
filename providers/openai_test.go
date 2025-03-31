@@ -129,6 +129,137 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 			)
 
 			assert.NotEmpty(t, res.Content, "content should not be empty")
+			assert.NotEmpty(t, res.Model, "model should not be empty")
+		})
+	}
+}
+
+func TestOpenAIModelsWithStreaming(t *testing.T) {
+	t.Parallel()
+
+	client := http.Client{
+		Timeout: 2 * time.Minute,
+	}
+	openai := providers.NewOpenAI([]string{os.Getenv("OPENAI_API_KEY")})
+
+	msgs := []request.Message{
+		{
+			Role:    "user",
+			Content: "please make a detailed analysis of the NVIDIA's current valuation.",
+		},
+	}
+
+	tests := []struct {
+		name string
+		req  request.Completion
+	}{
+		{
+			name: "should stream request with GPT4",
+			req: request.Completion{
+				Model:       models.GPT4{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should stream request with GPT4Turbo",
+			req: request.Completion{
+				Model:       models.GPT4Turbo{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should stream request with GPT4O",
+			req: request.Completion{
+				Model:       models.GPT4O{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should stream request with GPT4OMini",
+			req: request.Completion{
+				Model:       models.GPT4OMini{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should stream request with O1",
+			req: request.Completion{
+				Model:       models.O1{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should stream request with O1Mini",
+			req: request.Completion{
+				Model:       models.O1Mini{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should stream request with O1Preview",
+			req: request.Completion{
+				Model:       models.O1Preview{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var chunkHandlerCollection string
+			res, err := openai.StreamResponse(
+				context.Background(),
+				client,
+				tt.req,
+				func(chunk string) error {
+					chunkHandlerCollection = chunkHandlerCollection + chunk
+					return nil
+				},
+				nil,
+			)
+			require.NoError(
+				t,
+				err,
+				"StreamResponse returned an unexpected error",
+				"error",
+				err,
+			)
+
+			assert.NotEmpty(
+				t,
+				chunkHandlerCollection,
+				"chunkHandlerCollection should not be empty",
+			)
+			assert.NotEmpty(t, res.Content, "content should not be empty")
+			assert.NotEmpty(t, res.Model, "model should not be empty")
 		})
 	}
 }
