@@ -4,42 +4,48 @@ const AnthropicProvider = "anthropic"
 
 type Claude3Opus struct{}
 
-// GetName implements Model.
-func (c *Claude3Opus) GetName() string {
+func (c Claude3Opus) GetName() string {
 	return "claude-3-opus-latest"
 }
 
-// GetProvider implements Model.
-func (c *Claude3Opus) GetProvider() string {
+func (c Claude3Opus) GetProvider() string {
 	return AnthropicProvider
 }
 
 var _ Model = new(Claude3Opus)
 
-type Claude3Sonnet struct{}
+type Claude35Sonnet struct{}
 
-// GetName implements Model.
-func (c *Claude3Sonnet) GetName() string {
-	return "claude-3-sonnet-latest"
+func (c Claude35Sonnet) GetName() string {
+	return "claude-3-5-sonnet-latest"
 }
 
-// GetProvider implements Model.
-func (c *Claude3Sonnet) GetProvider() string {
+func (c Claude35Sonnet) GetProvider() string {
 	return AnthropicProvider
 }
 
-var _ Model = new(Claude3Sonnet)
+var _ Model = new(Claude35Sonnet)
 
-type Claude3Haiku struct{}
+type Claude35Haiku struct{}
 
-// GetName implements Model.
-func (c *Claude3Haiku) GetName() string {
-	return "claude-3-haiku-latest"
+func (c Claude35Haiku) GetName() string {
+	return "claude-3-5-haiku-latest"
 }
 
-// GetProvider implements Model.
-func (c *Claude3Haiku) GetProvider() string {
+func (c Claude35Haiku) GetProvider() string {
 	return AnthropicProvider
 }
 
-var _ Model = new(Claude3Haiku)
+var _ Model = new(Claude35Haiku)
+
+type Claude37Sonnet struct{}
+
+func (c Claude37Sonnet) GetName() string {
+	return "claude-3-7-sonnet-latest"
+}
+
+func (c Claude37Sonnet) GetProvider() string {
+	return AnthropicProvider
+}
+
+var _ Model = new(Claude37Sonnet)
