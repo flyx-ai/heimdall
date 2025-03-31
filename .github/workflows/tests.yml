@@ -1,0 +1,32 @@
+name: heimdall test suit
+
+# on:
+#   push:
+#     branches:
+#       - 'master'
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  direct:
+    name: direct completion and streaming tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+      - name: run
+        run: just t
+        env:
+          ANTHROPIC_API_KEY: ${{secrets.ANTHROPIC_API_KEY}}
+          PERPLEXITY_API_KEY: ${{secrets.PERPLEXITY_API_KEY}}
+          GOOGLE_API_KEY: ${{secrets.GOOGLE_API_KEY}}
+          OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
+          VERTEX_AI_KEY: ${{secrets.VERTEX_AI_KEY}}
