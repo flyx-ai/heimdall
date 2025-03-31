@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: test with tools as well
 func TestOpenAIModelsWithCompletion(t *testing.T) {
 	t.Parallel()
 

@@ -30,34 +30,6 @@ func (v VertexGemini15Pro) GetProvider() string {
 
 var _ Model = new(VertexGemini15Pro)
 
-type VertexGemini10ProVision struct{}
-
-// GetName implements Model.
-func (v VertexGemini10ProVision) GetName() string {
-	return "gemini-1.0-pro-vision-001"
-}
-
-// GetProvider implements Model.
-func (v VertexGemini10ProVision) GetProvider() string {
-	return VertexProvider
-}
-
-var _ Model = new(VertexGemini10ProVision)
-
-type VertexGemini10Pro struct{}
-
-// GetName implements Model.
-func (v VertexGemini10Pro) GetName() string {
-	return "gemini-1.0-pro-002"
-}
-
-// GetProvider implements Model.
-func (v VertexGemini10Pro) GetProvider() string {
-	return VertexProvider
-}
-
-var _ Model = new(VertexGemini10Pro)
-
 type VertexGemini20Flash struct{}
 
 // GetName implements Model.

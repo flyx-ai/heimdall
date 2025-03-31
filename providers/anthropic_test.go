@@ -43,7 +43,7 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with claude-3-haiku",
 			req: request.Completion{
-				Model:       models.Claude3Haiku{},
+				Model:       models.Claude35Haiku{},
 				Messages:    msgs,
 				Temperature: 1,
 				Tags: map[string]string{
@@ -52,9 +52,9 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 			},
 		},
 		{
-			name: "should complete request with claude-3-sonnet",
+			name: "should complete request with claude-35-sonnet",
 			req: request.Completion{
-				Model:       models.Claude3Sonnet{},
+				Model:       models.Claude35Sonnet{},
 				Messages:    msgs,
 				Temperature: 1,
 				Tags: map[string]string{
@@ -66,6 +66,17 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 			name: "should complete request with claude-3-opus",
 			req: request.Completion{
 				Model:       models.Claude3Opus{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with claude-37-sonnet",
+			req: request.Completion{
+				Model:       models.Claude37Sonnet{},
 				Messages:    msgs,
 				Temperature: 1,
 				Tags: map[string]string{

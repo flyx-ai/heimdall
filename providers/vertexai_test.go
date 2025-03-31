@@ -2,6 +2,7 @@ package providers_test
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"os"
 	"testing"
@@ -14,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: test with tools as well
 func TestVertexAIModelsWithCompletion(t *testing.T) {
 	t.Parallel()
 
@@ -22,8 +22,8 @@ func TestVertexAIModelsWithCompletion(t *testing.T) {
 		Timeout: 2 * time.Minute,
 	}
 
-	projectID := os.Getenv("gen-lang-client-0602921774-f67ceed7f6b6")
-	location := os.Getenv("us-east-1")
+	projectID := os.Getenv("VERTEX_PROJECT_ID")
+	location := "us-west-1"
 	credentialsJSON := os.Getenv("VERTEX_AI_KEY")
 
 	vertexai, err := providers.NewVertexAI(
@@ -60,61 +60,39 @@ func TestVertexAIModelsWithCompletion(t *testing.T) {
 				},
 			},
 		},
-		// {
-		// 	name: "should complete request with VertexGemini15Pro",
-		// 	req: request.Completion{
-		// 		Model:       models.VertexGemini15Pro{},
-		// 		Messages:    msgs,
-		// 		Temperature: 1,
-		// 		Tags: map[string]string{
-		// 			"type": "testing",
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	name: "should complete request with VertexGemini10Pro",
-		// 	req: request.Completion{
-		// 		Model:       models.VertexGemini10Pro{},
-		// 		Messages:    msgs,
-		// 		Temperature: 1,
-		// 		Tags: map[string]string{
-		// 			"type": "testing",
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	name: "should complete request with VertexGemini10ProVision",
-		// 	req: request.Completion{
-		// 		Model:       models.VertexGemini10ProVision{},
-		// 		Messages:    msgs,
-		// 		Temperature: 1,
-		// 		Tags: map[string]string{
-		// 			"type": "testing",
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	name: "should complete request with VertexGemini20Flash",
-		// 	req: request.Completion{
-		// 		Model:       models.VertexGemini20Flash{},
-		// 		Messages:    msgs,
-		// 		Temperature: 1,
-		// 		Tags: map[string]string{
-		// 			"type": "testing",
-		// 		},
-		// 	},
-		// },
-		// {
-		// 	name: "should complete request with VertexGemini20FlashLite",
-		// 	req: request.Completion{
-		// 		Model:       models.VertexGemini20FlashLite{},
-		// 		Messages:    msgs,
-		// 		Temperature: 1,
-		// 		Tags: map[string]string{
-		// 			"type": "testing",
-		// 		},
-		// 	},
-		// },
+		{
+			name: "should complete request with VertexGemini15Pro",
+			req: request.Completion{
+				Model:       models.VertexGemini15Pro{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with VertexGemini20Flash",
+			req: request.Completion{
+				Model:       models.VertexGemini20Flash{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with VertexGemini20FlashLite",
+			req: request.Completion{
+				Model:       models.VertexGemini20FlashLite{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -128,11 +106,18 @@ func TestVertexAIModelsWithCompletion(t *testing.T) {
 			require.NoError(
 				t,
 				err,
-				"CompleteResponse returned an unexpected error",
-				"error",
-				err,
+				"vertex complete response returned an error",
 			)
 
+			slog.Info(
+				"USAGE",
+				"tkns",
+				res.Usage.TotalTokens,
+				"pt",
+				res.Usage.PromptTokens,
+				"ct",
+				res.Usage.CompletionTokens,
+			)
 			assert.NotEmpty(t, res.Content, "content should not be empty")
 		})
 	}

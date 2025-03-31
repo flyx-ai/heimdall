@@ -114,10 +114,12 @@ func (a Anthropic) CompleteResponse(
 				i,
 			),
 		})
+
 		res, _, err := a.doRequest(ctx, req, client, nil, key)
 		if err == nil {
 			return res, nil
 		}
+
 		reqLog.Events = append(reqLog.Events, response.Event{
 			Timestamp: time.Now(),
 			Description: fmt.Sprintf(

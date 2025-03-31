@@ -10,11 +10,12 @@ import (
 	"net/http"
 	"time"
 
-	"cloud.google.com/go/vertexai/genai"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/genai"
+
 	"github.com/flyx-ai/heimdall/models"
 	"github.com/flyx-ai/heimdall/request"
 	"github.com/flyx-ai/heimdall/response"
-	"google.golang.org/api/option"
 )
 
 type VertexAI struct {
@@ -95,22 +96,20 @@ func (v *VertexAI) tryWithBackup(
 	chunkHandler func(chunk string) error,
 	requestLog *response.Logging,
 ) (response.Completion, error) {
-	model := v.vertexAIClient.GenerativeModel(req.Model.GetName())
-
-	var parts []genai.Part
+	var parts []*genai.Content
 	for _, msg := range req.Messages {
 		if msg.Role == "system" {
-			parts = append(parts, genai.Text(msg.Content))
+			parts = append(parts, genai.NewUserContentFromText(msg.Content))
 		}
 		if msg.Role == "user" {
-			parts = append(parts, genai.Text(msg.Content))
+			parts = append(parts, genai.NewUserContentFromText(msg.Content))
 		}
-		if msg.Role == "file" {
-			parts = append(parts, genai.FileData{
-				MIMEType: string(msg.FileType),
-				FileURI:  msg.Content,
-			})
-		}
+		// if msg.Role == "file" {
+		// 	parts = append(parts, genai.FileData{
+		// 		MIMEType: string(msg.FileType),
+		// 		FileURI:  msg.Content,
+		// 	})
+		// }
 	}
 	maxRetries := 5
 	initialBackoff := 100 * time.Millisecond
@@ -137,7 +136,13 @@ func (v *VertexAI) tryWithBackup(
 			})
 			return response.Completion{}, ctx.Err()
 		default:
-			res, err := model.GenerateContent(ctx, parts...)
+			res, err := v.vertexAIClient.Models.GenerateContent(
+				ctx,
+				req.Model.GetName(),
+				parts,
+				nil,
+			)
+
 			if err == nil {
 				rb, err := json.MarshalIndent(res, "", "  ")
 				if err != nil {
@@ -149,10 +154,10 @@ func (v *VertexAI) tryWithBackup(
 					Model:   req.Model.GetName(),
 					Usage: response.Usage{
 						PromptTokens: int(
-							res.UsageMetadata.PromptTokenCount,
+							*res.UsageMetadata.PromptTokenCount,
 						),
 						CompletionTokens: int(
-							res.UsageMetadata.CandidatesTokenCount,
+							*res.UsageMetadata.CandidatesTokenCount,
 						),
 						TotalTokens: int(
 							res.UsageMetadata.TotalTokenCount,
@@ -209,9 +214,15 @@ func NewVertexAI(
 ) (VertexAI, error) {
 	client, err := genai.NewClient(
 		ctx,
-		projectID,
-		location,
-		option.WithCredentialsJSON([]byte(credentialsJSON)),
+		&genai.ClientConfig{
+			Project:  projectID,
+			Location: location,
+			Credentials: &google.Credentials{
+				JSON: []byte(credentialsJSON),
+			},
+			HTTPClient:  &http.Client{},
+			HTTPOptions: genai.HTTPOptions{APIVersion: "v1"},
+		},
 	)
 	if err != nil {
 		return VertexAI{}, errors.New("could not setup new genai client")
