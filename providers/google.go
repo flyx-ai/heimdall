@@ -330,7 +330,8 @@ func (g Google) doRequest(
 
 	switch req.Model.GetName() {
 	case string(models.Gemini15FlashModel),
-		string(models.Gemini15ProModel):
+		string(models.Gemini15ProModel),
+		string(models.Gemini25ProExpModel):
 		for _, msg := range req.Messages {
 			if msg.Role == "system" {
 				geminiReq.SystemInstruction.Parts = part{
