@@ -82,6 +82,17 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "should complete request with gemini 2.5 pro experimental",
+			req: request.Completion{
+				Model:       models.Gemini25ProExp{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -166,6 +177,17 @@ func TestGoogleModelsWithStreaming(t *testing.T) {
 			name: "should stream request with gemini 2.0 flash lite",
 			req: request.Completion{
 				Model:       models.Gemini20FlashLite{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with gemini 2.5 pro experimental",
+			req: request.Completion{
+				Model:       models.Gemini25ProExp{},
 				Messages:    msgs,
 				Temperature: 1,
 				Tags: map[string]string{
