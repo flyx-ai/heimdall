@@ -37,6 +37,17 @@ var GoogleSearchRetrievalTool = map[string]map[string]any{
 }
 
 type Gemini15Pro struct {
+	// StructuredOutput represents a subset of the OpenAPI 3.0 Schema Object. Refer to gemini documentation for complete and up-to-date information. An example structure could be:
+	//
+	// 	var schemaGoogle = map[string]any{
+	// 		"type": "object",
+	// 		"properties": map[string]any{
+	// 			"final_answer": map[string]any{"type": "string"},
+	// 			"valuation": map[string]any{
+	// 				"type": "number",
+	// 			},
+	// 		},
+	// 	}
 	StructuredOutput map[string]any
 }
 
@@ -70,7 +81,18 @@ func (g Gemini15Flash) GetProvider() string {
 var _ Model = new(Gemini15Flash)
 
 type Gemini20Flash struct {
-	Tools            GoogleTool
+	Tools GoogleTool
+	// StructuredOutput represents a subset of the OpenAPI 3.0 Schema Object. Refer to gemini documentation for complete and up-to-date information. An example structure could be:
+	//
+	// 	var schemaGoogle = map[string]any{
+	// 		"type": "object",
+	// 		"properties": map[string]any{
+	// 			"final_answer": map[string]any{"type": "string"},
+	// 			"valuation": map[string]any{
+	// 				"type": "number",
+	// 			},
+	// 		},
+	// 	}
 	StructuredOutput map[string]any
 }
 
@@ -97,7 +119,18 @@ var (
 )
 
 type Gemini20FlashLite struct {
-	Tools            GoogleTool
+	Tools GoogleTool
+	// StructuredOutput represents a subset of the OpenAPI 3.0 Schema Object. Refer to gemini documentation for complete and up-to-date information. An example structure could be:
+	//
+	// 	var schemaGoogle = map[string]any{
+	// 		"type": "object",
+	// 		"properties": map[string]any{
+	// 			"final_answer": map[string]any{"type": "string"},
+	// 			"valuation": map[string]any{
+	// 				"type": "number",
+	// 			},
+	// 		},
+	// 	}
 	StructuredOutput map[string]any
 }
 

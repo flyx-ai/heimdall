@@ -3,6 +3,20 @@ package models
 const OpenaiProvider = "openai"
 
 type O3Mini struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
 	StructuredOutput map[string]any
 }
 
@@ -24,6 +38,20 @@ var (
 )
 
 type O1 struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
 	StructuredOutput map[string]any
 }
 
@@ -93,6 +121,20 @@ func (g GPT4Turbo) GetProvider() string {
 var _ Model = new(GPT4Turbo)
 
 type GPT4O struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
 	StructuredOutput map[string]any
 }
 
@@ -114,6 +156,20 @@ var (
 )
 
 type GPT4OMini struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
 	StructuredOutput map[string]any
 }
 
