@@ -2,19 +2,62 @@ package models
 
 const OpenaiProvider = "openai"
 
-type O3Mini struct{}
+type O3Mini struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
+	StructuredOutput map[string]any
+}
+
+func (o O3Mini) GetStructuredOutput() map[string]any {
+	return o.StructuredOutput
+}
 
 func (o O3Mini) GetName() string {
-	return "o1-mini"
+	return "o3-mini"
 }
 
 func (o O3Mini) GetProvider() string {
 	return OpenaiProvider
 }
 
-var _ Model = new(O3Mini)
+var (
+	_ Model            = new(O3Mini)
+	_ StructuredOutput = new(O3Mini)
+)
 
-type O1 struct{}
+type O1 struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
+	StructuredOutput map[string]any
+}
+
+func (o O1) GetStructuredOutput() map[string]any {
+	return o.StructuredOutput
+}
 
 func (o O1) GetName() string {
 	return "o1"
@@ -24,7 +67,10 @@ func (o O1) GetProvider() string {
 	return OpenaiProvider
 }
 
-var _ Model = new(O1)
+var (
+	_ Model            = new(O1)
+	_ StructuredOutput = new(O1)
+)
 
 type O1Mini struct{}
 
@@ -74,7 +120,27 @@ func (g GPT4Turbo) GetProvider() string {
 
 var _ Model = new(GPT4Turbo)
 
-type GPT4O struct{}
+type GPT4O struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
+	StructuredOutput map[string]any
+}
+
+func (g GPT4O) GetStructuredOutput() map[string]any {
+	return g.StructuredOutput
+}
 
 func (g GPT4O) GetName() string {
 	return "gpt-4o"
@@ -84,9 +150,32 @@ func (g GPT4O) GetProvider() string {
 	return OpenaiProvider
 }
 
-var _ Model = new(GPT4O)
+var (
+	_ Model            = new(GPT4O)
+	_ StructuredOutput = new(GPT4O)
+)
 
-type GPT4OMini struct{}
+type GPT4OMini struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
+	StructuredOutput map[string]any
+}
+
+func (g GPT4OMini) GetStructuredOutput() map[string]any {
+	return g.StructuredOutput
+}
 
 func (g GPT4OMini) GetName() string {
 	return "gpt-4o-mini"
@@ -96,4 +185,7 @@ func (g GPT4OMini) GetProvider() string {
 	return OpenaiProvider
 }
 
-var _ Model = new(GPT4OMini)
+var (
+	_ Model            = new(GPT4OMini)
+	_ StructuredOutput = new(GPT4OMini)
+)

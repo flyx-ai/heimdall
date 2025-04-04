@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,12 +44,13 @@ type streamOptions struct {
 }
 
 type openAIRequest struct {
-	Model         string                 `json:"model"`
-	Messages      []openAIRequestMessage `json:"messages"`
-	Stream        bool                   `json:"stream"`
-	StreamOptions streamOptions          `json:"stream_options"`
-	Temperature   float32                `json:"temperature,omitempty"`
-	TopP          float32                `json:"top_p,omitempty"`
+	Model          string                 `json:"model"`
+	Messages       []openAIRequestMessage `json:"messages"`
+	Stream         bool                   `json:"stream"`
+	StreamOptions  streamOptions          `json:"stream_options"`
+	Temperature    float32                `json:"temperature,omitempty"`
+	TopP           float32                `json:"top_p,omitempty"`
+	ResponseFormat map[string]any         `json:"response_format,omitempty"`
 }
 
 type Openai struct {
@@ -83,6 +85,14 @@ func (oa Openai) doRequest(
 		StreamOptions: streamOptions{IncludeUsage: true},
 		Temperature:   1.0,
 	}
+	if gs, ok := req.Model.(models.StructuredOutput); ok {
+		if structure := gs.GetStructuredOutput(); structure != nil {
+			apiReq.ResponseFormat = map[string]any{
+				"type":        "json_schema",
+				"json_schema": structure,
+			}
+		}
+	}
 
 	body, err := json.Marshal(apiReq)
 	if err != nil {
@@ -109,7 +119,9 @@ func (oa Openai) doRequest(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return response.Completion{}, resp.StatusCode, err
+		return response.Completion{}, resp.StatusCode, errors.New(
+			"received non-200 status code",
+		)
 	}
 
 	reader := bufio.NewReader(resp.Body)
