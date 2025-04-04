@@ -9,6 +9,9 @@ alias tv := test-vertexai
 
 alias ci := golangci-lint
 
+heimdall:
+	go run cmd/heimdall/main.go
+
 test:
 	go test -v ./...
 
