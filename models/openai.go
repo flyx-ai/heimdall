@@ -2,7 +2,18 @@ package models
 
 const OpenaiProvider = "openai"
 
-type O3Mini struct{}
+type OpenAIModel interface {
+	Model
+	GetStructuredOutput() []byte
+}
+
+type O3Mini struct {
+	StructuredOutput []byte
+}
+
+func (o O3Mini) GetStructuredOutput() []byte {
+	return o.StructuredOutput
+}
 
 func (o O3Mini) GetName() string {
 	return "o1-mini"
@@ -12,7 +23,7 @@ func (o O3Mini) GetProvider() string {
 	return OpenaiProvider
 }
 
-var _ Model = new(O3Mini)
+var _ OpenAIModel = new(O3Mini)
 
 type O1 struct{}
 

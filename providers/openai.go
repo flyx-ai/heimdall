@@ -43,12 +43,13 @@ type streamOptions struct {
 }
 
 type openAIRequest struct {
-	Model         string                 `json:"model"`
-	Messages      []openAIRequestMessage `json:"messages"`
-	Stream        bool                   `json:"stream"`
-	StreamOptions streamOptions          `json:"stream_options"`
-	Temperature   float32                `json:"temperature,omitempty"`
-	TopP          float32                `json:"top_p,omitempty"`
+	Model          string                       `json:"model"`
+	Messages       []openAIRequestMessage       `json:"messages"`
+	Stream         bool                         `json:"stream"`
+	StreamOptions  streamOptions                `json:"stream_options"`
+	Temperature    float32                      `json:"temperature,omitempty"`
+	TopP           float32                      `json:"top_p,omitempty"`
+	ResponseFormat map[string]map[string]string `json:"response_format,omitempty"`
 }
 
 type Openai struct {
@@ -82,6 +83,16 @@ func (oa Openai) doRequest(
 		Stream:        true,
 		StreamOptions: streamOptions{IncludeUsage: true},
 		Temperature:   1.0,
+	}
+	if openAIModel, ok := req.Model.(models.OpenAIModel); ok {
+		if structure := openAIModel.GetStructuredOutput(); structure != nil {
+			apiReq.ResponseFormat = map[string]map[string]string{
+				"response_format": {
+					"type":        "json_schema",
+					"json_schema": string(structure),
+				},
+			}
+		}
 	}
 
 	body, err := json.Marshal(apiReq)
