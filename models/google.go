@@ -5,11 +5,11 @@ const GoogleProvider = "google"
 type GoogleModelName string
 
 const (
-	Gemini15ProModel       GoogleModelName = "gemini-1.5-pro-002"
-	Gemini15FlashModel     GoogleModelName = "gemini-1.5-flash-002"
-	Gemini20FlashModel     GoogleModelName = "gemini-2.0-flash-001"
-	Gemini20FlashLiteModel GoogleModelName = "gemini-2.0-flash-lite-001"
-	Gemini25ProExpModel    GoogleModelName = "gemini-2.5-pro-exp-03-25"
+	Gemini15ProModel         GoogleModelName = "gemini-1.5-pro-002"
+	Gemini15FlashModel       GoogleModelName = "gemini-1.5-flash-002"
+	Gemini20FlashModel       GoogleModelName = "gemini-2.0-flash-001"
+	Gemini20FlashLiteModel   GoogleModelName = "gemini-2.0-flash-lite-001"
+	Gemini25ProPreviewpModel GoogleModelName = "gemini-2.5-pro-preview-03-25"
 )
 
 type GoogleTool []map[string]map[string]any
@@ -156,14 +156,14 @@ var (
 	_ GoogleTools      = new(Gemini20FlashLite)
 )
 
-type Gemini25ProExp struct{}
+type Gemini25ProPreview struct{}
 
-func (g Gemini25ProExp) GetName() string {
-	return string(Gemini25ProExpModel)
+func (g Gemini25ProPreview) GetName() string {
+	return string(Gemini25ProPreviewpModel)
 }
 
-func (g Gemini25ProExp) GetProvider() string {
+func (g Gemini25ProPreview) GetProvider() string {
 	return GoogleProvider
 }
 
-var _ Model = new(Gemini25ProExp)
+var _ Model = new(Gemini25ProPreview)
