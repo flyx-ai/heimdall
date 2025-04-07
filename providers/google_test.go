@@ -85,7 +85,7 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with gemini 2.5 pro experimental",
 			req: request.Completion{
-				Model:       models.Gemini25ProExp{},
+				Model:       models.Gemini25ProPreview{},
 				Messages:    msgs,
 				Temperature: 1,
 				Tags: map[string]string{
@@ -187,7 +187,7 @@ func TestGoogleModelsWithStreaming(t *testing.T) {
 		{
 			name: "should complete request with gemini 2.5 pro experimental",
 			req: request.Completion{
-				Model:       models.Gemini25ProExp{},
+				Model:       models.Gemini25ProPreview{},
 				Messages:    msgs,
 				Temperature: 1,
 				Tags: map[string]string{
