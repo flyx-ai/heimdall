@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -206,14 +205,6 @@ func (oa Openai) doRequest(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		b, _ := io.ReadAll(resp.Body)
-		slog.Info(
-			"#####################################",
-			"sc",
-			resp.StatusCode,
-			"b",
-			string(b),
-		)
 		return response.Completion{}, resp.StatusCode, errors.New(
 			"received non-200 status code",
 		)
