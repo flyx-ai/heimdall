@@ -101,9 +101,9 @@ func (p Perplexity) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
-	messages := make([]openAIRequestMessage, len(req.Messages))
+	messages := make([]requestMessage, len(req.Messages))
 	for i, msg := range req.Messages {
-		messages[i] = openAIRequestMessage(openAIRequestMessage{
+		messages[i] = requestMessage(requestMessage{
 			Role:    msg.Role,
 			Content: msg.Content,
 		})

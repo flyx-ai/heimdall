@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -21,9 +22,29 @@ import (
 
 const openAIBaseURL = "https://api.openai.com/v1"
 
-type openAIRequestMessage struct {
+type requestMessage struct {
 	Role    string `json:"role"`
-	Content string `json:"content"`
+	Content any    `json:"content"`
+}
+
+type file struct {
+	Filename string `json:"filename"`
+	FileData string `json:"file_data"`
+}
+
+type fileInput struct {
+	Type string `json:"type"`
+	File file   `json:"file"`
+}
+
+type fileInputMessage struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+type requestMessageWithFile struct {
+	Role    string `json:"role"`
+	Content []any  `json:"content"`
 }
 
 type openAIChunk struct {
@@ -44,13 +65,13 @@ type streamOptions struct {
 }
 
 type openAIRequest struct {
-	Model          string                 `json:"model"`
-	Messages       []openAIRequestMessage `json:"messages"`
-	Stream         bool                   `json:"stream"`
-	StreamOptions  streamOptions          `json:"stream_options"`
-	Temperature    float32                `json:"temperature,omitempty"`
-	TopP           float32                `json:"top_p,omitempty"`
-	ResponseFormat map[string]any         `json:"response_format,omitempty"`
+	Model          string         `json:"model"`
+	Messages       any            `json:"messages"`
+	Stream         bool           `json:"stream"`
+	StreamOptions  streamOptions  `json:"stream_options"`
+	Temperature    float32        `json:"temperature,omitempty"`
+	TopP           float32        `json:"top_p,omitempty"`
+	ResponseFormat map[string]any `json:"response_format,omitempty"`
 }
 
 type Openai struct {
@@ -70,38 +91,104 @@ func (oa Openai) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
-	messages := make([]openAIRequestMessage, len(req.Messages))
-	for i, msg := range req.Messages {
-		messages[i] = openAIRequestMessage(openAIRequestMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
-	}
+	model := req.Model.GetName()
 
-	apiReq := openAIRequest{
-		Model:         req.Model.GetName(),
-		Messages:      messages,
+	openaiRequest := openAIRequest{
+		Model:         model,
 		Stream:        true,
 		StreamOptions: streamOptions{IncludeUsage: true},
 		Temperature:   1.0,
 	}
-	if gs, ok := req.Model.(models.StructuredOutput); ok {
-		if structure := gs.GetStructuredOutput(); structure != nil {
-			apiReq.ResponseFormat = map[string]any{
-				"type":        "json_schema",
-				"json_schema": structure,
-			}
-		}
-	}
 
-	body, err := json.Marshal(apiReq)
-	if err != nil {
-		return response.Completion{}, 0, err
+	var requestBody []byte
+
+	switch model {
+	case models.GPT4OAlias:
+		request, err := prepareGPT4ORequest(
+			openaiRequest,
+			req.Model,
+			req.Messages,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(request)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
+	case models.GPT4OMiniAlias:
+		request, err := prepareGPT4OMiniRequest(
+			openaiRequest,
+			req.Model,
+			req.Messages,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(request)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
+	case models.O1Alias:
+		request, err := prepareO1Request(
+			openaiRequest,
+			req.Model,
+			req.Messages,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(request)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
+	case models.O3MiniAlias:
+		request, err := prepareO3MiniRequest(
+			openaiRequest,
+			req.Model,
+			req.Messages,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(request)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
+
+	default:
+		requestMessages := make([]requestMessage, len(req.Messages))
+		for i, msg := range req.Messages {
+			requestMessages[i] = requestMessage(requestMessage{
+				Role:    msg.Role,
+				Content: msg.Content,
+			})
+		}
+
+		openaiRequest.Messages = requestMessages
+		body, err := json.Marshal(openaiRequest)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST",
 		fmt.Sprintf("%s/chat/completions", openAIBaseURL),
-		bytes.NewReader(body))
+		bytes.NewReader(requestBody))
 	if err != nil {
 		return response.Completion{}, 0, fmt.Errorf(
 			"create request: %w",
@@ -119,6 +206,14 @@ func (oa Openai) doRequest(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		slog.Info(
+			"#####################################",
+			"sc",
+			resp.StatusCode,
+			"b",
+			string(b),
+		)
 		return response.Completion{}, resp.StatusCode, errors.New(
 			"received non-200 status code",
 		)
@@ -412,3 +507,257 @@ func (oa Openai) StreamResponse(
 }
 
 var _ LLMProvider = new(Openai)
+
+func prepareGPT4ORequest(
+	request openAIRequest,
+	requestedModel models.Model,
+	messages []request.Message,
+) (openAIRequest, error) {
+	gpt4O, ok := requestedModel.(models.GPT4O)
+	if !ok {
+		return request, errors.New(
+			"internal error; model was o3-mini but type assertion to models.O3Mini failed",
+		)
+	}
+
+	if gpt4O.StructuredOutput != nil {
+		request.ResponseFormat = map[string]any{
+			"type":        "json_schema",
+			"json_schema": gpt4O.StructuredOutput,
+		}
+	}
+
+	if len(gpt4O.PdfFile) == 1 {
+		reqMsgWithFile := []requestMessageWithFile{
+			{
+				Role:    "user",
+				Content: []any{},
+			},
+		}
+
+		var filename string
+		var fileData string
+
+		for name, data := range gpt4O.PdfFile {
+			filename = name
+			fileData = data
+		}
+
+		fi := fileInput{
+			Type: "file",
+			File: file{
+				Filename: filename,
+				FileData: string(fileData),
+			},
+		}
+
+		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
+		for _, msg := range messages {
+			if msg.Role == "user" {
+				reqMsgWithFile[0].Content = append(
+					reqMsgWithFile[0].Content,
+					fileInputMessage{
+						Type: "text",
+						Text: msg.Content,
+					},
+				)
+			}
+		}
+
+		request.Messages = reqMsgWithFile
+
+		return request, nil
+	}
+
+	requestMessages := make([]requestMessage, len(messages))
+	for i, msg := range messages {
+		requestMessages[i] = requestMessage(requestMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
+	}
+
+	request.Messages = requestMessages
+
+	return request, nil
+}
+
+func prepareGPT4OMiniRequest(
+	request openAIRequest,
+	requestedModel models.Model,
+	messages []request.Message,
+) (openAIRequest, error) {
+	gpt4OMini, ok := requestedModel.(models.GPT4OMini)
+	if !ok {
+		return request, errors.New(
+			"internal error; model was o3-mini but type assertion to models.O3Mini failed",
+		)
+	}
+
+	if gpt4OMini.StructuredOutput != nil {
+		request.ResponseFormat = map[string]any{
+			"type":        "json_schema",
+			"json_schema": gpt4OMini.StructuredOutput,
+		}
+	}
+
+	if len(gpt4OMini.PdfFile) == 1 {
+		reqMsgWithFile := []requestMessageWithFile{
+			{
+				Role:    "user",
+				Content: []any{},
+			},
+		}
+
+		var filename string
+		var fileData string
+
+		for name, data := range gpt4OMini.PdfFile {
+			filename = name
+			fileData = data
+		}
+
+		fi := fileInput{
+			Type: "file",
+			File: file{
+				Filename: filename,
+				FileData: string(fileData),
+			},
+		}
+
+		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
+		for _, msg := range messages {
+			if msg.Role == "user" {
+				reqMsgWithFile[0].Content = append(
+					reqMsgWithFile[0].Content,
+					fileInputMessage{
+						Type: "text",
+						Text: msg.Content,
+					},
+				)
+			}
+		}
+
+		request.Messages = reqMsgWithFile
+
+		return request, nil
+	}
+
+	requestMessages := make([]requestMessage, len(messages))
+	for i, msg := range messages {
+		requestMessages[i] = requestMessage(requestMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
+	}
+
+	request.Messages = requestMessages
+
+	return request, nil
+}
+
+func prepareO1Request(
+	request openAIRequest,
+	requestedModel models.Model,
+	messages []request.Message,
+) (openAIRequest, error) {
+	o1, ok := requestedModel.(models.O1)
+	if !ok {
+		return request, errors.New(
+			"internal error; model was o3-mini but type assertion to models.O3Mini failed",
+		)
+	}
+
+	if o1.StructuredOutput != nil {
+		request.ResponseFormat = map[string]any{
+			"type":        "json_schema",
+			"json_schema": o1.StructuredOutput,
+		}
+	}
+
+	if len(o1.PdfFile) == 1 {
+		reqMsgWithFile := []requestMessageWithFile{
+			{
+				Role:    "user",
+				Content: []any{},
+			},
+		}
+
+		var filename string
+		var fileData string
+
+		for name, data := range o1.PdfFile {
+			filename = name
+			fileData = data
+		}
+
+		fi := fileInput{
+			Type: "file",
+			File: file{
+				Filename: filename,
+				FileData: string(fileData),
+			},
+		}
+
+		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
+		for _, msg := range messages {
+			if msg.Role == "user" {
+				reqMsgWithFile[0].Content = append(
+					reqMsgWithFile[0].Content,
+					fileInputMessage{
+						Type: "text",
+						Text: msg.Content,
+					},
+				)
+			}
+		}
+
+		request.Messages = reqMsgWithFile
+
+		return request, nil
+	}
+
+	requestMessages := make([]requestMessage, len(messages))
+	for i, msg := range messages {
+		requestMessages[i] = requestMessage(requestMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
+	}
+
+	request.Messages = requestMessages
+
+	return request, nil
+}
+
+func prepareO3MiniRequest(
+	request openAIRequest,
+	requestedModel models.Model,
+	messages []request.Message,
+) (openAIRequest, error) {
+	o3Mini, ok := requestedModel.(models.O3Mini)
+	if !ok {
+		return request, errors.New(
+			"internal error; model was o3-mini but type assertion to models.O3Mini failed",
+		)
+	}
+
+	if o3Mini.StructuredOutput != nil {
+		request.ResponseFormat = map[string]any{
+			"type":        "json_schema",
+			"json_schema": o3Mini.StructuredOutput,
+		}
+	}
+
+	requestMessages := make([]requestMessage, len(messages))
+	for i, msg := range messages {
+		requestMessages[i] = requestMessage(requestMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
+	}
+
+	request.Messages = requestMessages
+
+	return request, nil
+}

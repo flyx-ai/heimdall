@@ -2,6 +2,17 @@ package models
 
 const OpenaiProvider = "openai"
 
+const (
+	O3MiniAlias    = "o3-mini-2025-01-31"
+	GPT4OAlias     = "gpt-4o-2024-11-20"
+	GPT4OMiniAlias = "gpt-4o-mini-2024-07-18"
+	O1Alias        = "o1-2024-12-17"
+	O1MiniAlias    = "o1-mini-2024-09-12"
+	O1PreviewAlias = "o1-preview-2024-09-12"
+	GPT4Alias      = "gpt-4-0613"
+	GPT4TurboAlias = "gpt-4-turbo"
+)
+
 type O3Mini struct {
 	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
 	//
@@ -20,22 +31,15 @@ type O3Mini struct {
 	StructuredOutput map[string]any
 }
 
-func (o O3Mini) GetStructuredOutput() map[string]any {
-	return o.StructuredOutput
-}
-
 func (o O3Mini) GetName() string {
-	return "o3-mini"
+	return O3MiniAlias
 }
 
 func (o O3Mini) GetProvider() string {
 	return OpenaiProvider
 }
 
-var (
-	_ Model            = new(O3Mini)
-	_ StructuredOutput = new(O3Mini)
-)
+var _ Model = new(O3Mini)
 
 type O1 struct {
 	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
@@ -53,29 +57,28 @@ type O1 struct {
 	//  	},
 	//  }
 	StructuredOutput map[string]any
-}
 
-func (o O1) GetStructuredOutput() map[string]any {
-	return o.StructuredOutput
+	// PdfFile let's you include a PDF file in your request to the LLM.
+	// The expected format:
+	//
+	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	PdfFile map[string]string
 }
 
 func (o O1) GetName() string {
-	return "o1"
+	return O1Alias
 }
 
 func (o O1) GetProvider() string {
 	return OpenaiProvider
 }
 
-var (
-	_ Model            = new(O1)
-	_ StructuredOutput = new(O1)
-)
+var _ Model = new(O1)
 
 type O1Mini struct{}
 
 func (o O1Mini) GetName() string {
-	return "o1-mini"
+	return O1MiniAlias
 }
 
 func (o O1Mini) GetProvider() string {
@@ -87,7 +90,7 @@ var _ Model = new(O1Mini)
 type O1Preview struct{}
 
 func (o O1Preview) GetName() string {
-	return "o1-preview"
+	return O1PreviewAlias
 }
 
 func (o O1Preview) GetProvider() string {
@@ -99,7 +102,7 @@ var _ Model = new(O1Preview)
 type GPT4 struct{}
 
 func (g GPT4) GetName() string {
-	return "gpt-4"
+	return GPT4Alias
 }
 
 func (g GPT4) GetProvider() string {
@@ -111,7 +114,7 @@ var _ Model = new(GPT4)
 type GPT4Turbo struct{}
 
 func (g GPT4Turbo) GetName() string {
-	return "gpt-4-turbo"
+	return GPT4TurboAlias
 }
 
 func (g GPT4Turbo) GetProvider() string {
@@ -136,24 +139,23 @@ type GPT4O struct {
 	//  	},
 	//  }
 	StructuredOutput map[string]any
-}
 
-func (g GPT4O) GetStructuredOutput() map[string]any {
-	return g.StructuredOutput
+	// PdfFile let's you include a PDF file in your request to the LLM.
+	// The expected format:
+	//
+	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	PdfFile map[string]string
 }
 
 func (g GPT4O) GetName() string {
-	return "gpt-4o"
+	return GPT4OAlias
 }
 
 func (g GPT4O) GetProvider() string {
 	return OpenaiProvider
 }
 
-var (
-	_ Model            = new(GPT4O)
-	_ StructuredOutput = new(GPT4O)
-)
+var _ Model = new(GPT4O)
 
 type GPT4OMini struct {
 	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
@@ -171,21 +173,20 @@ type GPT4OMini struct {
 	//  	},
 	//  }
 	StructuredOutput map[string]any
-}
 
-func (g GPT4OMini) GetStructuredOutput() map[string]any {
-	return g.StructuredOutput
+	// PdfFile let's you include a PDF file in your request to the LLM.
+	// The expected format:
+	//
+	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	PdfFile map[string]string
 }
 
 func (g GPT4OMini) GetName() string {
-	return "gpt-4o-mini"
+	return GPT4OMiniAlias
 }
 
 func (g GPT4OMini) GetProvider() string {
 	return OpenaiProvider
 }
 
-var (
-	_ Model            = new(GPT4OMini)
-	_ StructuredOutput = new(GPT4OMini)
-)
+var _ Model = new(GPT4OMini)
