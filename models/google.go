@@ -3,18 +3,14 @@ package models
 const GoogleProvider = "google"
 
 const (
-	Gemini15ProModel         = "gemini-1.5-pro-002"
-	Gemini15FlashModel       = "gemini-1.5-flash-002"
-	Gemini20FlashModel       = "gemini-2.0-flash-001"
-	Gemini20FlashLiteModel   = "gemini-2.0-flash-lite-001"
-	Gemini25ProPreviewpModel = "gemini-2.5-pro-preview-03-25"
+	Gemini15FlashModel      = "gemini-1.5-flash-002"
+	Gemini15ProModel        = "gemini-1.5-pro-002"
+	Gemini20FlashModel      = "gemini-2.0-flash-001"
+	Gemini20FlashLiteModel  = "gemini-2.0-flash-lite-001"
+	Gemini25ProPreviewModel = "gemini-2.5-pro-preview-03-25"
 )
 
 type GoogleTool []map[string]map[string]any
-
-type GoogleTools interface {
-	GetTools() GoogleTool
-}
 
 var GoogleSearchTool = map[string]map[string]any{
 	"google_search": {},
@@ -97,14 +93,7 @@ func (g Gemini20Flash) GetProvider() string {
 	return GoogleProvider
 }
 
-func (g Gemini20Flash) GetTools() GoogleTool {
-	return g.Tools
-}
-
-var (
-	_ Model       = new(Gemini20Flash)
-	_ GoogleTools = new(Gemini20Flash)
-)
+var _ Model = new(Gemini20Flash)
 
 type Gemini20FlashLite struct {
 	Tools GoogleTool
@@ -131,19 +120,12 @@ func (g Gemini20FlashLite) GetProvider() string {
 	return GoogleProvider
 }
 
-func (g Gemini20FlashLite) GetTools() GoogleTool {
-	return g.Tools
-}
-
-var (
-	_ Model       = new(Gemini20FlashLite)
-	_ GoogleTools = new(Gemini20FlashLite)
-)
+var _ Model = new(Gemini20FlashLite)
 
 type Gemini25ProPreview struct{}
 
 func (g Gemini25ProPreview) GetName() string {
-	return Gemini25ProPreviewpModel
+	return Gemini25ProPreviewModel
 }
 
 func (g Gemini25ProPreview) GetProvider() string {

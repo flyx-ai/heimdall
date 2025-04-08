@@ -325,64 +325,99 @@ func (g Google) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
-	model := req.Model.GetName()
+	model := req.Model
 	geminiReq := geminiRequest{
 		Contents: make([]content, 1),
 	}
 
 	var requestBody []byte
 
-	body, err := json.Marshal(geminiReq)
-	if err != nil {
-		return response.Completion{}, 0, err
-	}
-
-	switch model {
+	switch model.GetName() {
 	case models.Gemini15FlashModel:
-	}
+		request, err := prepareGemini15FlashRequest(
+			geminiReq,
+			model,
+			req.Messages,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
 
-	for _, msg := range req.Messages {
-		if msg.Role == "system" {
-			geminiReq.SystemInstruction.Parts = part{
-				Text: msg.Content,
-			}
+		body, err := json.Marshal(request)
+		if err != nil {
+			return response.Completion{}, 0, err
 		}
-		if msg.Role == "user" {
-			geminiReq.Contents[0].Parts = append(
-				geminiReq.Contents[0].Parts,
-				part{
-					Text: msg.Content,
-				},
-			)
-		}
-		if msg.Role == "file" {
-			geminiReq.Contents[0].Parts = append(
-				geminiReq.Contents[0].Parts,
-				part{
-					FileData: fileData{
-						MimeType: string(msg.FileType),
-						FileURI:  msg.Content,
-					},
-				},
-			)
-		}
-	}
 
-	if tools, ok := req.Model.(models.GoogleTools); ok {
-		geminiReq.Tools = tools.GetTools()
-	}
-
-	if gs, ok := req.Model.(models.StructuredOutput); ok {
-		structuredOutput := gs.GetStructuredOutput()
-		geminiReq.Config = map[string]any{
-			"response_mime_type": "application/json",
-			"response_schema":    structuredOutput,
+		requestBody = body
+	case models.Gemini15ProModel:
+		request, err := prepareGemini15ProRequest(
+			geminiReq,
+			model,
+			req.Messages,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
 		}
+
+		body, err := json.Marshal(request)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
+	case models.Gemini20FlashModel:
+		request, err := prepareGemini20FlashRequest(
+			geminiReq,
+			model,
+			req.Messages,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(request)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
+	case models.Gemini20FlashLiteModel:
+		request, err := prepareGemini20FlashLiteRequest(
+			geminiReq,
+			model,
+			req.Messages,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(request)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
+	case models.Gemini25ProPreviewModel:
+		request, err := prepareGemini25ProPreviewRequest(
+			geminiReq,
+			model,
+			req.Messages,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(request)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		fmt.Sprintf(googleBaseUrl, req.Model.GetName(), key),
-		bytes.NewReader(body))
+		bytes.NewReader(requestBody))
 	if err != nil {
 		return response.Completion{}, 0, err
 	}
@@ -461,75 +496,246 @@ func (g Google) doRequest(
 var _ LLMProvider = new(Google)
 
 func prepareGemini15FlashRequest(
-	request openAIRequest,
+	request geminiRequest,
 	requestedModel models.Model,
 	messages []request.Message,
-) (openAIRequest, error) {
-	gemini15Flash, ok := requestedModel.(models.Gemini15Flash)
+) (geminiRequest, error) {
+	// TODO: implement file, image etc on model
+	_, ok := requestedModel.(models.Gemini15Flash)
 	if !ok {
 		return request, errors.New(
-			"internal error; model was o3-mini but type assertion to models.O3Mini failed",
+			"internal error; model type assertion to models.Gemini15Flash failed",
 		)
 	}
 
-	if gemini15Flash.StructuredOutput != nil {
-		request.ResponseFormat = map[string]any{
-			"type":        "json_schema",
-			"json_schema": gemini15Flash.StructuredOutput,
-		}
-	}
-
-	if len(gemini15Flash.PdfFile) == 1 {
-		reqMsgWithFile := []requestMessageWithFile{
-			{
-				Role:    "user",
-				Content: []any{},
-			},
-		}
-
-		var filename string
-		var fileData string
-
-		for name, data := range gemini15Flash.PdfFile {
-			filename = name
-			fileData = data
-		}
-
-		fi := fileInput{
-			Type: "file",
-			File: file{
-				Filename: filename,
-				FileData: string(fileData),
-			},
-		}
-
-		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
-		for _, msg := range messages {
-			if msg.Role == "user" {
-				reqMsgWithFile[0].Content = append(
-					reqMsgWithFile[0].Content,
-					fileInputMessage{
-						Type: "text",
-						Text: msg.Content,
-					},
-				)
+	for _, msg := range messages {
+		if msg.Role == "system" {
+			request.SystemInstruction.Parts = part{
+				Text: msg.Content,
 			}
 		}
-
-		request.Messages = reqMsgWithFile
-
-		return request, nil
+		if msg.Role == "user" {
+			request.Contents[0].Parts = append(
+				request.Contents[0].Parts,
+				part{
+					Text: msg.Content,
+				},
+			)
+		}
 	}
 
-	requestMessages := make([]requestMessage, len(messages))
-	for i, msg := range messages {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
+	return request, nil
+}
+
+func prepareGemini15ProRequest(
+	request geminiRequest,
+	requestedModel models.Model,
+	messages []request.Message,
+) (geminiRequest, error) {
+	model, ok := requestedModel.(models.Gemini15Pro)
+	if !ok {
+		return request, errors.New(
+			"internal error; model type assertion to models.Gemini15Pro failed",
+		)
 	}
 
-	request.Messages = requestMessages
+	for _, msg := range messages {
+		if msg.Role == "system" {
+			request.SystemInstruction.Parts = part{
+				Text: msg.Content,
+			}
+		}
+		if msg.Role == "user" {
+			request.Contents[0].Parts = append(
+				request.Contents[0].Parts,
+				part{
+					Text: msg.Content,
+				},
+			)
+		}
+	}
+
+	if len(model.PdfFile) == 1 {
+		var mimeType string
+		var fileURI string
+
+		for name, data := range model.PdfFile {
+			mimeType = name
+			fileURI = data
+		}
+
+		request.Contents[0].Parts = append(
+			request.Contents[0].Parts,
+			part{
+				FileData: fileData{
+					MimeType: mimeType,
+					FileURI:  fileURI,
+				},
+			},
+		)
+	}
+
+	if len(model.StructuredOutput) == 1 {
+		request.Config = map[string]any{
+			"response_mime_type": "application/json",
+			"response_schema":    model.StructuredOutput,
+		}
+	}
+
+	return request, nil
+}
+
+func prepareGemini20FlashRequest(
+	request geminiRequest,
+	requestedModel models.Model,
+	messages []request.Message,
+) (geminiRequest, error) {
+	model, ok := requestedModel.(models.Gemini20Flash)
+	if !ok {
+		return request, errors.New(
+			"internal error; model type assertion to models.Gemini20Flash failed",
+		)
+	}
+
+	for _, msg := range messages {
+		if msg.Role == "system" {
+			request.SystemInstruction.Parts = part{
+				Text: msg.Content,
+			}
+		}
+		if msg.Role == "user" {
+			request.Contents[0].Parts = append(
+				request.Contents[0].Parts,
+				part{
+					Text: msg.Content,
+				},
+			)
+		}
+	}
+
+	if len(model.PdfFile) == 1 {
+		var mimeType string
+		var fileURI string
+
+		for name, data := range model.PdfFile {
+			mimeType = name
+			fileURI = data
+		}
+
+		request.Contents[0].Parts = append(
+			request.Contents[0].Parts,
+			part{
+				FileData: fileData{
+					MimeType: mimeType,
+					FileURI:  fileURI,
+				},
+			},
+		)
+	}
+
+	if len(model.StructuredOutput) == 1 {
+		request.Config = map[string]any{
+			"response_mime_type": "application/json",
+			"response_schema":    model.StructuredOutput,
+		}
+	}
+
+	if len(model.Tools) > 1 {
+		request.Tools = model.Tools
+	}
+
+	return request, nil
+}
+
+func prepareGemini20FlashLiteRequest(
+	request geminiRequest,
+	requestedModel models.Model,
+	messages []request.Message,
+) (geminiRequest, error) {
+	model, ok := requestedModel.(models.Gemini20FlashLite)
+	if !ok {
+		return request, errors.New(
+			"internal error; model type assertion to models.Gemini20FlashLite failed",
+		)
+	}
+
+	for _, msg := range messages {
+		if msg.Role == "system" {
+			request.SystemInstruction.Parts = part{
+				Text: msg.Content,
+			}
+		}
+		if msg.Role == "user" {
+			request.Contents[0].Parts = append(
+				request.Contents[0].Parts,
+				part{
+					Text: msg.Content,
+				},
+			)
+		}
+	}
+
+	if len(model.PdfFile) == 1 {
+		var mimeType string
+		var fileURI string
+
+		for name, data := range model.PdfFile {
+			mimeType = name
+			fileURI = data
+		}
+
+		request.Contents[0].Parts = append(
+			request.Contents[0].Parts,
+			part{
+				FileData: fileData{
+					MimeType: mimeType,
+					FileURI:  fileURI,
+				},
+			},
+		)
+	}
+
+	if len(model.StructuredOutput) == 1 {
+		request.Config = map[string]any{
+			"response_mime_type": "application/json",
+			"response_schema":    model.StructuredOutput,
+		}
+	}
+
+	if len(model.Tools) > 1 {
+		request.Tools = model.Tools
+	}
+
+	return request, nil
+}
+
+func prepareGemini25ProPreviewRequest(
+	request geminiRequest,
+	requestedModel models.Model,
+	messages []request.Message,
+) (geminiRequest, error) {
+	_, ok := requestedModel.(models.Gemini25ProPreview)
+	if !ok {
+		return request, errors.New(
+			"internal error; model type assertion to models.Gemini25ProPreview  failed",
+		)
+	}
+
+	for _, msg := range messages {
+		if msg.Role == "system" {
+			request.SystemInstruction.Parts = part{
+				Text: msg.Content,
+			}
+		}
+		if msg.Role == "user" {
+			request.Contents[0].Parts = append(
+				request.Contents[0].Parts,
+				part{
+					Text: msg.Content,
+				},
+			)
+		}
+	}
 
 	return request, nil
 }
