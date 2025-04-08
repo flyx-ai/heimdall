@@ -325,8 +325,20 @@ func (g Google) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
+	model := req.Model.GetName()
 	geminiReq := geminiRequest{
 		Contents: make([]content, 1),
+	}
+
+	var requestBody []byte
+
+	body, err := json.Marshal(geminiReq)
+	if err != nil {
+		return response.Completion{}, 0, err
+	}
+
+	switch model {
+	case models.Gemini15FlashModel:
 	}
 
 	for _, msg := range req.Messages {
@@ -366,11 +378,6 @@ func (g Google) doRequest(
 			"response_mime_type": "application/json",
 			"response_schema":    structuredOutput,
 		}
-	}
-
-	body, err := json.Marshal(geminiReq)
-	if err != nil {
-		return response.Completion{}, 0, err
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
@@ -452,3 +459,77 @@ func (g Google) doRequest(
 }
 
 var _ LLMProvider = new(Google)
+
+func prepareGemini15FlashRequest(
+	request openAIRequest,
+	requestedModel models.Model,
+	messages []request.Message,
+) (openAIRequest, error) {
+	gemini15Flash, ok := requestedModel.(models.Gemini15Flash)
+	if !ok {
+		return request, errors.New(
+			"internal error; model was o3-mini but type assertion to models.O3Mini failed",
+		)
+	}
+
+	if gemini15Flash.StructuredOutput != nil {
+		request.ResponseFormat = map[string]any{
+			"type":        "json_schema",
+			"json_schema": gemini15Flash.StructuredOutput,
+		}
+	}
+
+	if len(gemini15Flash.PdfFile) == 1 {
+		reqMsgWithFile := []requestMessageWithFile{
+			{
+				Role:    "user",
+				Content: []any{},
+			},
+		}
+
+		var filename string
+		var fileData string
+
+		for name, data := range gemini15Flash.PdfFile {
+			filename = name
+			fileData = data
+		}
+
+		fi := fileInput{
+			Type: "file",
+			File: file{
+				Filename: filename,
+				FileData: string(fileData),
+			},
+		}
+
+		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
+		for _, msg := range messages {
+			if msg.Role == "user" {
+				reqMsgWithFile[0].Content = append(
+					reqMsgWithFile[0].Content,
+					fileInputMessage{
+						Type: "text",
+						Text: msg.Content,
+					},
+				)
+			}
+		}
+
+		request.Messages = reqMsgWithFile
+
+		return request, nil
+	}
+
+	requestMessages := make([]requestMessage, len(messages))
+	for i, msg := range messages {
+		requestMessages[i] = requestMessage(requestMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
+	}
+
+	request.Messages = requestMessages
+
+	return request, nil
+}
