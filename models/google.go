@@ -2,21 +2,15 @@ package models
 
 const GoogleProvider = "google"
 
-type GoogleModelName string
-
 const (
-	Gemini15ProModel         GoogleModelName = "gemini-1.5-pro-002"
-	Gemini15FlashModel       GoogleModelName = "gemini-1.5-flash-002"
-	Gemini20FlashModel       GoogleModelName = "gemini-2.0-flash-001"
-	Gemini20FlashLiteModel   GoogleModelName = "gemini-2.0-flash-lite-001"
-	Gemini25ProPreviewpModel GoogleModelName = "gemini-2.5-pro-preview-03-25"
+	Gemini15FlashModel      = "gemini-1.5-flash-002"
+	Gemini15ProModel        = "gemini-1.5-pro-002"
+	Gemini20FlashModel      = "gemini-2.0-flash-001"
+	Gemini20FlashLiteModel  = "gemini-2.0-flash-lite-001"
+	Gemini25ProPreviewModel = "gemini-2.5-pro-preview-03-25"
 )
 
 type GoogleTool []map[string]map[string]any
-
-type GoogleTools interface {
-	GetTools() GoogleTool
-}
 
 var GoogleSearchTool = map[string]map[string]any{
 	"google_search": {},
@@ -48,30 +42,24 @@ type Gemini15Pro struct {
 	// 			},
 	// 		},
 	// 	}
+	PdfFile          map[string]string
 	StructuredOutput map[string]any
 }
 
-func (g Gemini15Pro) GetStructuredOutput() map[string]any {
-	return g.StructuredOutput
-}
-
 func (g Gemini15Pro) GetName() string {
-	return string(Gemini15ProModel)
+	return Gemini15ProModel
 }
 
 func (g Gemini15Pro) GetProvider() string {
 	return GoogleProvider
 }
 
-var (
-	_ Model            = new(Gemini15Pro)
-	_ StructuredOutput = new(Gemini15Pro)
-)
+var _ Model = new(Gemini15Pro)
 
 type Gemini15Flash struct{}
 
 func (g Gemini15Flash) GetName() string {
-	return string(Gemini15FlashModel)
+	return Gemini15FlashModel
 }
 
 func (g Gemini15Flash) GetProvider() string {
@@ -93,30 +81,19 @@ type Gemini20Flash struct {
 	// 			},
 	// 		},
 	// 	}
+	PdfFile          map[string]string
 	StructuredOutput map[string]any
 }
 
-func (g Gemini20Flash) GetStructuredOutput() map[string]any {
-	return g.StructuredOutput
-}
-
 func (g Gemini20Flash) GetName() string {
-	return string(Gemini20FlashModel)
+	return Gemini20FlashModel
 }
 
 func (g Gemini20Flash) GetProvider() string {
 	return GoogleProvider
 }
 
-func (g Gemini20Flash) GetTools() GoogleTool {
-	return g.Tools
-}
-
-var (
-	_ Model            = new(Gemini20Flash)
-	_ StructuredOutput = new(Gemini20Flash)
-	_ GoogleTools      = new(Gemini20Flash)
-)
+var _ Model = new(Gemini20Flash)
 
 type Gemini20FlashLite struct {
 	Tools GoogleTool
@@ -131,35 +108,24 @@ type Gemini20FlashLite struct {
 	// 			},
 	// 		},
 	// 	}
+	PdfFile          map[string]string
 	StructuredOutput map[string]any
 }
 
-func (g Gemini20FlashLite) GetStructuredOutput() map[string]any {
-	return g.StructuredOutput
-}
-
 func (g Gemini20FlashLite) GetName() string {
-	return string(Gemini20FlashLiteModel)
+	return Gemini20FlashLiteModel
 }
 
 func (g Gemini20FlashLite) GetProvider() string {
 	return GoogleProvider
 }
 
-func (g Gemini20FlashLite) GetTools() GoogleTool {
-	return g.Tools
-}
-
-var (
-	_ Model            = new(Gemini20FlashLite)
-	_ StructuredOutput = new(Gemini20FlashLite)
-	_ GoogleTools      = new(Gemini20FlashLite)
-)
+var _ Model = new(Gemini20FlashLite)
 
 type Gemini25ProPreview struct{}
 
 func (g Gemini25ProPreview) GetName() string {
-	return string(Gemini25ProPreviewpModel)
+	return Gemini25ProPreviewModel
 }
 
 func (g Gemini25ProPreview) GetProvider() string {
