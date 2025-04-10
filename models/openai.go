@@ -71,7 +71,8 @@ type O1 struct {
 	//
 	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
 	// Only provide a pdf file or an image file, not both.
-	PdfFile   map[string]string
+	PdfFile map[string]string
+	// ImageFile enables vision for the request
 	ImageFile []OpenaiImagePayload
 }
 
@@ -155,7 +156,8 @@ type GPT4O struct {
 	//
 	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
 	// Only provide a pdf file or an image file, not both.
-	PdfFile   map[string]string
+	PdfFile map[string]string
+	// ImageFile enables vision for the request
 	ImageFile []OpenaiImagePayload
 }
 
@@ -192,7 +194,8 @@ type (
 		//
 		// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
 		// Only provide a pdf file or an image file, not both.
-		PdfFile   map[string]string
+		PdfFile map[string]string
+		// ImageFile enables vision for the request
 		ImageFile []OpenaiImagePayload
 	}
 )
