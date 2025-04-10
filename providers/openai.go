@@ -46,6 +46,20 @@ type requestMessageWithFile struct {
 	Content []any  `json:"content"`
 }
 
+type imageUrl struct {
+	Url    string `json:"url"`
+	Detail string `json:"detail"`
+}
+type imageInput struct {
+	Type     string   `json:"type"`
+	ImageUrl imageUrl `json:"image_url"`
+}
+
+type requestMessageWithImage struct {
+	Role    string `json:"role"`
+	Content []any  `json:"content"`
+}
+
 type openAIChunk struct {
 	Choices []struct {
 		Delta struct {
@@ -518,6 +532,53 @@ func prepareGPT4ORequest(
 		}
 	}
 
+	if len(gpt4O.PdfFile) == 1 && len(gpt4O.ImageFile) == 1 {
+		return openAIRequest{}, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(gpt4O.ImageFile) == 1 {
+		reqMsgWithImage := []requestMessageWithImage{
+			{
+				Role:    "user",
+				Content: []any{},
+			},
+		}
+
+		for _, img := range gpt4O.ImageFile {
+			detail := "auto"
+			if img.Detail != "" {
+				detail = img.Detail
+			}
+
+			ii := imageInput{
+				Type: "image_url",
+				ImageUrl: imageUrl{
+					Url:    img.Url,
+					Detail: detail,
+				},
+			}
+			reqMsgWithImage[0].Content = append(reqMsgWithImage[0].Content, ii)
+		}
+
+		for _, msg := range messages {
+			if msg.Role == "user" {
+				reqMsgWithImage[0].Content = append(
+					reqMsgWithImage[0].Content,
+					fileInputMessage{
+						Type: "text",
+						Text: msg.Content,
+					},
+				)
+			}
+		}
+
+		request.Messages = reqMsgWithImage
+
+		return request, nil
+	}
+
 	if len(gpt4O.PdfFile) == 1 {
 		reqMsgWithFile := []requestMessageWithFile{
 			{
@@ -592,6 +653,53 @@ func prepareGPT4OMiniRequest(
 		}
 	}
 
+	if len(gpt4OMini.PdfFile) == 1 && len(gpt4OMini.ImageFile) == 1 {
+		return openAIRequest{}, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(gpt4OMini.ImageFile) == 1 {
+		reqMsgWithImage := []requestMessageWithImage{
+			{
+				Role:    "user",
+				Content: []any{},
+			},
+		}
+
+		for _, img := range gpt4OMini.ImageFile {
+			detail := "auto"
+			if img.Detail != "" {
+				detail = img.Detail
+			}
+
+			ii := imageInput{
+				Type: "image_url",
+				ImageUrl: imageUrl{
+					Url:    img.Url,
+					Detail: detail,
+				},
+			}
+			reqMsgWithImage[0].Content = append(reqMsgWithImage[0].Content, ii)
+		}
+
+		for _, msg := range messages {
+			if msg.Role == "user" {
+				reqMsgWithImage[0].Content = append(
+					reqMsgWithImage[0].Content,
+					fileInputMessage{
+						Type: "text",
+						Text: msg.Content,
+					},
+				)
+			}
+		}
+
+		request.Messages = reqMsgWithImage
+
+		return request, nil
+	}
+
 	if len(gpt4OMini.PdfFile) == 1 {
 		reqMsgWithFile := []requestMessageWithFile{
 			{
@@ -664,6 +772,52 @@ func prepareO1Request(
 			"type":        "json_schema",
 			"json_schema": o1.StructuredOutput,
 		}
+	}
+	if len(o1.PdfFile) == 1 && len(o1.ImageFile) == 1 {
+		return openAIRequest{}, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(o1.ImageFile) == 1 {
+		reqMsgWithImage := []requestMessageWithImage{
+			{
+				Role:    "user",
+				Content: []any{},
+			},
+		}
+
+		for _, img := range o1.ImageFile {
+			detail := "auto"
+			if img.Detail != "" {
+				detail = img.Detail
+			}
+
+			ii := imageInput{
+				Type: "image_url",
+				ImageUrl: imageUrl{
+					Url:    img.Url,
+					Detail: detail,
+				},
+			}
+			reqMsgWithImage[0].Content = append(reqMsgWithImage[0].Content, ii)
+		}
+
+		for _, msg := range messages {
+			if msg.Role == "user" {
+				reqMsgWithImage[0].Content = append(
+					reqMsgWithImage[0].Content,
+					fileInputMessage{
+						Type: "text",
+						Text: msg.Content,
+					},
+				)
+			}
+		}
+
+		request.Messages = reqMsgWithImage
+
+		return request, nil
 	}
 
 	if len(o1.PdfFile) == 1 {

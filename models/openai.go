@@ -13,6 +13,14 @@ const (
 	GPT4TurboAlias = "gpt-4-turbo"
 )
 
+type OpenaiImagePayload struct {
+	// Url can be ether that, an url or a base64 encoding of the image .
+	// If using base64, it must follow this format: data:image/jpeg;base64,{base64_image}
+	Url string
+	// Detail determines the level detail to use when processing and understanding the image. Can be either: high, low or auto. If nothing is specified, it will default to auto.
+	Detail string
+}
+
 type O3Mini struct {
 	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
 	//
@@ -62,7 +70,10 @@ type O1 struct {
 	// The expected format:
 	//
 	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	// Only provide a pdf file or an image file, not both.
 	PdfFile map[string]string
+	// ImageFile enables vision for the request
+	ImageFile []OpenaiImagePayload
 }
 
 func (o O1) GetName() string {
@@ -144,7 +155,10 @@ type GPT4O struct {
 	// The expected format:
 	//
 	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	// Only provide a pdf file or an image file, not both.
 	PdfFile map[string]string
+	// ImageFile enables vision for the request
+	ImageFile []OpenaiImagePayload
 }
 
 func (g GPT4O) GetName() string {
@@ -157,29 +171,34 @@ func (g GPT4O) GetProvider() string {
 
 var _ Model = new(GPT4O)
 
-type GPT4OMini struct {
-	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
-	//
-	//  var schema = map[string]any{
-	//  	"name": "navidia_valuation",
-	//  	"schema": map[string]any{
-	//  		"type": "object",
-	//  		"properties": map[string]any{
-	//  			"final_answer": map[string]any{"type": "string"},
-	//  			"valuation": map[string]any{
-	//  				"type": "number",
-	//  			},
-	//  		},
-	//  	},
-	//  }
-	StructuredOutput map[string]any
+type (
+	GPT4OMini struct {
+		// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+		//
+		//  var schema = map[string]any{
+		//  	"name": "navidia_valuation",
+		//  	"schema": map[string]any{
+		//  		"type": "object",
+		//  		"properties": map[string]any{
+		//  			"final_answer": map[string]any{"type": "string"},
+		//  			"valuation": map[string]any{
+		//  				"type": "number",
+		//  			},
+		//  		},
+		//  	},
+		//  }
+		StructuredOutput map[string]any
 
-	// PdfFile let's you include a PDF file in your request to the LLM.
-	// The expected format:
-	//
-	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
-	PdfFile map[string]string
-}
+		// PdfFile let's you include a PDF file in your request to the LLM.
+		// The expected format:
+		//
+		// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+		// Only provide a pdf file or an image file, not both.
+		PdfFile map[string]string
+		// ImageFile enables vision for the request
+		ImageFile []OpenaiImagePayload
+	}
+)
 
 func (g GPT4OMini) GetName() string {
 	return GPT4OMiniAlias
