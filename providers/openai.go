@@ -116,6 +116,22 @@ func (oa Openai) doRequest(
 	var requestBody []byte
 
 	switch model {
+	case models.GPT41Alias:
+		request, err := prepareGPT41Request(
+			openaiRequest,
+			req.Model,
+			req.Messages,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(request)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
 	case models.GPT4OAlias:
 		request, err := prepareGPT4ORequest(
 			openaiRequest,
@@ -832,6 +848,126 @@ func prepareO1Request(
 		var fileData string
 
 		for name, data := range o1.PdfFile {
+			filename = name
+			fileData = data
+		}
+
+		fi := fileInput{
+			Type: "file",
+			File: file{
+				Filename: filename,
+				FileData: string(fileData),
+			},
+		}
+
+		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
+		for _, msg := range messages {
+			if msg.Role == "user" {
+				reqMsgWithFile[0].Content = append(
+					reqMsgWithFile[0].Content,
+					fileInputMessage{
+						Type: "text",
+						Text: msg.Content,
+					},
+				)
+			}
+		}
+
+		request.Messages = reqMsgWithFile
+
+		return request, nil
+	}
+
+	requestMessages := make([]requestMessage, len(messages))
+	for i, msg := range messages {
+		requestMessages[i] = requestMessage(requestMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
+	}
+
+	request.Messages = requestMessages
+
+	return request, nil
+}
+
+func prepareGPT41Request(
+	request openAIRequest,
+	requestedModel models.Model,
+	messages []request.Message,
+) (openAIRequest, error) {
+	gpt41, ok := requestedModel.(models.GPT41)
+	if !ok {
+		return request, errors.New(
+			"internal error; model was gpt 4.1 but type assertion to models.GPT41 failed",
+		)
+	}
+
+	if gpt41.StructuredOutput != nil {
+		request.ResponseFormat = map[string]any{
+			"type":        "json_schema",
+			"json_schema": gpt41.StructuredOutput,
+		}
+	}
+	if len(gpt41.PdfFile) == 1 && len(gpt41.ImageFile) == 1 {
+		return openAIRequest{}, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(gpt41.ImageFile) == 1 {
+		reqMsgWithImage := []requestMessageWithImage{
+			{
+				Role:    "user",
+				Content: []any{},
+			},
+		}
+
+		for _, img := range gpt41.ImageFile {
+			detail := "auto"
+			if img.Detail != "" {
+				detail = img.Detail
+			}
+
+			ii := imageInput{
+				Type: "image_url",
+				ImageUrl: imageUrl{
+					Url:    img.Url,
+					Detail: detail,
+				},
+			}
+			reqMsgWithImage[0].Content = append(reqMsgWithImage[0].Content, ii)
+		}
+
+		for _, msg := range messages {
+			if msg.Role == "user" {
+				reqMsgWithImage[0].Content = append(
+					reqMsgWithImage[0].Content,
+					fileInputMessage{
+						Type: "text",
+						Text: msg.Content,
+					},
+				)
+			}
+		}
+
+		request.Messages = reqMsgWithImage
+
+		return request, nil
+	}
+
+	if len(gpt41.PdfFile) == 1 {
+		reqMsgWithFile := []requestMessageWithFile{
+			{
+				Role:    "user",
+				Content: []any{},
+			},
+		}
+
+		var filename string
+		var fileData string
+
+		for name, data := range gpt41.PdfFile {
 			filename = name
 			fileData = data
 		}

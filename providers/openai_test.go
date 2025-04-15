@@ -110,6 +110,17 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "should complete request with gpt 4.1",
+			req: request.Completion{
+				Model:       models.GPT41{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -223,6 +234,17 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 			name: "should stream request with O1Preview",
 			req: request.Completion{
 				Model:       models.O1Preview{},
+				Messages:    msgs,
+				Temperature: 1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with gpt 4.1",
+			req: request.Completion{
+				Model:       models.GPT41{},
 				Messages:    msgs,
 				Temperature: 1,
 				Tags: map[string]string{
