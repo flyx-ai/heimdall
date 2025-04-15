@@ -40,21 +40,29 @@ type geminiRequest struct {
 }
 
 type content struct {
-	Parts []part `json:"parts"`
+	Parts []any `json:"parts"`
 }
 
 type systemInstruction struct {
-	Parts part `json:"parts"`
+	Parts any `json:"parts"`
 }
 
 type fileData struct {
 	MimeType string `json:"mime_type,omitzero"`
 	FileURI  string `json:"file_uri,omitzero"`
 }
+type imageData struct {
+	MimeType string `json:"mime_type,omitzero"`
+	Data     string `json:"data,omitzero"`
+}
+
+type filePart struct {
+	InlineData any `json:"inline_data,omitzero"`
+}
 
 type part struct {
-	Text     string   `json:"text,omitzero"`
-	FileData fileData `json:"file_data,omitzero"`
+	Text     string `json:"text,omitzero"`
+	FileData any    `json:"file_data,omitzero"`
 }
 
 type geminiResponse struct {
@@ -555,6 +563,16 @@ func prepareGemini15ProRequest(
 		}
 	}
 
+	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
+		return geminiRequest{}, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		request = handleVisionData(request, model.ImageFile)
+	}
+
 	if len(model.PdfFile) == 1 {
 		var mimeType string
 		var fileURI string
@@ -611,6 +629,16 @@ func prepareGemini20FlashRequest(
 				},
 			)
 		}
+	}
+
+	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
+		return geminiRequest{}, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		request = handleVisionData(request, model.ImageFile)
 	}
 
 	if len(model.PdfFile) == 1 {
@@ -675,6 +703,16 @@ func prepareGemini20FlashLiteRequest(
 		}
 	}
 
+	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
+		return geminiRequest{}, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		request = handleVisionData(request, model.ImageFile)
+	}
+
 	if len(model.PdfFile) == 1 {
 		var mimeType string
 		var fileURI string
@@ -714,10 +752,10 @@ func prepareGemini25ProPreviewRequest(
 	requestedModel models.Model,
 	messages []request.Message,
 ) (geminiRequest, error) {
-	_, ok := requestedModel.(models.Gemini25ProPreview)
+	model, ok := requestedModel.(models.Gemini25ProPreview)
 	if !ok {
 		return request, errors.New(
-			"internal error; model type assertion to models.Gemini25ProPreview  failed",
+			"internal error; model type assertion to models.Gemini20Flash failed",
 		)
 	}
 
@@ -737,5 +775,91 @@ func prepareGemini25ProPreviewRequest(
 		}
 	}
 
+	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
+		return geminiRequest{}, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		request = handleVisionData(request, model.ImageFile)
+	}
+
+	if len(model.PdfFile) == 1 {
+		var mimeType string
+		var fileURI string
+
+		for name, data := range model.PdfFile {
+			mimeType = name
+			fileURI = data
+		}
+
+		request.Contents[0].Parts = append(
+			request.Contents[0].Parts,
+			part{
+				FileData: fileData{
+					MimeType: mimeType,
+					FileURI:  fileURI,
+				},
+			},
+		)
+	}
+
+	if len(model.StructuredOutput) == 1 {
+		request.Config = map[string]any{
+			"response_mime_type": "application/json",
+			"response_schema":    model.StructuredOutput,
+		}
+	}
+
+	if len(model.Tools) > 1 {
+		request.Tools = model.Tools
+	}
+
 	return request, nil
+}
+
+func handleVisionData(
+	request geminiRequest,
+	imageFiles []models.GoogleImagePayload,
+) geminiRequest {
+	for _, imgFile := range imageFiles {
+		if strings.HasPrefix(imgFile.Data, "https://") {
+			request.Contents[0].Parts = append(
+				request.Contents[0].Parts,
+				filePart{
+					InlineData: fileData{
+						MimeType: imgFile.MimeType,
+						FileURI:  imgFile.Data,
+					},
+				},
+			)
+		}
+		if !strings.HasPrefix(imgFile.Data, "https://") {
+			base64 := imgFile.Data
+
+			fullBase64 := fmt.Sprintf("data:%s;base64,", imgFile.MimeType)
+			if strings.Contains(imgFile.Data, fullBase64) {
+				base64Part := strings.Split(
+					imgFile.Data,
+					fullBase64,
+				)
+				if len(base64Part) > 0 {
+					base64 = base64Part[1]
+				}
+			}
+
+			request.Contents[0].Parts = append(
+				request.Contents[0].Parts,
+				filePart{
+					InlineData: imageData{
+						MimeType: imgFile.MimeType,
+						Data:     base64,
+					},
+				},
+			)
+		}
+	}
+
+	return request
 }
