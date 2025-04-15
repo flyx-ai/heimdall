@@ -755,7 +755,7 @@ func prepareGemini25ProPreviewRequest(
 	model, ok := requestedModel.(models.Gemini25ProPreview)
 	if !ok {
 		return request, errors.New(
-			"internal error; model type assertion to models.Gemini20Flash failed",
+			"internal error; model type assertion to models.Gemini25ProPreview failed",
 		)
 	}
 
