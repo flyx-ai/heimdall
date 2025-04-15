@@ -30,6 +30,13 @@ var GoogleSearchRetrievalTool = map[string]map[string]any{
 	},
 }
 
+type GoogleImagePayload struct {
+	MimeType string
+	// Data can be either a base64 encoded payload or a file_uri.
+	// If you pass a base64 encoded image you must omit the `data:image/<type>;base64,` part
+	Data string
+}
+
 type Gemini15Pro struct {
 	// StructuredOutput represents a subset of the OpenAPI 3.0 Schema Object. Refer to gemini documentation for complete and up-to-date information. An example structure could be:
 	//
@@ -42,8 +49,9 @@ type Gemini15Pro struct {
 	// 			},
 	// 		},
 	// 	}
-	PdfFile          map[string]string
 	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []GoogleImagePayload
 }
 
 func (g Gemini15Pro) GetName() string {
@@ -81,8 +89,9 @@ type Gemini20Flash struct {
 	// 			},
 	// 		},
 	// 	}
-	PdfFile          map[string]string
 	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []GoogleImagePayload
 }
 
 func (g Gemini20Flash) GetName() string {
@@ -108,8 +117,9 @@ type Gemini20FlashLite struct {
 	// 			},
 	// 		},
 	// 	}
-	PdfFile          map[string]string
 	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []GoogleImagePayload
 }
 
 func (g Gemini20FlashLite) GetName() string {
@@ -122,7 +132,23 @@ func (g Gemini20FlashLite) GetProvider() string {
 
 var _ Model = new(Gemini20FlashLite)
 
-type Gemini25ProPreview struct{}
+type Gemini25ProPreview struct {
+	Tools GoogleTool
+	// StructuredOutput represents a subset of the OpenAPI 3.0 Schema Object. Refer to gemini documentation for complete and up-to-date information. An example structure could be:
+	//
+	// 	var schemaGoogle = map[string]any{
+	// 		"type": "object",
+	// 		"properties": map[string]any{
+	// 			"final_answer": map[string]any{"type": "string"},
+	// 			"valuation": map[string]any{
+	// 				"type": "number",
+	// 			},
+	// 		},
+	// 	}
+	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []GoogleImagePayload
+}
 
 func (g Gemini25ProPreview) GetName() string {
 	return Gemini25ProPreviewModel
