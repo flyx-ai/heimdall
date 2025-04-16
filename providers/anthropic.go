@@ -77,16 +77,16 @@ func (a Anthropic) CompleteResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		var systemMsg string
-		var userMsg string
-		for _, msg := range req.Messages {
-			if msg.Role == "system" {
-				systemMsg = msg.Content
-			}
-			if msg.Role == "user" {
-				userMsg = msg.Content
-			}
-		}
+		// var systemMsg string
+		// var userMsg string
+		// for _, msg := range req.Messages {
+		// 	if msg.Role == "system" {
+		// 		systemMsg = msg.Content
+		// 	}
+		// 	if msg.Role == "user" {
+		// 		userMsg = msg.Content
+		// 	}
+		// }
 
 		req.Tags["request_type"] = "completion"
 
@@ -97,8 +97,8 @@ func (a Anthropic) CompleteResponse(
 					Description: "start of call to CompleteResponse",
 				},
 			},
-			SystemMsg: systemMsg,
-			UserMsg:   userMsg,
+			SystemMsg: req.SystemMessage,
+			UserMsg:   req.UserMessage,
 			Start:     time.Now(),
 		}
 	}
@@ -141,17 +141,15 @@ func (a Anthropic) doRequest(
 	key string,
 ) (response.Completion, int, error) {
 	var systemMsg string
-	messages := []anthropicMsg{}
-	for _, msg := range req.Messages {
-		if msg.Role == "system" {
-			systemMsg = msg.Content
-		}
-		if msg.Role == "user" || msg.Role == "assistant" {
-			messages = append(messages, anthropicMsg{
-				Role:    msg.Role,
-				Content: msg.Content,
-			})
-		}
+	messages := []anthropicMsg{
+		{
+			Role:    "system",
+			Content: req.SystemMessage,
+		},
+		{
+			Role:    "user",
+			Content: req.UserMessage,
+		},
 	}
 
 	apiReq := anthropicRequest{
@@ -286,17 +284,6 @@ func (a Anthropic) StreamResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		var systemMsg string
-		var userMsg string
-		for _, msg := range req.Messages {
-			if msg.Role == "system" {
-				systemMsg = msg.Content
-			}
-			if msg.Role == "user" {
-				userMsg = msg.Content
-			}
-		}
-
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -306,8 +293,8 @@ func (a Anthropic) StreamResponse(
 					Description: "start of call to StreamResponse",
 				},
 			},
-			SystemMsg: systemMsg,
-			UserMsg:   userMsg,
+			SystemMsg: req.SystemMessage,
+			UserMsg:   req.UserMessage,
 			Start:     time.Now(),
 		}
 	}
