@@ -32,12 +32,7 @@ func main() {
 			Model: models.O3Mini{
 				StructuredOutput: nil,
 			},
-			Messages: []request.Message{
-				{
-					Role:    "user",
-					Content: "analyze the current performance of anthropic",
-				},
-			},
+			UserMessage: "analyze the current performance of anthropic",
 			Temperature: 0,
 			TopP:        0,
 			Tags:        map[string]string{},

@@ -31,16 +31,6 @@ func (v *VertexAI) CompleteResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		var systemMsg string
-		var userMsg string
-		for _, msg := range req.Messages {
-			if msg.Role == "system" {
-				systemMsg = msg.Content
-			}
-			if msg.Role == "user" {
-				userMsg = msg.Content
-			}
-		}
 
 		req.Tags["request_type"] = "streaming"
 
@@ -51,8 +41,8 @@ func (v *VertexAI) CompleteResponse(
 					Description: "start of call to StreamResponse",
 				},
 			},
-			SystemMsg: systemMsg,
-			UserMsg:   userMsg,
+			SystemMsg: req.SystemMessage,
+			UserMsg:   req.UserMessage,
 			Start:     time.Now(),
 		}
 	}
@@ -76,17 +66,6 @@ func (v *VertexAI) StreamResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		var systemMsg string
-		var userMsg string
-		for _, msg := range req.Messages {
-			if msg.Role == "system" {
-				systemMsg = msg.Content
-			}
-			if msg.Role == "user" {
-				userMsg = msg.Content
-			}
-		}
-
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -96,8 +75,8 @@ func (v *VertexAI) StreamResponse(
 					Description: "start of call to StreamResponse",
 				},
 			},
-			SystemMsg: systemMsg,
-			UserMsg:   userMsg,
+			SystemMsg: req.SystemMessage,
+			UserMsg:   req.UserMessage,
 			Start:     time.Now(),
 		}
 	}
@@ -138,37 +117,30 @@ func (v *VertexAI) doRequest(
 	// TODO: system instructions seems to not work with current SDK version
 	// systemInstructions := ""
 	var parts []*genai.Content
-	for _, msg := range req.Messages {
-		// if msg.Role == "system" {
-		// 	systemInstructions = msg.Content
-		// }
-		if msg.Role == "user" {
-			parts = append(
-				parts,
-				genai.NewContentFromText(msg.Content, genai.RoleUser),
-			)
-		}
-		if msg.Role == "file" {
-			parts = append(
-				parts,
-				genai.NewContentFromURI(
-					msg.Content,
-					string(msg.FileType),
-					genai.RoleUser,
-				),
-			)
-		}
-		if msg.Role == "bytes" {
-			parts = append(
-				parts,
-				genai.NewContentFromBytes(
-					[]byte(msg.Content),
-					string(msg.FileType),
-					genai.RoleUser,
-				),
-			)
-		}
-	}
+	parts = append(
+		parts,
+		genai.NewContentFromText(req.UserMessage, genai.RoleUser),
+	)
+	// if msg.Role == "file" {
+	// 	parts = append(
+	// 		parts,
+	// 		genai.NewContentFromURI(
+	// 			msg.Content,
+	// 			string(msg.FileType),
+	// 			genai.RoleUser,
+	// 		),
+	// 	)
+	// }
+	// if msg.Role == "bytes" {
+	// 	parts = append(
+	// 		parts,
+	// 		genai.NewContentFromBytes(
+	// 			[]byte(msg.Content),
+	// 			string(msg.FileType),
+	// 			genai.RoleUser,
+	// 		),
+	// 	)
+	// }
 
 	stream := v.vertexAIClient.Models.GenerateContentStream(
 		ctx,

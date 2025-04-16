@@ -27,8 +27,10 @@ const (
 )
 
 type Completion struct {
-	Model       models.Model
-	Messages    []Message
+	Model         models.Model
+	SystemMessage string
+	UserMessage   string
+	// Messages    []Message
 	Fallback    []models.Model
 	Temperature float32
 	TopP        float32

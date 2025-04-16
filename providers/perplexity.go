@@ -39,17 +39,6 @@ func (p Perplexity) CompleteResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		var systemMsg string
-		var userMsg string
-		for _, msg := range req.Messages {
-			if msg.Role == "system" {
-				systemMsg = msg.Content
-			}
-			if msg.Role == "user" {
-				userMsg = msg.Content
-			}
-		}
-
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -59,8 +48,8 @@ func (p Perplexity) CompleteResponse(
 					Description: "start of call to StreamResponse",
 				},
 			},
-			SystemMsg: systemMsg,
-			UserMsg:   userMsg,
+			SystemMsg: req.SystemMessage,
+			UserMsg:   req.UserMessage,
 			Start:     time.Now(),
 		}
 	}
@@ -101,13 +90,15 @@ func (p Perplexity) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
-	messages := make([]requestMessage, len(req.Messages))
-	for i, msg := range req.Messages {
-		messages[i] = requestMessage(requestMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
-	}
+	messages := make([]requestMessage, 2)
+	messages[0] = requestMessage(requestMessage{
+		Role:    "system",
+		Content: req.SystemMessage,
+	})
+	messages[1] = requestMessage(requestMessage{
+		Role:    "user",
+		Content: req.UserMessage,
+	})
 
 	apiReq := openAIRequest{
 		Model:         req.Model.GetName(),
@@ -221,17 +212,6 @@ func (p Perplexity) StreamResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		var systemMsg string
-		var userMsg string
-		for _, msg := range req.Messages {
-			if msg.Role == "system" {
-				systemMsg = msg.Content
-			}
-			if msg.Role == "user" {
-				userMsg = msg.Content
-			}
-		}
-
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -241,8 +221,8 @@ func (p Perplexity) StreamResponse(
 					Description: "start of call to StreamResponse",
 				},
 			},
-			SystemMsg: systemMsg,
-			UserMsg:   userMsg,
+			SystemMsg: req.SystemMessage,
+			UserMsg:   req.UserMessage,
 			Start:     time.Now(),
 		}
 	}

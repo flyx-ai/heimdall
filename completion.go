@@ -16,17 +16,6 @@ func (r *Router) Complete(
 ) (response.Completion, error) {
 	now := time.Now()
 
-	var systemMsg string
-	var userMsg string
-	for _, msg := range req.Messages {
-		if msg.Role == "system" {
-			systemMsg = msg.Content
-		}
-		if msg.Role == "user" {
-			userMsg = msg.Content
-		}
-	}
-
 	req.Tags["request_type"] = "completion"
 
 	requestLog := response.Logging{
@@ -36,8 +25,8 @@ func (r *Router) Complete(
 				Description: "start of call to Complete",
 			},
 		},
-		SystemMsg: systemMsg,
-		UserMsg:   userMsg,
+		SystemMsg: req.SystemMessage,
+		UserMsg:   req.UserMessage,
 		Start:     now,
 	}
 

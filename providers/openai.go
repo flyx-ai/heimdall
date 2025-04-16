@@ -120,7 +120,8 @@ func (oa Openai) doRequest(
 		request, err := prepareGPT41Request(
 			openaiRequest,
 			req.Model,
-			req.Messages,
+			req.SystemMessage,
+			req.UserMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -136,7 +137,8 @@ func (oa Openai) doRequest(
 		request, err := prepareGPT4ORequest(
 			openaiRequest,
 			req.Model,
-			req.Messages,
+			req.SystemMessage,
+			req.UserMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -152,7 +154,8 @@ func (oa Openai) doRequest(
 		request, err := prepareGPT4OMiniRequest(
 			openaiRequest,
 			req.Model,
-			req.Messages,
+			req.SystemMessage,
+			req.UserMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -168,7 +171,8 @@ func (oa Openai) doRequest(
 		request, err := prepareO1Request(
 			openaiRequest,
 			req.Model,
-			req.Messages,
+			req.SystemMessage,
+			req.UserMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -184,7 +188,8 @@ func (oa Openai) doRequest(
 		request, err := prepareO3MiniRequest(
 			openaiRequest,
 			req.Model,
-			req.Messages,
+			req.SystemMessage,
+			req.UserMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -198,13 +203,15 @@ func (oa Openai) doRequest(
 		requestBody = body
 
 	default:
-		requestMessages := make([]requestMessage, len(req.Messages))
-		for i, msg := range req.Messages {
-			requestMessages[i] = requestMessage(requestMessage{
-				Role:    msg.Role,
-				Content: msg.Content,
-			})
-		}
+		requestMessages := make([]requestMessage, 2)
+		requestMessages[0] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: req.SystemMessage,
+		})
+		requestMessages[1] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: req.UserMessage,
+		})
 
 		openaiRequest.Messages = requestMessages
 		body, err := json.Marshal(openaiRequest)
@@ -410,17 +417,6 @@ func (oa Openai) CompleteResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		var systemMsg string
-		var userMsg string
-		for _, msg := range req.Messages {
-			if msg.Role == "system" {
-				systemMsg = msg.Content
-			}
-			if msg.Role == "user" {
-				userMsg = msg.Content
-			}
-		}
-
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -430,8 +426,8 @@ func (oa Openai) CompleteResponse(
 					Description: "start of call to StreamResponse",
 				},
 			},
-			SystemMsg: systemMsg,
-			UserMsg:   userMsg,
+			SystemMsg: req.SystemMessage,
+			UserMsg:   req.UserMessage,
 			Start:     time.Now(),
 		}
 	}
@@ -473,17 +469,6 @@ func (oa Openai) StreamResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		var systemMsg string
-		var userMsg string
-		for _, msg := range req.Messages {
-			if msg.Role == "system" {
-				systemMsg = msg.Content
-			}
-			if msg.Role == "user" {
-				userMsg = msg.Content
-			}
-		}
-
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -493,8 +478,8 @@ func (oa Openai) StreamResponse(
 					Description: "start of call to StreamResponse",
 				},
 			},
-			SystemMsg: systemMsg,
-			UserMsg:   userMsg,
+			SystemMsg: req.SystemMessage,
+			UserMsg:   req.UserMessage,
 			Start:     time.Now(),
 		}
 	}
@@ -532,7 +517,8 @@ var _ LLMProvider = new(Openai)
 func prepareGPT4ORequest(
 	request openAIRequest,
 	requestedModel models.Model,
-	messages []request.Message,
+	systemInst string,
+	userMsg string,
 ) (openAIRequest, error) {
 	gpt4O, ok := requestedModel.(models.GPT4O)
 	if !ok {
@@ -578,17 +564,13 @@ func prepareGPT4ORequest(
 			reqMsgWithImage[0].Content = append(reqMsgWithImage[0].Content, ii)
 		}
 
-		for _, msg := range messages {
-			if msg.Role == "user" {
-				reqMsgWithImage[0].Content = append(
-					reqMsgWithImage[0].Content,
-					fileInputMessage{
-						Type: "text",
-						Text: msg.Content,
-					},
-				)
-			}
-		}
+		reqMsgWithImage[0].Content = append(
+			reqMsgWithImage[0].Content,
+			fileInputMessage{
+				Type: "text",
+				Text: userMsg,
+			},
+		)
 
 		request.Messages = reqMsgWithImage
 
@@ -620,30 +602,27 @@ func prepareGPT4ORequest(
 		}
 
 		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
-		for _, msg := range messages {
-			if msg.Role == "user" {
-				reqMsgWithFile[0].Content = append(
-					reqMsgWithFile[0].Content,
-					fileInputMessage{
-						Type: "text",
-						Text: msg.Content,
-					},
-				)
-			}
-		}
-
+		reqMsgWithFile[0].Content = append(
+			reqMsgWithFile[0].Content,
+			fileInputMessage{
+				Type: "text",
+				Text: userMsg,
+			},
+		)
 		request.Messages = reqMsgWithFile
 
 		return request, nil
 	}
 
-	requestMessages := make([]requestMessage, len(messages))
-	for i, msg := range messages {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
-	}
+	requestMessages := make([]requestMessage, 2)
+	requestMessages[0] = requestMessage(requestMessage{
+		Role:    "system",
+		Content: systemInst,
+	})
+	requestMessages[1] = requestMessage(requestMessage{
+		Role:    "user",
+		Content: userMsg,
+	})
 
 	request.Messages = requestMessages
 
@@ -653,7 +632,8 @@ func prepareGPT4ORequest(
 func prepareGPT4OMiniRequest(
 	request openAIRequest,
 	requestedModel models.Model,
-	messages []request.Message,
+	systemInst string,
+	userMsg string,
 ) (openAIRequest, error) {
 	gpt4OMini, ok := requestedModel.(models.GPT4OMini)
 	if !ok {
@@ -699,18 +679,13 @@ func prepareGPT4OMiniRequest(
 			reqMsgWithImage[0].Content = append(reqMsgWithImage[0].Content, ii)
 		}
 
-		for _, msg := range messages {
-			if msg.Role == "user" {
-				reqMsgWithImage[0].Content = append(
-					reqMsgWithImage[0].Content,
-					fileInputMessage{
-						Type: "text",
-						Text: msg.Content,
-					},
-				)
-			}
-		}
-
+		reqMsgWithImage[0].Content = append(
+			reqMsgWithImage[0].Content,
+			fileInputMessage{
+				Type: "text",
+				Text: userMsg,
+			},
+		)
 		request.Messages = reqMsgWithImage
 
 		return request, nil
@@ -741,30 +716,28 @@ func prepareGPT4OMiniRequest(
 		}
 
 		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
-		for _, msg := range messages {
-			if msg.Role == "user" {
-				reqMsgWithFile[0].Content = append(
-					reqMsgWithFile[0].Content,
-					fileInputMessage{
-						Type: "text",
-						Text: msg.Content,
-					},
-				)
-			}
-		}
+		reqMsgWithFile[0].Content = append(
+			reqMsgWithFile[0].Content,
+			fileInputMessage{
+				Type: "text",
+				Text: userMsg,
+			},
+		)
 
 		request.Messages = reqMsgWithFile
 
 		return request, nil
 	}
 
-	requestMessages := make([]requestMessage, len(messages))
-	for i, msg := range messages {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
-	}
+	requestMessages := make([]requestMessage, 2)
+	requestMessages[0] = requestMessage(requestMessage{
+		Role:    "system",
+		Content: systemInst,
+	})
+	requestMessages[1] = requestMessage(requestMessage{
+		Role:    "user",
+		Content: userMsg,
+	})
 
 	request.Messages = requestMessages
 
@@ -774,7 +747,8 @@ func prepareGPT4OMiniRequest(
 func prepareO1Request(
 	request openAIRequest,
 	requestedModel models.Model,
-	messages []request.Message,
+	systemInst string,
+	userMsg string,
 ) (openAIRequest, error) {
 	o1, ok := requestedModel.(models.O1)
 	if !ok {
@@ -819,18 +793,13 @@ func prepareO1Request(
 			reqMsgWithImage[0].Content = append(reqMsgWithImage[0].Content, ii)
 		}
 
-		for _, msg := range messages {
-			if msg.Role == "user" {
-				reqMsgWithImage[0].Content = append(
-					reqMsgWithImage[0].Content,
-					fileInputMessage{
-						Type: "text",
-						Text: msg.Content,
-					},
-				)
-			}
-		}
-
+		reqMsgWithImage[0].Content = append(
+			reqMsgWithImage[0].Content,
+			fileInputMessage{
+				Type: "text",
+				Text: userMsg,
+			},
+		)
 		request.Messages = reqMsgWithImage
 
 		return request, nil
@@ -861,30 +830,28 @@ func prepareO1Request(
 		}
 
 		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
-		for _, msg := range messages {
-			if msg.Role == "user" {
-				reqMsgWithFile[0].Content = append(
-					reqMsgWithFile[0].Content,
-					fileInputMessage{
-						Type: "text",
-						Text: msg.Content,
-					},
-				)
-			}
-		}
+		reqMsgWithFile[0].Content = append(
+			reqMsgWithFile[0].Content,
+			fileInputMessage{
+				Type: "text",
+				Text: userMsg,
+			},
+		)
 
 		request.Messages = reqMsgWithFile
 
 		return request, nil
 	}
 
-	requestMessages := make([]requestMessage, len(messages))
-	for i, msg := range messages {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
-	}
+	requestMessages := make([]requestMessage, 2)
+	requestMessages[0] = requestMessage(requestMessage{
+		Role:    "system",
+		Content: systemInst,
+	})
+	requestMessages[1] = requestMessage(requestMessage{
+		Role:    "user",
+		Content: userMsg,
+	})
 
 	request.Messages = requestMessages
 
@@ -894,7 +861,8 @@ func prepareO1Request(
 func prepareGPT41Request(
 	request openAIRequest,
 	requestedModel models.Model,
-	messages []request.Message,
+	systemInst string,
+	userMsg string,
 ) (openAIRequest, error) {
 	gpt41, ok := requestedModel.(models.GPT41)
 	if !ok {
@@ -939,17 +907,13 @@ func prepareGPT41Request(
 			reqMsgWithImage[0].Content = append(reqMsgWithImage[0].Content, ii)
 		}
 
-		for _, msg := range messages {
-			if msg.Role == "user" {
-				reqMsgWithImage[0].Content = append(
-					reqMsgWithImage[0].Content,
-					fileInputMessage{
-						Type: "text",
-						Text: msg.Content,
-					},
-				)
-			}
-		}
+		reqMsgWithImage[0].Content = append(
+			reqMsgWithImage[0].Content,
+			fileInputMessage{
+				Type: "text",
+				Text: userMsg,
+			},
+		)
 
 		request.Messages = reqMsgWithImage
 
@@ -981,30 +945,28 @@ func prepareGPT41Request(
 		}
 
 		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
-		for _, msg := range messages {
-			if msg.Role == "user" {
-				reqMsgWithFile[0].Content = append(
-					reqMsgWithFile[0].Content,
-					fileInputMessage{
-						Type: "text",
-						Text: msg.Content,
-					},
-				)
-			}
-		}
+		reqMsgWithFile[0].Content = append(
+			reqMsgWithFile[0].Content,
+			fileInputMessage{
+				Type: "text",
+				Text: userMsg,
+			},
+		)
 
 		request.Messages = reqMsgWithFile
 
 		return request, nil
 	}
 
-	requestMessages := make([]requestMessage, len(messages))
-	for i, msg := range messages {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
-	}
+	requestMessages := make([]requestMessage, 2)
+	requestMessages[0] = requestMessage(requestMessage{
+		Role:    "system",
+		Content: systemInst,
+	})
+	requestMessages[1] = requestMessage(requestMessage{
+		Role:    "user",
+		Content: userMsg,
+	})
 
 	request.Messages = requestMessages
 
@@ -1014,7 +976,8 @@ func prepareGPT41Request(
 func prepareO3MiniRequest(
 	request openAIRequest,
 	requestedModel models.Model,
-	messages []request.Message,
+	systemInst string,
+	userMsg string,
 ) (openAIRequest, error) {
 	o3Mini, ok := requestedModel.(models.O3Mini)
 	if !ok {
@@ -1030,13 +993,15 @@ func prepareO3MiniRequest(
 		}
 	}
 
-	requestMessages := make([]requestMessage, len(messages))
-	for i, msg := range messages {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
-	}
+	requestMessages := make([]requestMessage, 2)
+	requestMessages[0] = requestMessage(requestMessage{
+		Role:    "system",
+		Content: systemInst,
+	})
+	requestMessages[1] = requestMessage(requestMessage{
+		Role:    "user",
+		Content: userMsg,
+	})
 
 	request.Messages = requestMessages
 

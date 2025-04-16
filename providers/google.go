@@ -106,17 +106,6 @@ func (g Google) CompleteResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		var systemMsg string
-		var userMsg string
-		for _, msg := range req.Messages {
-			if msg.Role == "system" {
-				systemMsg = msg.Content
-			}
-			if msg.Role == "user" {
-				userMsg = msg.Content
-			}
-		}
-
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -126,8 +115,8 @@ func (g Google) CompleteResponse(
 					Description: "start of call to StreamResponse",
 				},
 			},
-			SystemMsg: systemMsg,
-			UserMsg:   userMsg,
+			SystemMsg: req.SystemMessage,
+			UserMsg:   req.UserMessage,
 			Start:     time.Now(),
 		}
 	}
@@ -269,17 +258,6 @@ func (g Google) StreamResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		var systemMsg string
-		var userMsg string
-		for _, msg := range req.Messages {
-			if msg.Role == "system" {
-				systemMsg = msg.Content
-			}
-			if msg.Role == "user" {
-				userMsg = msg.Content
-			}
-		}
-
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -289,8 +267,8 @@ func (g Google) StreamResponse(
 					Description: "start of call to StreamResponse",
 				},
 			},
-			SystemMsg: systemMsg,
-			UserMsg:   userMsg,
+			SystemMsg: req.SystemMessage,
+			UserMsg:   req.UserMessage,
 			Start:     time.Now(),
 		}
 	}
@@ -345,7 +323,8 @@ func (g Google) doRequest(
 		request, err := prepareGemini15FlashRequest(
 			geminiReq,
 			model,
-			req.Messages,
+			req.SystemMessage,
+			req.UserMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -361,7 +340,8 @@ func (g Google) doRequest(
 		request, err := prepareGemini15ProRequest(
 			geminiReq,
 			model,
-			req.Messages,
+			req.SystemMessage,
+			req.UserMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -377,7 +357,8 @@ func (g Google) doRequest(
 		request, err := prepareGemini20FlashRequest(
 			geminiReq,
 			model,
-			req.Messages,
+			req.SystemMessage,
+			req.UserMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -393,7 +374,8 @@ func (g Google) doRequest(
 		request, err := prepareGemini20FlashLiteRequest(
 			geminiReq,
 			model,
-			req.Messages,
+			req.SystemMessage,
+			req.UserMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -409,7 +391,8 @@ func (g Google) doRequest(
 		request, err := prepareGemini25ProPreviewRequest(
 			geminiReq,
 			model,
-			req.Messages,
+			req.SystemMessage,
+			req.UserMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -506,7 +489,8 @@ var _ LLMProvider = new(Google)
 func prepareGemini15FlashRequest(
 	request geminiRequest,
 	requestedModel models.Model,
-	messages []request.Message,
+	systemInst string,
+	userMsg string,
 ) (geminiRequest, error) {
 	// TODO: implement file, image etc on model
 	_, ok := requestedModel.(models.Gemini15Flash)
@@ -516,21 +500,16 @@ func prepareGemini15FlashRequest(
 		)
 	}
 
-	for _, msg := range messages {
-		if msg.Role == "system" {
-			request.SystemInstruction.Parts = part{
-				Text: msg.Content,
-			}
-		}
-		if msg.Role == "user" {
-			request.Contents[0].Parts = append(
-				request.Contents[0].Parts,
-				part{
-					Text: msg.Content,
-				},
-			)
-		}
+	request.SystemInstruction.Parts = part{
+		Text: systemInst,
 	}
+
+	request.Contents[0].Parts = append(
+		request.Contents[0].Parts,
+		part{
+			Text: userMsg,
+		},
+	)
 
 	return request, nil
 }
@@ -538,7 +517,8 @@ func prepareGemini15FlashRequest(
 func prepareGemini15ProRequest(
 	request geminiRequest,
 	requestedModel models.Model,
-	messages []request.Message,
+	systemInst string,
+	userMsg string,
 ) (geminiRequest, error) {
 	model, ok := requestedModel.(models.Gemini15Pro)
 	if !ok {
@@ -547,21 +527,16 @@ func prepareGemini15ProRequest(
 		)
 	}
 
-	for _, msg := range messages {
-		if msg.Role == "system" {
-			request.SystemInstruction.Parts = part{
-				Text: msg.Content,
-			}
-		}
-		if msg.Role == "user" {
-			request.Contents[0].Parts = append(
-				request.Contents[0].Parts,
-				part{
-					Text: msg.Content,
-				},
-			)
-		}
+	request.SystemInstruction.Parts = part{
+		Text: systemInst,
 	}
+
+	request.Contents[0].Parts = append(
+		request.Contents[0].Parts,
+		part{
+			Text: userMsg,
+		},
+	)
 
 	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
 		return geminiRequest{}, errors.New(
@@ -606,7 +581,8 @@ func prepareGemini15ProRequest(
 func prepareGemini20FlashRequest(
 	request geminiRequest,
 	requestedModel models.Model,
-	messages []request.Message,
+	systemInst string,
+	userMsg string,
 ) (geminiRequest, error) {
 	model, ok := requestedModel.(models.Gemini20Flash)
 	if !ok {
@@ -615,21 +591,16 @@ func prepareGemini20FlashRequest(
 		)
 	}
 
-	for _, msg := range messages {
-		if msg.Role == "system" {
-			request.SystemInstruction.Parts = part{
-				Text: msg.Content,
-			}
-		}
-		if msg.Role == "user" {
-			request.Contents[0].Parts = append(
-				request.Contents[0].Parts,
-				part{
-					Text: msg.Content,
-				},
-			)
-		}
+	request.SystemInstruction.Parts = part{
+		Text: systemInst,
 	}
+
+	request.Contents[0].Parts = append(
+		request.Contents[0].Parts,
+		part{
+			Text: userMsg,
+		},
+	)
 
 	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
 		return geminiRequest{}, errors.New(
@@ -678,7 +649,8 @@ func prepareGemini20FlashRequest(
 func prepareGemini20FlashLiteRequest(
 	request geminiRequest,
 	requestedModel models.Model,
-	messages []request.Message,
+	systemInst string,
+	userMsg string,
 ) (geminiRequest, error) {
 	model, ok := requestedModel.(models.Gemini20FlashLite)
 	if !ok {
@@ -687,21 +659,16 @@ func prepareGemini20FlashLiteRequest(
 		)
 	}
 
-	for _, msg := range messages {
-		if msg.Role == "system" {
-			request.SystemInstruction.Parts = part{
-				Text: msg.Content,
-			}
-		}
-		if msg.Role == "user" {
-			request.Contents[0].Parts = append(
-				request.Contents[0].Parts,
-				part{
-					Text: msg.Content,
-				},
-			)
-		}
+	request.SystemInstruction.Parts = part{
+		Text: systemInst,
 	}
+
+	request.Contents[0].Parts = append(
+		request.Contents[0].Parts,
+		part{
+			Text: userMsg,
+		},
+	)
 
 	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
 		return geminiRequest{}, errors.New(
@@ -750,7 +717,8 @@ func prepareGemini20FlashLiteRequest(
 func prepareGemini25ProPreviewRequest(
 	request geminiRequest,
 	requestedModel models.Model,
-	messages []request.Message,
+	systemInst string,
+	userMsg string,
 ) (geminiRequest, error) {
 	model, ok := requestedModel.(models.Gemini25ProPreview)
 	if !ok {
@@ -759,21 +727,16 @@ func prepareGemini25ProPreviewRequest(
 		)
 	}
 
-	for _, msg := range messages {
-		if msg.Role == "system" {
-			request.SystemInstruction.Parts = part{
-				Text: msg.Content,
-			}
-		}
-		if msg.Role == "user" {
-			request.Contents[0].Parts = append(
-				request.Contents[0].Parts,
-				part{
-					Text: msg.Content,
-				},
-			)
-		}
+	request.SystemInstruction.Parts = part{
+		Text: systemInst,
 	}
+
+	request.Contents[0].Parts = append(
+		request.Contents[0].Parts,
+		part{
+			Text: userMsg,
+		},
+	)
 
 	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
 		return geminiRequest{}, errors.New(

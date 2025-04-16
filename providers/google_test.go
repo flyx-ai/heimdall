@@ -23,17 +23,8 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 	}
 	google := providers.NewGoogle([]string{os.Getenv("GOOGLE_API_KEY")})
 
-	msgs := []request.Message{
-		{
-			Role:    "system",
-			Content: "you are a helpful assistant.",
-		},
-		{
-			Role:    "user",
-			Content: "please make a detailed analysis of the NVIDIA's current valuation.",
-		},
-	}
-
+	systemInst := "you are a helpful assistant."
+	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
 	tests := []struct {
 		name string
 		req  request.Completion
@@ -41,9 +32,10 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with gemini 1.5 flash",
 			req: request.Completion{
-				Model:       models.Gemini15Flash{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Gemini15Flash{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -52,9 +44,10 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with gemini 1.5 pro",
 			req: request.Completion{
-				Model:       models.Gemini15Pro{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Gemini15Pro{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -63,9 +56,10 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with gemini 2.0 flash",
 			req: request.Completion{
-				Model:       models.Gemini20Flash{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Gemini20Flash{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -74,9 +68,10 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with gemini 2.0 flash lite",
 			req: request.Completion{
-				Model:       models.Gemini20FlashLite{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Gemini20FlashLite{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -85,9 +80,10 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with gemini 2.5 pro experimental",
 			req: request.Completion{
-				Model:       models.Gemini25ProPreview{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Gemini25ProPreview{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -125,16 +121,8 @@ func TestGoogleModelsWithStreaming(t *testing.T) {
 	}
 	google := providers.NewGoogle([]string{os.Getenv("GOOGLE_API_KEY")})
 
-	msgs := []request.Message{
-		{
-			Role:    "system",
-			Content: "you are a helpful assistant.",
-		},
-		{
-			Role:    "user",
-			Content: "please make a detailed analysis of the NVIDIA's current valuation.",
-		},
-	}
+	systemInst := "you are a helpful assistant."
+	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
 
 	tests := []struct {
 		name string
@@ -143,9 +131,10 @@ func TestGoogleModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with gemini 1.5 flash",
 			req: request.Completion{
-				Model:       models.Gemini15Flash{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Gemini15Flash{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -154,9 +143,10 @@ func TestGoogleModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream  request with gemini 1.5 pro",
 			req: request.Completion{
-				Model:       models.Gemini15Pro{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Gemini15Pro{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -165,9 +155,10 @@ func TestGoogleModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with gemini 2.0 flash",
 			req: request.Completion{
-				Model:       models.Gemini20Flash{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Gemini20Flash{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -176,9 +167,10 @@ func TestGoogleModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with gemini 2.0 flash lite",
 			req: request.Completion{
-				Model:       models.Gemini20FlashLite{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Gemini20FlashLite{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -187,9 +179,10 @@ func TestGoogleModelsWithStreaming(t *testing.T) {
 		{
 			name: "should complete request with gemini 2.5 pro experimental",
 			req: request.Completion{
-				Model:       models.Gemini25ProPreview{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Gemini25ProPreview{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
