@@ -25,16 +25,8 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 		[]string{os.Getenv("ANTHROPIC_API_KEY")},
 	)
 
-	msgs := []request.Message{
-		{
-			Role:    "system",
-			Content: "you are a helpful assistant.",
-		},
-		{
-			Role:    "user",
-			Content: "please make a detailed analysis of the NVIDIA's current valuation.",
-		},
-	}
+	systemInst := "you are a helpful assistant."
+	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
 
 	tests := []struct {
 		name string
@@ -43,9 +35,10 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with claude-3-haiku",
 			req: request.Completion{
-				Model:       models.Claude35Haiku{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Claude35Haiku{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -54,9 +47,10 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with claude-35-sonnet",
 			req: request.Completion{
-				Model:       models.Claude35Sonnet{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Claude35Sonnet{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -65,9 +59,10 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with claude-3-opus",
 			req: request.Completion{
-				Model:       models.Claude3Opus{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Claude3Opus{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -76,9 +71,10 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with claude-37-sonnet",
 			req: request.Completion{
-				Model:       models.Claude37Sonnet{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Claude37Sonnet{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -118,16 +114,8 @@ func TestAnthropicModelsWithStreaming(t *testing.T) {
 		[]string{os.Getenv("ANTHROPIC_API_KEY")},
 	)
 
-	msgs := []request.Message{
-		{
-			Role:    "system",
-			Content: "you are a helpful assistant.",
-		},
-		{
-			Role:    "user",
-			Content: "please make a detailed analysis of the NVIDIA's current valuation.",
-		},
-	}
+	systemInst := "you are a helpful assistant."
+	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
 
 	tests := []struct {
 		name string
@@ -136,9 +124,10 @@ func TestAnthropicModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with claude-3-haiku",
 			req: request.Completion{
-				Model:       models.Claude35Haiku{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Claude35Haiku{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -147,9 +136,10 @@ func TestAnthropicModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with claude-35-sonnet",
 			req: request.Completion{
-				Model:       models.Claude35Sonnet{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Claude35Sonnet{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -158,9 +148,10 @@ func TestAnthropicModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with claude-3-opus",
 			req: request.Completion{
-				Model:       models.Claude3Opus{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Claude3Opus{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -169,9 +160,10 @@ func TestAnthropicModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with claude-37-sonnet",
 			req: request.Completion{
-				Model:       models.Claude37Sonnet{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Claude37Sonnet{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},

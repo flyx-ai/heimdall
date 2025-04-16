@@ -21,17 +21,6 @@ func (r *Router) Stream(
 		return response.Completion{}, ErrNoChunkHandler
 	}
 
-	var systemMsg string
-	var userMsg string
-	for _, msg := range req.Messages {
-		if msg.Role == "system" {
-			systemMsg = msg.Content
-		}
-		if msg.Role == "user" {
-			userMsg = msg.Content
-		}
-	}
-
 	req.Tags["request_type"] = "stream"
 
 	models := append([]models.Model{req.Model}, req.Fallback...)
@@ -45,8 +34,8 @@ func (r *Router) Stream(
 				Description: "start of call to Stream",
 			},
 		},
-		SystemMsg: systemMsg,
-		UserMsg:   userMsg,
+		SystemMsg: req.SystemMessage,
+		UserMsg:   req.UserMessage,
 		Start:     now,
 	}
 

@@ -22,12 +22,8 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 	}
 	openai := providers.NewOpenAI([]string{os.Getenv("OPENAI_API_KEY")})
 
-	msgs := []request.Message{
-		{
-			Role:    "user",
-			Content: "please make a detailed analysis of the NVIDIA's current valuation.",
-		},
-	}
+	systemInst := "you are a helpful assistant."
+	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
 
 	tests := []struct {
 		name string
@@ -36,9 +32,10 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with GPT4",
 			req: request.Completion{
-				Model:       models.GPT4{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.GPT4{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -47,9 +44,10 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with GPT4Turbo",
 			req: request.Completion{
-				Model:       models.GPT4Turbo{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.GPT4Turbo{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -58,9 +56,10 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with GPT4O",
 			req: request.Completion{
-				Model:       models.GPT4O{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.GPT4O{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -69,9 +68,10 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with GPT4OMini",
 			req: request.Completion{
-				Model:       models.GPT4OMini{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.GPT4OMini{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -80,9 +80,10 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with O1",
 			req: request.Completion{
-				Model:       models.O1{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.O1{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -91,9 +92,10 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with O1Mini",
 			req: request.Completion{
-				Model:       models.O1Mini{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.O1Mini{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -102,9 +104,10 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with O1Preview",
 			req: request.Completion{
-				Model:       models.O1Preview{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.O1Preview{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -113,9 +116,10 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with gpt 4.1",
 			req: request.Completion{
-				Model:       models.GPT41{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.GPT41{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -153,12 +157,8 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 	}
 	openai := providers.NewOpenAI([]string{os.Getenv("OPENAI_API_KEY")})
 
-	msgs := []request.Message{
-		{
-			Role:    "user",
-			Content: "please make a detailed analysis of the NVIDIA's current valuation.",
-		},
-	}
+	systemInst := "you are a helpful assistant."
+	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
 
 	tests := []struct {
 		name string
@@ -167,9 +167,10 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with GPT4",
 			req: request.Completion{
-				Model:       models.GPT4{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.GPT4{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -178,9 +179,10 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with GPT4Turbo",
 			req: request.Completion{
-				Model:       models.GPT4Turbo{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.GPT4Turbo{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -189,9 +191,10 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with GPT4O",
 			req: request.Completion{
-				Model:       models.GPT4O{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.GPT4O{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -200,9 +203,10 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with GPT4OMini",
 			req: request.Completion{
-				Model:       models.GPT4OMini{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.GPT4OMini{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -211,9 +215,10 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with O1",
 			req: request.Completion{
-				Model:       models.O1{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.O1{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -222,9 +227,10 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with O1Mini",
 			req: request.Completion{
-				Model:       models.O1Mini{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.O1Mini{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -233,9 +239,10 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with O1Preview",
 			req: request.Completion{
-				Model:       models.O1Preview{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.O1Preview{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -244,9 +251,10 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 		{
 			name: "should complete request with gpt 4.1",
 			req: request.Completion{
-				Model:       models.GPT41{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.GPT41{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},

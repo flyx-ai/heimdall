@@ -33,16 +33,8 @@ func TestVertexAIModelsWithCompletion(t *testing.T) {
 	)
 	require.NoError(t, err, "error creating VertexAI provider", "error", err)
 
-	msgs := []request.Message{
-		{
-			Role:    "system",
-			Content: "you are a helpful assistant.",
-		},
-		{
-			Role:    "user",
-			Content: "please make a detailed analysis of the NVIDIA's current valuation.",
-		},
-	}
+	systemInst := "you are a helpful assistant."
+	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
 
 	tests := []struct {
 		name string
@@ -51,9 +43,10 @@ func TestVertexAIModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with VertexGemini15Flash",
 			req: request.Completion{
-				Model:       models.VertexGemini15FlashThinking{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.VertexGemini15FlashThinking{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -62,9 +55,10 @@ func TestVertexAIModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with VertexGemini15Pro",
 			req: request.Completion{
-				Model:       models.VertexGemini15Pro{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.VertexGemini15Pro{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -73,9 +67,10 @@ func TestVertexAIModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with VertexGemini20Flash",
 			req: request.Completion{
-				Model:       models.VertexGemini20Flash{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.VertexGemini20Flash{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -84,9 +79,10 @@ func TestVertexAIModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with VertexGemini20FlashLite",
 			req: request.Completion{
-				Model:       models.VertexGemini20FlashLite{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.VertexGemini20FlashLite{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -133,16 +129,8 @@ func TestVertexAIModelsWithStreaming(t *testing.T) {
 	)
 	require.NoError(t, err, "error creating VertexAI provider", "error", err)
 
-	msgs := []request.Message{
-		{
-			Role:    "system",
-			Content: "you are a helpful assistant.",
-		},
-		{
-			Role:    "user",
-			Content: "please make a detailed analysis of the NVIDIA's current valuation.",
-		},
-	}
+	systemInst := "you are a helpful assistant."
+	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
 
 	tests := []struct {
 		name string
@@ -151,9 +139,10 @@ func TestVertexAIModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with VertexGemini15Flash",
 			req: request.Completion{
-				Model:       models.VertexGemini15FlashThinking{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.VertexGemini15FlashThinking{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -162,9 +151,10 @@ func TestVertexAIModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with VertexGemini15Pro",
 			req: request.Completion{
-				Model:       models.VertexGemini15Pro{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.VertexGemini15Pro{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -173,9 +163,10 @@ func TestVertexAIModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with VertexGemini20Flash",
 			req: request.Completion{
-				Model:       models.VertexGemini20Flash{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.VertexGemini20Flash{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -184,9 +175,10 @@ func TestVertexAIModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with VertexGemini20FlashLite",
 			req: request.Completion{
-				Model:       models.VertexGemini20FlashLite{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.VertexGemini20FlashLite{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},

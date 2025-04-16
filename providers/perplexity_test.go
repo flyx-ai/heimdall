@@ -24,16 +24,8 @@ func TestPerplexityModelsWithCompletion(t *testing.T) {
 		[]string{os.Getenv("PERPLEXITY_API_KEY")},
 	)
 
-	msgs := []request.Message{
-		{
-			Role:    "system",
-			Content: "you are a helpful assistant.",
-		},
-		{
-			Role:    "user",
-			Content: "please make a detailed analysis of the NVIDIA's current valuation.",
-		},
-	}
+	systemInst := "you are a helpful assistant."
+	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
 
 	tests := []struct {
 		name string
@@ -42,9 +34,10 @@ func TestPerplexityModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with Sonar",
 			req: request.Completion{
-				Model:       models.Sonar{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Sonar{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -53,9 +46,10 @@ func TestPerplexityModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with SonarPro",
 			req: request.Completion{
-				Model:       models.SonarPro{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.SonarPro{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -64,9 +58,10 @@ func TestPerplexityModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with SonarReasoning",
 			req: request.Completion{
-				Model:       models.SonarReasoning{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.SonarReasoning{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -75,9 +70,10 @@ func TestPerplexityModelsWithCompletion(t *testing.T) {
 		{
 			name: "should complete request with SonarReasoningPro",
 			req: request.Completion{
-				Model:       models.SonarReasoningPro{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.SonarReasoningPro{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -117,16 +113,8 @@ func TestPerplexityModelsWithStreaming(t *testing.T) {
 		[]string{os.Getenv("PERPLEXITY_API_KEY")},
 	)
 
-	msgs := []request.Message{
-		{
-			Role:    "system",
-			Content: "you are a helpful assistant.",
-		},
-		{
-			Role:    "user",
-			Content: "please make a detailed analysis of the NVIDIA's current valuation.",
-		},
-	}
+	systemInst := "you are a helpful assistant."
+	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
 
 	tests := []struct {
 		name string
@@ -135,9 +123,10 @@ func TestPerplexityModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with Sonar",
 			req: request.Completion{
-				Model:       models.Sonar{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.Sonar{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -146,9 +135,10 @@ func TestPerplexityModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with SonarPro",
 			req: request.Completion{
-				Model:       models.SonarPro{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.SonarPro{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -157,9 +147,10 @@ func TestPerplexityModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with SonarReasoning",
 			req: request.Completion{
-				Model:       models.SonarReasoning{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.SonarReasoning{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
@@ -168,9 +159,10 @@ func TestPerplexityModelsWithStreaming(t *testing.T) {
 		{
 			name: "should stream request with SonarReasoningPro",
 			req: request.Completion{
-				Model:       models.SonarReasoningPro{},
-				Messages:    msgs,
-				Temperature: 1,
+				Model:         models.SonarReasoningPro{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
 				Tags: map[string]string{
 					"type": "testing",
 				},
