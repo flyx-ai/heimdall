@@ -149,6 +149,15 @@ func (v *VertexAI) doRequest(
 				genai.NewUserContentFromURI(msg.Content, string(msg.FileType)),
 			)
 		}
+		if msg.Role == "bytes" {
+			parts = append(
+				parts,
+				genai.NewUserContentFromBytes(
+					[]byte(msg.Content),
+					string(msg.FileType),
+				),
+			)
+		}
 	}
 
 	stream := v.vertexAIClient.Models.GenerateContentStream(
