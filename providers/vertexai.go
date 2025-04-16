@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/oauth2/google"
+	"cloud.google.com/go/auth"
 	"google.golang.org/genai"
 
 	"github.com/flyx-ai/heimdall/models"
@@ -135,26 +135,36 @@ func (v *VertexAI) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
+	// TODO: system instructions seems to not work with current SDK version
+	// systemInstructions := ""
 	var parts []*genai.Content
 	for _, msg := range req.Messages {
-		if msg.Role == "system" {
-			parts = append(parts, genai.NewUserContentFromText(msg.Content))
-		}
+		// if msg.Role == "system" {
+		// 	systemInstructions = msg.Content
+		// }
 		if msg.Role == "user" {
-			parts = append(parts, genai.NewUserContentFromText(msg.Content))
+			parts = append(
+				parts,
+				genai.NewContentFromText(msg.Content, genai.RoleUser),
+			)
 		}
 		if msg.Role == "file" {
 			parts = append(
 				parts,
-				genai.NewUserContentFromURI(msg.Content, string(msg.FileType)),
+				genai.NewContentFromURI(
+					msg.Content,
+					string(msg.FileType),
+					genai.RoleUser,
+				),
 			)
 		}
 		if msg.Role == "bytes" {
 			parts = append(
 				parts,
-				genai.NewUserContentFromBytes(
+				genai.NewContentFromBytes(
 					[]byte(msg.Content),
 					string(msg.FileType),
+					genai.RoleUser,
 				),
 			)
 		}
@@ -203,10 +213,10 @@ func (v *VertexAI) doRequest(
 
 				usage = response.Usage{
 					PromptTokens: int(
-						*streamPart.UsageMetadata.PromptTokenCount,
+						streamPart.UsageMetadata.PromptTokenCount,
 					),
 					CompletionTokens: int(
-						*streamPart.UsageMetadata.CandidatesTokenCount,
+						streamPart.UsageMetadata.CandidatesTokenCount,
 					),
 					TotalTokens: int(
 						streamPart.UsageMetadata.TotalTokenCount,
@@ -336,9 +346,9 @@ func NewVertexAI(
 		&genai.ClientConfig{
 			Project:  projectID,
 			Location: location,
-			Credentials: &google.Credentials{
+			Credentials: auth.NewCredentials(&auth.CredentialsOptions{
 				JSON: []byte(credentialsJSON),
-			},
+			}),
 			HTTPClient:  &http.Client{},
 			HTTPOptions: genai.HTTPOptions{APIVersion: "v1"},
 		},
