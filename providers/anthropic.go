@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,16 +25,32 @@ type Anthropic struct {
 	apiKeys []string
 }
 
-// NewAnthropicClient creates a new Anthropic LLM provider with the given API keys.
-func NewAnthropicClient(apiKeys []string) Anthropic {
+// NewAnthropic creates a new Anthropic LLM provider with the given API keys.
+func NewAnthropic(apiKeys []string) Anthropic {
 	return Anthropic{
 		apiKeys: apiKeys,
 	}
 }
 
+type (
+	visionSource struct {
+		Type      string `json:"type"`
+		MediaType string `json:"media_type"`
+		Data      string `json:"data"`
+	}
+	anthropicVisionPayload struct {
+		Type   string       `json:"type"`
+		Source visionSource `json:"source"`
+	}
+	anthropicVisionTextPayload struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}
+)
+
 type anthropicMsg struct {
 	Role    string `json:"role"`
-	Content string `json:"content"`
+	Content any    `json:"content"`
 }
 
 type anthropicRequest struct {
@@ -77,17 +94,6 @@ func (a Anthropic) CompleteResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		// var systemMsg string
-		// var userMsg string
-		// for _, msg := range req.Messages {
-		// 	if msg.Role == "system" {
-		// 		systemMsg = msg.Content
-		// 	}
-		// 	if msg.Role == "user" {
-		// 		userMsg = msg.Content
-		// 	}
-		// }
-
 		req.Tags["request_type"] = "completion"
 
 		reqLog = &response.Logging{
@@ -140,21 +146,51 @@ func (a Anthropic) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
-	var systemMsg string
-	messages := []anthropicMsg{
-		{
-			Role:    "system",
-			Content: req.SystemMessage,
-		},
-		{
-			Role:    "user",
-			Content: req.UserMessage,
-		},
+	modelName := req.Model.GetName()
+
+	var messages []anthropicMsg
+	switch modelName {
+	case models.AnthropicClaude3OpusAlias:
+		msgs, err := prepareClaude3Opus(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = msgs
+	case models.AnthropicClaude35HaikuAlias:
+		msgs, err := prepareClaude35Haiku(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = msgs
+	case models.AnthropicClaude35SonnetAlias:
+		msgs, err := prepareClaude35Sonnet(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = msgs
+	case models.AnthropicClaude37SonnetAlias:
+		msgs, err := prepareClaude37Sonnet(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = msgs
 	}
 
 	apiReq := anthropicRequest{
-		System:      systemMsg,
-		Model:       req.Model.GetName(),
+		System:      req.SystemMessage,
+		Model:       modelName,
 		Messages:    messages,
 		Stream:      true,
 		MaxTokens:   4096,
@@ -424,3 +460,140 @@ func (a Anthropic) tryWithBackup(
 }
 
 var _ LLMProvider = new(Anthropic)
+
+func prepareClaude3Opus(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude3Opus)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude3Opus failed",
+		)
+	}
+
+	if len(model.ImageFile) == 1 {
+		return handleVision(userMsg, model.ImageFile), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func prepareClaude35Sonnet(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude35Sonnet)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude35Sonnet failed",
+		)
+	}
+
+	if len(model.ImageFile) == 1 {
+		return handleVision(userMsg, model.ImageFile), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func prepareClaude35Haiku(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude35Haiku)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude35Haiku failed",
+		)
+	}
+
+	if len(model.ImageFile) == 1 {
+		return handleVision(userMsg, model.ImageFile), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func prepareClaude37Sonnet(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude37Sonnet)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude37Sonnet failed",
+		)
+	}
+
+	if len(model.ImageFile) == 1 {
+		return handleVision(userMsg, model.ImageFile), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func handleVision(
+	userMsg string,
+	imageFile map[models.AnthropicImageType]string,
+) []anthropicMsg {
+	mediaType := ""
+	data := ""
+	for t, val := range imageFile {
+		mediaType = string(t)
+		data = val
+	}
+
+	return []anthropicMsg{
+		{
+			Role: "user",
+			Content: []any{
+				anthropicVisionPayload{
+					Type: "image",
+					Source: visionSource{
+						Type:      "base64",
+						MediaType: mediaType,
+						Data:      data,
+					},
+				},
+				anthropicVisionTextPayload{
+					Type: "text",
+					Text: userMsg,
+				},
+			},
+		},
+	}
+}
+
+// {"role": "user", "content": [
+//   {
+//     "type": "image",
+//     "source": {
+//       "type": "base64",
+//       "media_type": "image/jpeg",
+//       "data": "/9j/4AAQSkZJRg...",
+//     }
+//   },
+//   {"type": "text", "text": "What is in this image?"}
+// ]}
+//

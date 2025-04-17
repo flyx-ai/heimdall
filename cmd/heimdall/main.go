@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"log/slog"
 	"net/http"
 	"os"
@@ -21,16 +22,27 @@ func main() {
 	ctx := context.Background()
 
 	// gApiKey := os.Getenv("GOOGLE_API_KEY")
-	oaApiKey := os.Getenv("OPENAI_API_KEY")
+	// oaApiKey := os.Getenv("OPENAI_API_KEY")
+
+	f, e := os.ReadFile("cmd/heimdall/doggo.jpeg")
+	if e != nil {
+		panic(e)
+	}
+
+	aApiKey := os.Getenv("ANTHROPIC_API_KEY")
 
 	// timeout := 1 * time.Minute
 	// g := providers.NewGoogle([]string{gApiKey})
-	oa := providers.NewOpenAI([]string{oaApiKey})
-	res, err := oa.CompleteResponse(
+	a := providers.NewAnthropic([]string{aApiKey})
+	res, err := a.CompleteResponse(
 		ctx,
 		request.Completion{
-			Model: models.O3Mini{
-				StructuredOutput: nil,
+			Model: models.Claude35Haiku{
+				ImageFile: map[models.AnthropicImageType]string{
+					models.AnthropicImageJpeg: base64.StdEncoding.EncodeToString(
+						f,
+					),
+				},
 			},
 			UserMessage: "analyze the current performance of anthropic",
 			Temperature: 0,

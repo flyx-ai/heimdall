@@ -2,12 +2,25 @@ package models
 
 const AnthropicProvider = "anthropic"
 
+const (
+	AnthropicClaude3OpusAlias    = "claude-3-opus-latest"
+	AnthropicClaude35SonnetAlias = "claude-3-5-sonnet-latest"
+	AnthropicClaude35HaikuAlias  = "claude-3-5-haiku-latest"
+	AnthropicClaude37SonnetAlias = "claude-3-7-sonnet-latest"
+)
+
+type AnthropicImageType string
+
+const (
+	AnthropicImageJpeg AnthropicImageType = "image/jpeg"
+)
+
 type Claude3Opus struct {
-	ImageFile string
+	ImageFile map[AnthropicImageType]string
 }
 
 func (c Claude3Opus) GetName() string {
-	return "claude-3-opus-latest"
+	return AnthropicClaude3OpusAlias
 }
 
 func (c Claude3Opus) GetProvider() string {
@@ -17,11 +30,11 @@ func (c Claude3Opus) GetProvider() string {
 var _ Model = new(Claude3Opus)
 
 type Claude35Sonnet struct {
-	ImageFile string
+	ImageFile map[AnthropicImageType]string
 }
 
 func (c Claude35Sonnet) GetName() string {
-	return "claude-3-5-sonnet-latest"
+	return AnthropicClaude35SonnetAlias
 }
 
 func (c Claude35Sonnet) GetProvider() string {
@@ -31,11 +44,11 @@ func (c Claude35Sonnet) GetProvider() string {
 var _ Model = new(Claude35Sonnet)
 
 type Claude35Haiku struct {
-	ImageFile string
+	ImageFile map[AnthropicImageType]string
 }
 
 func (c Claude35Haiku) GetName() string {
-	return "claude-3-5-haiku-latest"
+	return AnthropicClaude35HaikuAlias
 }
 
 func (c Claude35Haiku) GetProvider() string {
@@ -45,11 +58,11 @@ func (c Claude35Haiku) GetProvider() string {
 var _ Model = new(Claude35Haiku)
 
 type Claude37Sonnet struct {
-	ImageFile string
+	ImageFile map[AnthropicImageType]string
 }
 
 func (c Claude37Sonnet) GetName() string {
-	return "claude-3-7-sonnet-latest"
+	return AnthropicClaude37SonnetAlias
 }
 
 func (c Claude37Sonnet) GetProvider() string {
