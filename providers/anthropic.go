@@ -571,16 +571,3 @@ func handleVision(
 		},
 	}
 }
-
-// {"role": "user", "content": [
-//   {
-//     "type": "image",
-//     "source": {
-//       "type": "base64",
-//       "media_type": "image/jpeg",
-//       "data": "/9j/4AAQSkZJRg...",
-//     }
-//   },
-//   {"type": "text", "text": "What is in this image?"}
-// ]}
-//
