@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -223,85 +222,73 @@ func (a Anthropic) doRequest(
 		return response.Completion{}, resp.StatusCode, err
 	}
 
-	reader := bufio.NewReader(resp.Body)
+	scanner := bufio.NewScanner(resp.Body)
 	var fullContent strings.Builder
-	var lastResponse *anthropicStreamResponse
+
 	chunks := 0
 	now := time.Now()
+	isRunning := true
 
-	for {
+	type DeltaEvent struct {
+		Type  string `json:"type"`
+		Index int    `json:"index"`
+		Delta struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"delta"`
+	}
+
+	for isRunning {
 		if chunks == 0 && time.Since(now).Seconds() > 3.0 {
 			return response.Completion{}, 0, context.Canceled
 		}
 
-		line, err := reader.ReadBytes('\n')
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return response.Completion{}, 0, err
-		}
+		var completeText strings.Builder
 
-		if len(bytes.TrimSpace(line)) == 0 {
-			continue
-		}
+		for scanner.Scan() {
+			line := scanner.Text()
 
-		line = bytes.TrimSpace(line)
+			if strings.HasPrefix(line, "data: ") {
+				dataStr := strings.TrimPrefix(line, "data: ")
+				var event DeltaEvent
+				err := json.Unmarshal([]byte(dataStr), &event)
+				if err != nil {
+					return response.Completion{}, 0, err
+				}
 
-		if bytes.HasPrefix(line, []byte("event:")) {
-			continue
-		}
+				if event.Type == "content_block_delta" &&
+					event.Delta.Type == "text_delta" {
+					completeText.WriteString(event.Delta.Text)
 
-		if !bytes.HasPrefix(line, []byte("data:")) {
-			continue
-		}
-
-		data := bytes.TrimPrefix(line, []byte("data: "))
-
-		if bytes.Equal(bytes.TrimSpace(data), []byte("[DONE]")) {
-			break
-		}
-
-		var chunk anthropicStreamResponse
-		if err := json.Unmarshal(data, &chunk); err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		switch chunk.Type {
-		case "message_start":
-			lastResponse = &chunk
-		case "content_block_start":
-			continue
-		case "content_block_delta":
-			if chunk.Delta.Text != "" {
-				fullContent.WriteString(chunk.Delta.Text)
-				if chunkHandler != nil {
-					if err := chunkHandler(chunk.Delta.Text); err != nil {
-						return response.Completion{}, 0, err
+					if chunkHandler != nil {
+						if err := chunkHandler(event.Delta.Text); err != nil {
+							return response.Completion{}, 0, err
+						}
 					}
 				}
-			}
-		case "message_delta":
-			if lastResponse != nil {
-				lastResponse.Usage = chunk.Usage
-				lastResponse.StopReason = chunk.StopReason
-			}
-		case "message_stop":
-			if lastResponse != nil {
-				lastResponse.Usage = chunk.Usage
-				lastResponse.StopReason = chunk.StopReason
+
+				chunks++
 			}
 		}
 
-		chunks++
+		err := scanner.Err()
+		switch err {
+		case nil:
+			fullContent = completeText
+			isRunning = false
+		default:
+			fmt.Println("Error reading input:", err)
+			return response.Completion{}, 0, context.Canceled
+		}
 	}
 
 	return response.Completion{
 		Content: fullContent.String(),
 		Model:   req.Model.GetName(),
+		// TODO: try to standardize this across providers
 		Usage: response.Usage{
-			CompletionTokens: lastResponse.Usage.OutputTokens,
-			PromptTokens:     lastResponse.Usage.InputTokens,
+			// CompletionTokens: lastResponse.Usage.OutputTokens,
+			// PromptTokens:     lastResponse.Usage.InputTokens,
 		},
 	}, 0, nil
 }
