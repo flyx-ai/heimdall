@@ -62,28 +62,6 @@ type anthropicRequest struct {
 	TopP        float32        `json:"top_p,omitempty"`
 }
 
-type anthropicStreamResponse struct {
-	Type    string `json:"type"`
-	Content []struct {
-		Text string `json:"text"`
-		Type string `json:"type"`
-	} `json:"content"`
-	ID           string  `json:"id"`
-	Model        string  `json:"model"`
-	Role         string  `json:"role"`
-	StopReason   string  `json:"stop_reason"`
-	StopSequence *string `json:"stop_sequence"`
-	Usage        struct {
-		InputTokens  int `json:"input_tokens"`
-		OutputTokens int `json:"output_tokens"`
-	} `json:"usage"`
-	Delta struct {
-		Type    string `json:"type"`
-		Text    string `json:"text"`
-		Message string `json:"message"`
-	} `json:"delta"`
-}
-
 // CompleteResponse implements LLMProvider.
 func (a Anthropic) CompleteResponse(
 	ctx context.Context,
