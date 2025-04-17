@@ -20,7 +20,7 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	openai := providers.NewOpenAI([]string{os.Getenv("OPENAI_API_KEY")})
+	openai := providers.NewOpenAI([]string{os.Getenv("OPENAI_API_KEY_TWO")})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
@@ -155,7 +155,7 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	openai := providers.NewOpenAI([]string{os.Getenv("OPENAI_API_KEY")})
+	openai := providers.NewOpenAI([]string{os.Getenv("OPENAI_API_KEY_TWO")})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."

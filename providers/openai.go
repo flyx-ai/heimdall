@@ -203,12 +203,8 @@ func (oa Openai) doRequest(
 		requestBody = body
 
 	default:
-		requestMessages := make([]requestMessage, 2)
+		requestMessages := make([]requestMessage, 1)
 		requestMessages[0] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: req.SystemMessage,
-		})
-		requestMessages[1] = requestMessage(requestMessage{
 			Role:    "user",
 			Content: req.UserMessage,
 		})
