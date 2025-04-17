@@ -7,8 +7,8 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -24,16 +24,32 @@ type Anthropic struct {
 	apiKeys []string
 }
 
-// NewAnthropicClient creates a new Anthropic LLM provider with the given API keys.
-func NewAnthropicClient(apiKeys []string) Anthropic {
+// NewAnthropic creates a new Anthropic LLM provider with the given API keys.
+func NewAnthropic(apiKeys []string) Anthropic {
 	return Anthropic{
 		apiKeys: apiKeys,
 	}
 }
 
+type (
+	visionSource struct {
+		Type      string `json:"type"`
+		MediaType string `json:"media_type"`
+		Data      string `json:"data"`
+	}
+	anthropicVisionPayload struct {
+		Type   string       `json:"type"`
+		Source visionSource `json:"source"`
+	}
+	anthropicVisionTextPayload struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}
+)
+
 type anthropicMsg struct {
 	Role    string `json:"role"`
-	Content string `json:"content"`
+	Content any    `json:"content"`
 }
 
 type anthropicRequest struct {
@@ -46,28 +62,6 @@ type anthropicRequest struct {
 	TopP        float32        `json:"top_p,omitempty"`
 }
 
-type anthropicStreamResponse struct {
-	Type    string `json:"type"`
-	Content []struct {
-		Text string `json:"text"`
-		Type string `json:"type"`
-	} `json:"content"`
-	ID           string  `json:"id"`
-	Model        string  `json:"model"`
-	Role         string  `json:"role"`
-	StopReason   string  `json:"stop_reason"`
-	StopSequence *string `json:"stop_sequence"`
-	Usage        struct {
-		InputTokens  int `json:"input_tokens"`
-		OutputTokens int `json:"output_tokens"`
-	} `json:"usage"`
-	Delta struct {
-		Type    string `json:"type"`
-		Text    string `json:"text"`
-		Message string `json:"message"`
-	} `json:"delta"`
-}
-
 // CompleteResponse implements LLMProvider.
 func (a Anthropic) CompleteResponse(
 	ctx context.Context,
@@ -77,17 +71,6 @@ func (a Anthropic) CompleteResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		// var systemMsg string
-		// var userMsg string
-		// for _, msg := range req.Messages {
-		// 	if msg.Role == "system" {
-		// 		systemMsg = msg.Content
-		// 	}
-		// 	if msg.Role == "user" {
-		// 		userMsg = msg.Content
-		// 	}
-		// }
-
 		req.Tags["request_type"] = "completion"
 
 		reqLog = &response.Logging{
@@ -140,21 +123,51 @@ func (a Anthropic) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
-	var systemMsg string
-	messages := []anthropicMsg{
-		{
-			Role:    "system",
-			Content: req.SystemMessage,
-		},
-		{
-			Role:    "user",
-			Content: req.UserMessage,
-		},
+	modelName := req.Model.GetName()
+
+	var messages []anthropicMsg
+	switch modelName {
+	case models.AnthropicClaude3OpusAlias:
+		msgs, err := prepareClaude3Opus(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = msgs
+	case models.AnthropicClaude35HaikuAlias:
+		msgs, err := prepareClaude35Haiku(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = msgs
+	case models.AnthropicClaude35SonnetAlias:
+		msgs, err := prepareClaude35Sonnet(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = msgs
+	case models.AnthropicClaude37SonnetAlias:
+		msgs, err := prepareClaude37Sonnet(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = msgs
 	}
 
 	apiReq := anthropicRequest{
-		System:      systemMsg,
-		Model:       req.Model.GetName(),
+		System:      req.SystemMessage,
+		Model:       modelName,
 		Messages:    messages,
 		Stream:      true,
 		MaxTokens:   4096,
@@ -187,85 +200,73 @@ func (a Anthropic) doRequest(
 		return response.Completion{}, resp.StatusCode, err
 	}
 
-	reader := bufio.NewReader(resp.Body)
+	scanner := bufio.NewScanner(resp.Body)
 	var fullContent strings.Builder
-	var lastResponse *anthropicStreamResponse
+
 	chunks := 0
 	now := time.Now()
+	isRunning := true
 
-	for {
+	type DeltaEvent struct {
+		Type  string `json:"type"`
+		Index int    `json:"index"`
+		Delta struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"delta"`
+	}
+
+	for isRunning {
 		if chunks == 0 && time.Since(now).Seconds() > 3.0 {
 			return response.Completion{}, 0, context.Canceled
 		}
 
-		line, err := reader.ReadBytes('\n')
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return response.Completion{}, 0, err
-		}
+		var completeText strings.Builder
 
-		if len(bytes.TrimSpace(line)) == 0 {
-			continue
-		}
+		for scanner.Scan() {
+			line := scanner.Text()
 
-		line = bytes.TrimSpace(line)
+			if strings.HasPrefix(line, "data: ") {
+				dataStr := strings.TrimPrefix(line, "data: ")
+				var event DeltaEvent
+				err := json.Unmarshal([]byte(dataStr), &event)
+				if err != nil {
+					return response.Completion{}, 0, err
+				}
 
-		if bytes.HasPrefix(line, []byte("event:")) {
-			continue
-		}
+				if event.Type == "content_block_delta" &&
+					event.Delta.Type == "text_delta" {
+					completeText.WriteString(event.Delta.Text)
 
-		if !bytes.HasPrefix(line, []byte("data:")) {
-			continue
-		}
-
-		data := bytes.TrimPrefix(line, []byte("data: "))
-
-		if bytes.Equal(bytes.TrimSpace(data), []byte("[DONE]")) {
-			break
-		}
-
-		var chunk anthropicStreamResponse
-		if err := json.Unmarshal(data, &chunk); err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		switch chunk.Type {
-		case "message_start":
-			lastResponse = &chunk
-		case "content_block_start":
-			continue
-		case "content_block_delta":
-			if chunk.Delta.Text != "" {
-				fullContent.WriteString(chunk.Delta.Text)
-				if chunkHandler != nil {
-					if err := chunkHandler(chunk.Delta.Text); err != nil {
-						return response.Completion{}, 0, err
+					if chunkHandler != nil {
+						if err := chunkHandler(event.Delta.Text); err != nil {
+							return response.Completion{}, 0, err
+						}
 					}
 				}
-			}
-		case "message_delta":
-			if lastResponse != nil {
-				lastResponse.Usage = chunk.Usage
-				lastResponse.StopReason = chunk.StopReason
-			}
-		case "message_stop":
-			if lastResponse != nil {
-				lastResponse.Usage = chunk.Usage
-				lastResponse.StopReason = chunk.StopReason
+
+				chunks++
 			}
 		}
 
-		chunks++
+		err := scanner.Err()
+		switch err {
+		case nil:
+			fullContent = completeText
+			isRunning = false
+		default:
+			fmt.Println("Error reading input:", err)
+			return response.Completion{}, 0, context.Canceled
+		}
 	}
 
 	return response.Completion{
 		Content: fullContent.String(),
 		Model:   req.Model.GetName(),
+		// TODO: try to standardize this across providers
 		Usage: response.Usage{
-			CompletionTokens: lastResponse.Usage.OutputTokens,
-			PromptTokens:     lastResponse.Usage.InputTokens,
+			// CompletionTokens: lastResponse.Usage.OutputTokens,
+			// PromptTokens:     lastResponse.Usage.InputTokens,
 		},
 	}, 0, nil
 }
@@ -424,3 +425,127 @@ func (a Anthropic) tryWithBackup(
 }
 
 var _ LLMProvider = new(Anthropic)
+
+func prepareClaude3Opus(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude3Opus)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude3Opus failed",
+		)
+	}
+
+	if len(model.ImageFile) == 1 {
+		return handleVision(userMsg, model.ImageFile), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func prepareClaude35Sonnet(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude35Sonnet)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude35Sonnet failed",
+		)
+	}
+
+	if len(model.ImageFile) == 1 {
+		return handleVision(userMsg, model.ImageFile), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func prepareClaude35Haiku(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude35Haiku)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude35Haiku failed",
+		)
+	}
+
+	if len(model.ImageFile) == 1 {
+		return handleVision(userMsg, model.ImageFile), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func prepareClaude37Sonnet(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude37Sonnet)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude37Sonnet failed",
+		)
+	}
+
+	if len(model.ImageFile) == 1 {
+		return handleVision(userMsg, model.ImageFile), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func handleVision(
+	userMsg string,
+	imageFile map[models.AnthropicImageType]string,
+) []anthropicMsg {
+	mediaType := ""
+	data := ""
+	for t, val := range imageFile {
+		mediaType = string(t)
+		data = val
+	}
+
+	return []anthropicMsg{
+		{
+			Role: "user",
+			Content: []any{
+				anthropicVisionPayload{
+					Type: "image",
+					Source: visionSource{
+						Type:      "base64",
+						MediaType: mediaType,
+						Data:      data,
+					},
+				},
+				anthropicVisionTextPayload{
+					Type: "text",
+					Text: userMsg,
+				},
+			},
+		},
+	}
+}

@@ -21,7 +21,7 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	anthropicProvider := providers.NewAnthropicClient(
+	anthropicProvider := providers.NewAnthropic(
 		[]string{os.Getenv("ANTHROPIC_API_KEY")},
 	)
 
@@ -110,7 +110,7 @@ func TestAnthropicModelsWithStreaming(t *testing.T) {
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	anthropicProvider := providers.NewAnthropicClient(
+	anthropicProvider := providers.NewAnthropic(
 		[]string{os.Getenv("ANTHROPIC_API_KEY")},
 	)
 
