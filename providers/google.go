@@ -404,6 +404,23 @@ func (g Google) doRequest(
 		}
 
 		requestBody = body
+	case models.Gemini25FlashPreviewModel:
+		request, err := prepareGemini25FlashPreviewRequest(
+			geminiReq,
+			model,
+			req.SystemMessage,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(request)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
@@ -656,6 +673,74 @@ func prepareGemini20FlashLiteRequest(
 	if !ok {
 		return request, errors.New(
 			"internal error; model type assertion to models.Gemini20FlashLite failed",
+		)
+	}
+
+	request.SystemInstruction.Parts = part{
+		Text: systemInst,
+	}
+
+	request.Contents[0].Parts = append(
+		request.Contents[0].Parts,
+		part{
+			Text: userMsg,
+		},
+	)
+
+	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
+		return geminiRequest{}, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		request = handleVisionData(request, model.ImageFile)
+	}
+
+	if len(model.PdfFile) == 1 {
+		var mimeType string
+		var fileURI string
+
+		for name, data := range model.PdfFile {
+			mimeType = name
+			fileURI = data
+		}
+
+		request.Contents[0].Parts = append(
+			request.Contents[0].Parts,
+			part{
+				FileData: fileData{
+					MimeType: mimeType,
+					FileURI:  fileURI,
+				},
+			},
+		)
+	}
+
+	if len(model.StructuredOutput) == 1 {
+		request.Config = map[string]any{
+			"response_mime_type": "application/json",
+			"response_schema":    model.StructuredOutput,
+		}
+	}
+
+	if len(model.Tools) > 1 {
+		request.Tools = model.Tools
+	}
+
+	return request, nil
+}
+
+func prepareGemini25FlashPreviewRequest(
+	request geminiRequest,
+	requestedModel models.Model,
+	systemInst string,
+	userMsg string,
+) (geminiRequest, error) {
+	model, ok := requestedModel.(models.Gemini25FlashPreview)
+	if !ok {
+		return request, errors.New(
+			"internal error; model type assertion to models.Gemini25FlashPreview failed",
 		)
 	}
 
