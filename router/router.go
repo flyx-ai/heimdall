@@ -45,7 +45,7 @@ func setupLogging(ctx context.Context) echo.MiddlewareFunc {
 				level = slog.LevelError
 			}
 
-			slog.Default().LogAttrs(ctx, level, "incoming_request",
+			slog.Default().LogAttrs(ctx, level, "req",
 				attrs...,
 			)
 

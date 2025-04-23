@@ -15,8 +15,10 @@ import (
 
 func startServer(ctx context.Context, h http.Handler) error {
 	srv := http.Server{
-		Addr:    "0.0.0.0:8080",
-		Handler: h,
+		Addr:         "0.0.0.0:8080",
+		Handler:      h,
+		ReadTimeout:  time.Second,
+		WriteTimeout: 10 * time.Second,
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},
