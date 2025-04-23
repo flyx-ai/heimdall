@@ -126,6 +126,16 @@ func (a Anthropic) doRequest(
 	modelName := req.Model.GetName()
 
 	var messages []anthropicMsg
+
+	if len(req.History) > 0 {
+		for _, his := range req.History {
+			messages = append(messages, anthropicMsg{
+				Role:    his.Role,
+				Content: his.Content,
+			})
+		}
+	}
+
 	switch modelName {
 	case models.AnthropicClaude3OpusAlias:
 		msgs, err := prepareClaude3Opus(
@@ -135,7 +145,7 @@ func (a Anthropic) doRequest(
 		if err != nil {
 			return response.Completion{}, 0, err
 		}
-		messages = msgs
+		messages = append(messages, msgs...)
 	case models.AnthropicClaude35HaikuAlias:
 		msgs, err := prepareClaude35Haiku(
 			req.Model,
@@ -144,7 +154,8 @@ func (a Anthropic) doRequest(
 		if err != nil {
 			return response.Completion{}, 0, err
 		}
-		messages = msgs
+
+		messages = append(messages, msgs...)
 	case models.AnthropicClaude35SonnetAlias:
 		msgs, err := prepareClaude35Sonnet(
 			req.Model,
@@ -153,7 +164,8 @@ func (a Anthropic) doRequest(
 		if err != nil {
 			return response.Completion{}, 0, err
 		}
-		messages = msgs
+
+		messages = append(messages, msgs...)
 	case models.AnthropicClaude37SonnetAlias:
 		msgs, err := prepareClaude37Sonnet(
 			req.Model,
@@ -162,7 +174,7 @@ func (a Anthropic) doRequest(
 		if err != nil {
 			return response.Completion{}, 0, err
 		}
-		messages = msgs
+		messages = append(messages, msgs...)
 	}
 
 	apiReq := anthropicRequest{

@@ -30,15 +30,14 @@ type Completion struct {
 	Model         models.Model
 	SystemMessage string
 	UserMessage   string
-	// Messages    []Message
-	Fallback    []models.Model
-	Temperature float32
-	TopP        float32
-	Tags        map[string]string `json:"tags"`
+	History       []Message
+	Fallback      []models.Model
+	Temperature   float32
+	TopP          float32
+	Tags          map[string]string `json:"tags"`
 }
 
 type Message struct {
-	Role     string
-	Content  string
-	FileType MimeType
+	Role    string
+	Content string
 }
