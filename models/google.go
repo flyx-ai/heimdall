@@ -11,6 +11,14 @@ const (
 	Gemini25ProPreviewModel   = "gemini-2.5-pro-preview-03-25"
 )
 
+type ThinkBudget string
+
+const (
+	HighThinkBudget   ThinkBudget = "thinking_budget.high"
+	MediumThinkBudget ThinkBudget = "thinking_budget.medium"
+	LowThinkBudget    ThinkBudget = "thinking_budget.low"
+)
+
 type GoogleTool []map[string]map[string]any
 
 var GoogleSearchTool = map[string]map[string]any{
@@ -53,6 +61,7 @@ type Gemini15Pro struct {
 	StructuredOutput map[string]any
 	PdfFile          map[string]string
 	ImageFile        []GoogleImagePayload
+	Thinking         ThinkBudget
 }
 
 func (g Gemini15Pro) GetName() string {
@@ -65,7 +74,9 @@ func (g Gemini15Pro) GetProvider() string {
 
 var _ Model = new(Gemini15Pro)
 
-type Gemini15Flash struct{}
+type Gemini15Flash struct {
+	Thinking ThinkBudget
+}
 
 func (g Gemini15Flash) GetName() string {
 	return Gemini15FlashModel
@@ -93,6 +104,7 @@ type Gemini20Flash struct {
 	StructuredOutput map[string]any
 	PdfFile          map[string]string
 	ImageFile        []GoogleImagePayload
+	Thinking         ThinkBudget
 }
 
 func (g Gemini20Flash) GetName() string {
@@ -121,6 +133,7 @@ type Gemini20FlashLite struct {
 	StructuredOutput map[string]any
 	PdfFile          map[string]string
 	ImageFile        []GoogleImagePayload
+	Thinking         ThinkBudget
 }
 
 func (g Gemini20FlashLite) GetName() string {
@@ -149,6 +162,7 @@ type Gemini25FlashPreview struct {
 	StructuredOutput map[string]any
 	PdfFile          map[string]string
 	ImageFile        []GoogleImagePayload
+	Thinking         ThinkBudget
 }
 
 func (g Gemini25FlashPreview) GetName() string {
@@ -177,6 +191,7 @@ type Gemini25ProPreview struct {
 	StructuredOutput map[string]any
 	PdfFile          map[string]string
 	ImageFile        []GoogleImagePayload
+	Thinking         ThinkBudget
 }
 
 func (g Gemini25ProPreview) GetName() string {

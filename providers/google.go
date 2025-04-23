@@ -510,7 +510,7 @@ func prepareGemini15FlashRequest(
 	userMsg string,
 ) (geminiRequest, error) {
 	// TODO: implement file, image etc on model
-	_, ok := requestedModel.(models.Gemini15Flash)
+	model, ok := requestedModel.(models.Gemini15Flash)
 	if !ok {
 		return request, errors.New(
 			"internal error; model type assertion to models.Gemini15Flash failed",
@@ -527,6 +527,10 @@ func prepareGemini15FlashRequest(
 			Text: userMsg,
 		},
 	)
+
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
+	}
 
 	return request, nil
 }
@@ -590,6 +594,10 @@ func prepareGemini15ProRequest(
 			"response_mime_type": "application/json",
 			"response_schema":    model.StructuredOutput,
 		}
+	}
+
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
 	}
 
 	return request, nil
@@ -660,6 +668,10 @@ func prepareGemini20FlashRequest(
 		request.Tools = model.Tools
 	}
 
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
+	}
+
 	return request, nil
 }
 
@@ -726,6 +738,10 @@ func prepareGemini20FlashLiteRequest(
 
 	if len(model.Tools) > 1 {
 		request.Tools = model.Tools
+	}
+
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
 	}
 
 	return request, nil
@@ -796,6 +812,10 @@ func prepareGemini25FlashPreviewRequest(
 		request.Tools = model.Tools
 	}
 
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
+	}
+
 	return request, nil
 }
 
@@ -864,6 +884,10 @@ func prepareGemini25ProPreviewRequest(
 		request.Tools = model.Tools
 	}
 
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
+	}
+
 	return request, nil
 }
 
@@ -906,6 +930,34 @@ func handleVisionData(
 					},
 				},
 			)
+		}
+	}
+
+	return request
+}
+
+func handleThinkingBudget(
+	request geminiRequest,
+	budget models.ThinkBudget,
+) geminiRequest {
+	switch budget {
+	case models.HighThinkBudget:
+		request.Config = map[string]any{
+			"thinkingConfig": map[string]int64{
+				"thinkingBudget": 24576,
+			},
+		}
+	case models.MediumThinkBudget:
+		request.Config = map[string]any{
+			"thinkingConfig": map[string]int64{
+				"thinkingBudget": 12288,
+			},
+		}
+	case models.LowThinkBudget:
+		request.Config = map[string]any{
+			"thinkingConfig": map[string]int64{
+				"thinkingBudget": 0,
+			},
 		}
 	}
 
