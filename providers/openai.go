@@ -122,6 +122,7 @@ func (oa Openai) doRequest(
 			req.Model,
 			req.SystemMessage,
 			req.UserMessage,
+			req.History,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -139,6 +140,7 @@ func (oa Openai) doRequest(
 			req.Model,
 			req.SystemMessage,
 			req.UserMessage,
+			req.History,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -156,6 +158,7 @@ func (oa Openai) doRequest(
 			req.Model,
 			req.SystemMessage,
 			req.UserMessage,
+			req.History,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -173,6 +176,7 @@ func (oa Openai) doRequest(
 			req.Model,
 			req.SystemMessage,
 			req.UserMessage,
+			req.History,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -190,6 +194,7 @@ func (oa Openai) doRequest(
 			req.Model,
 			req.SystemMessage,
 			req.UserMessage,
+			req.History,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -515,6 +520,7 @@ func prepareGPT4ORequest(
 	requestedModel models.Model,
 	systemInst string,
 	userMsg string,
+	history []request.Message,
 ) (openAIRequest, error) {
 	gpt4O, ok := requestedModel.(models.GPT4O)
 	if !ok {
@@ -537,12 +543,26 @@ func prepareGPT4ORequest(
 	}
 
 	if len(gpt4O.ImageFile) == 1 {
-		reqMsgWithImage := []requestMessageWithImage{
-			{
-				Role:    "user",
-				Content: []any{},
-			},
+		reqMsgWithImage := []requestMessageWithImage{}
+
+		for _, his := range history {
+			reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
+				Role: his.Role,
+				Content: []any{
+					fileInputMessage{
+						Type: "text",
+						Text: his.Content,
+					},
+				},
+			})
 		}
+
+		lastIndex := len(reqMsgWithImage)
+		if lastIndex == 1 {
+			lastIndex = 0
+		}
+
+		reqMsgWithImage[lastIndex].Role = "user"
 
 		for _, img := range gpt4O.ImageFile {
 			detail := "auto"
@@ -557,11 +577,14 @@ func prepareGPT4ORequest(
 					Detail: detail,
 				},
 			}
-			reqMsgWithImage[0].Content = append(reqMsgWithImage[0].Content, ii)
+			reqMsgWithImage[lastIndex].Content = append(
+				reqMsgWithImage[lastIndex].Content,
+				ii,
+			)
 		}
 
-		reqMsgWithImage[0].Content = append(
-			reqMsgWithImage[0].Content,
+		reqMsgWithImage[lastIndex].Content = append(
+			reqMsgWithImage[lastIndex].Content,
 			fileInputMessage{
 				Type: "text",
 				Text: userMsg,
@@ -574,13 +597,26 @@ func prepareGPT4ORequest(
 	}
 
 	if len(gpt4O.PdfFile) == 1 {
-		reqMsgWithFile := []requestMessageWithFile{
-			{
-				Role:    "user",
-				Content: []any{},
-			},
+		reqMsgWithFile := []requestMessageWithFile{}
+
+		for _, his := range history {
+			reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
+				Role: his.Role,
+				Content: []any{
+					fileInputMessage{
+						Type: "text",
+						Text: his.Content,
+					},
+				},
+			})
 		}
 
+		lastIndex := len(reqMsgWithFile)
+		if lastIndex == 1 {
+			lastIndex = 0
+		}
+
+		reqMsgWithFile[lastIndex].Role = "user"
 		var filename string
 		var fileData string
 
@@ -597,28 +633,52 @@ func prepareGPT4ORequest(
 			},
 		}
 
-		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
-		reqMsgWithFile[0].Content = append(
-			reqMsgWithFile[0].Content,
+		reqMsgWithFile[lastIndex].Content = append(
+			reqMsgWithFile[lastIndex].Content,
+			fi,
+		)
+		reqMsgWithFile[lastIndex].Content = append(
+			reqMsgWithFile[lastIndex].Content,
 			fileInputMessage{
 				Type: "text",
 				Text: userMsg,
 			},
 		)
+
 		request.Messages = reqMsgWithFile
 
 		return request, nil
 	}
 
-	requestMessages := make([]requestMessage, 2)
-	requestMessages[0] = requestMessage(requestMessage{
-		Role:    "system",
-		Content: systemInst,
-	})
-	requestMessages[1] = requestMessage(requestMessage{
-		Role:    "user",
-		Content: userMsg,
-	})
+	hisLen := len(history)
+	requestMessages := make([]requestMessage, hisLen+2)
+	for i, his := range history {
+		requestMessages[i] = requestMessage(requestMessage{
+			Role:    his.Role,
+			Content: his.Content,
+		})
+	}
+
+	if hisLen == 0 {
+		requestMessages[0] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: systemInst,
+		})
+		requestMessages[1] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: userMsg,
+		})
+	}
+	if hisLen != 0 {
+		requestMessages[hisLen+1] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: systemInst,
+		})
+		requestMessages[hisLen+2] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: userMsg,
+		})
+	}
 
 	request.Messages = requestMessages
 
@@ -630,6 +690,7 @@ func prepareGPT4OMiniRequest(
 	requestedModel models.Model,
 	systemInst string,
 	userMsg string,
+	history []request.Message,
 ) (openAIRequest, error) {
 	gpt4OMini, ok := requestedModel.(models.GPT4OMini)
 	if !ok {
@@ -652,12 +713,26 @@ func prepareGPT4OMiniRequest(
 	}
 
 	if len(gpt4OMini.ImageFile) == 1 {
-		reqMsgWithImage := []requestMessageWithImage{
-			{
-				Role:    "user",
-				Content: []any{},
-			},
+		reqMsgWithImage := []requestMessageWithImage{}
+
+		for _, his := range history {
+			reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
+				Role: his.Role,
+				Content: []any{
+					fileInputMessage{
+						Type: "text",
+						Text: his.Content,
+					},
+				},
+			})
 		}
+
+		lastIndex := len(reqMsgWithImage)
+		if lastIndex == 1 {
+			lastIndex = 0
+		}
+
+		reqMsgWithImage[lastIndex].Role = "user"
 
 		for _, img := range gpt4OMini.ImageFile {
 			detail := "auto"
@@ -672,29 +747,46 @@ func prepareGPT4OMiniRequest(
 					Detail: detail,
 				},
 			}
-			reqMsgWithImage[0].Content = append(reqMsgWithImage[0].Content, ii)
+			reqMsgWithImage[lastIndex].Content = append(
+				reqMsgWithImage[lastIndex].Content,
+				ii,
+			)
 		}
 
-		reqMsgWithImage[0].Content = append(
-			reqMsgWithImage[0].Content,
+		reqMsgWithImage[lastIndex].Content = append(
+			reqMsgWithImage[lastIndex].Content,
 			fileInputMessage{
 				Type: "text",
 				Text: userMsg,
 			},
 		)
+
 		request.Messages = reqMsgWithImage
 
 		return request, nil
 	}
 
 	if len(gpt4OMini.PdfFile) == 1 {
-		reqMsgWithFile := []requestMessageWithFile{
-			{
-				Role:    "user",
-				Content: []any{},
-			},
+		reqMsgWithFile := []requestMessageWithFile{}
+
+		for _, his := range history {
+			reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
+				Role: his.Role,
+				Content: []any{
+					fileInputMessage{
+						Type: "text",
+						Text: his.Content,
+					},
+				},
+			})
 		}
 
+		lastIndex := len(reqMsgWithFile)
+		if lastIndex == 1 {
+			lastIndex = 0
+		}
+
+		reqMsgWithFile[lastIndex].Role = "user"
 		var filename string
 		var fileData string
 
@@ -711,9 +803,12 @@ func prepareGPT4OMiniRequest(
 			},
 		}
 
-		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
-		reqMsgWithFile[0].Content = append(
-			reqMsgWithFile[0].Content,
+		reqMsgWithFile[lastIndex].Content = append(
+			reqMsgWithFile[lastIndex].Content,
+			fi,
+		)
+		reqMsgWithFile[lastIndex].Content = append(
+			reqMsgWithFile[lastIndex].Content,
 			fileInputMessage{
 				Type: "text",
 				Text: userMsg,
@@ -725,15 +820,35 @@ func prepareGPT4OMiniRequest(
 		return request, nil
 	}
 
-	requestMessages := make([]requestMessage, 2)
-	requestMessages[0] = requestMessage(requestMessage{
-		Role:    "system",
-		Content: systemInst,
-	})
-	requestMessages[1] = requestMessage(requestMessage{
-		Role:    "user",
-		Content: userMsg,
-	})
+	hisLen := len(history)
+	requestMessages := make([]requestMessage, hisLen+2)
+	for i, his := range history {
+		requestMessages[i] = requestMessage(requestMessage{
+			Role:    his.Role,
+			Content: his.Content,
+		})
+	}
+
+	if hisLen == 0 {
+		requestMessages[0] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: systemInst,
+		})
+		requestMessages[1] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: userMsg,
+		})
+	}
+	if hisLen != 0 {
+		requestMessages[hisLen+1] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: systemInst,
+		})
+		requestMessages[hisLen+2] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: userMsg,
+		})
+	}
 
 	request.Messages = requestMessages
 
@@ -745,6 +860,7 @@ func prepareO1Request(
 	requestedModel models.Model,
 	systemInst string,
 	userMsg string,
+	history []request.Message,
 ) (openAIRequest, error) {
 	o1, ok := requestedModel.(models.O1)
 	if !ok {
@@ -766,12 +882,26 @@ func prepareO1Request(
 	}
 
 	if len(o1.ImageFile) == 1 {
-		reqMsgWithImage := []requestMessageWithImage{
-			{
-				Role:    "user",
-				Content: []any{},
-			},
+		reqMsgWithImage := []requestMessageWithImage{}
+
+		for _, his := range history {
+			reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
+				Role: his.Role,
+				Content: []any{
+					fileInputMessage{
+						Type: "text",
+						Text: his.Content,
+					},
+				},
+			})
 		}
+
+		lastIndex := len(reqMsgWithImage)
+		if lastIndex == 1 {
+			lastIndex = 0
+		}
+
+		reqMsgWithImage[lastIndex].Role = "user"
 
 		for _, img := range o1.ImageFile {
 			detail := "auto"
@@ -786,29 +916,46 @@ func prepareO1Request(
 					Detail: detail,
 				},
 			}
-			reqMsgWithImage[0].Content = append(reqMsgWithImage[0].Content, ii)
+			reqMsgWithImage[lastIndex].Content = append(
+				reqMsgWithImage[lastIndex].Content,
+				ii,
+			)
 		}
 
-		reqMsgWithImage[0].Content = append(
-			reqMsgWithImage[0].Content,
+		reqMsgWithImage[lastIndex].Content = append(
+			reqMsgWithImage[lastIndex].Content,
 			fileInputMessage{
 				Type: "text",
 				Text: userMsg,
 			},
 		)
+
 		request.Messages = reqMsgWithImage
 
 		return request, nil
 	}
 
 	if len(o1.PdfFile) == 1 {
-		reqMsgWithFile := []requestMessageWithFile{
-			{
-				Role:    "user",
-				Content: []any{},
-			},
+		reqMsgWithFile := []requestMessageWithFile{}
+
+		for _, his := range history {
+			reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
+				Role: his.Role,
+				Content: []any{
+					fileInputMessage{
+						Type: "text",
+						Text: his.Content,
+					},
+				},
+			})
 		}
 
+		lastIndex := len(reqMsgWithFile)
+		if lastIndex == 1 {
+			lastIndex = 0
+		}
+
+		reqMsgWithFile[lastIndex].Role = "user"
 		var filename string
 		var fileData string
 
@@ -825,9 +972,12 @@ func prepareO1Request(
 			},
 		}
 
-		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
-		reqMsgWithFile[0].Content = append(
-			reqMsgWithFile[0].Content,
+		reqMsgWithFile[lastIndex].Content = append(
+			reqMsgWithFile[lastIndex].Content,
+			fi,
+		)
+		reqMsgWithFile[lastIndex].Content = append(
+			reqMsgWithFile[lastIndex].Content,
 			fileInputMessage{
 				Type: "text",
 				Text: userMsg,
@@ -839,15 +989,35 @@ func prepareO1Request(
 		return request, nil
 	}
 
-	requestMessages := make([]requestMessage, 2)
-	requestMessages[0] = requestMessage(requestMessage{
-		Role:    "system",
-		Content: systemInst,
-	})
-	requestMessages[1] = requestMessage(requestMessage{
-		Role:    "user",
-		Content: userMsg,
-	})
+	hisLen := len(history)
+	requestMessages := make([]requestMessage, hisLen+2)
+	for i, his := range history {
+		requestMessages[i] = requestMessage(requestMessage{
+			Role:    his.Role,
+			Content: his.Content,
+		})
+	}
+
+	if hisLen == 0 {
+		requestMessages[0] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: systemInst,
+		})
+		requestMessages[1] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: userMsg,
+		})
+	}
+	if hisLen != 0 {
+		requestMessages[hisLen+1] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: systemInst,
+		})
+		requestMessages[hisLen+2] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: userMsg,
+		})
+	}
 
 	request.Messages = requestMessages
 
@@ -859,6 +1029,7 @@ func prepareGPT41Request(
 	requestedModel models.Model,
 	systemInst string,
 	userMsg string,
+	history []request.Message,
 ) (openAIRequest, error) {
 	gpt41, ok := requestedModel.(models.GPT41)
 	if !ok {
@@ -880,12 +1051,26 @@ func prepareGPT41Request(
 	}
 
 	if len(gpt41.ImageFile) == 1 {
-		reqMsgWithImage := []requestMessageWithImage{
-			{
-				Role:    "user",
-				Content: []any{},
-			},
+		reqMsgWithImage := []requestMessageWithImage{}
+
+		for _, his := range history {
+			reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
+				Role: his.Role,
+				Content: []any{
+					fileInputMessage{
+						Type: "text",
+						Text: his.Content,
+					},
+				},
+			})
 		}
+
+		lastIndex := len(reqMsgWithImage)
+		if lastIndex == 1 {
+			lastIndex = 0
+		}
+
+		reqMsgWithImage[lastIndex].Role = "user"
 
 		for _, img := range gpt41.ImageFile {
 			detail := "auto"
@@ -900,11 +1085,14 @@ func prepareGPT41Request(
 					Detail: detail,
 				},
 			}
-			reqMsgWithImage[0].Content = append(reqMsgWithImage[0].Content, ii)
+			reqMsgWithImage[lastIndex].Content = append(
+				reqMsgWithImage[lastIndex].Content,
+				ii,
+			)
 		}
 
-		reqMsgWithImage[0].Content = append(
-			reqMsgWithImage[0].Content,
+		reqMsgWithImage[lastIndex].Content = append(
+			reqMsgWithImage[lastIndex].Content,
 			fileInputMessage{
 				Type: "text",
 				Text: userMsg,
@@ -917,13 +1105,26 @@ func prepareGPT41Request(
 	}
 
 	if len(gpt41.PdfFile) == 1 {
-		reqMsgWithFile := []requestMessageWithFile{
-			{
-				Role:    "user",
-				Content: []any{},
-			},
+		reqMsgWithFile := []requestMessageWithFile{}
+
+		for _, his := range history {
+			reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
+				Role: his.Role,
+				Content: []any{
+					fileInputMessage{
+						Type: "text",
+						Text: his.Content,
+					},
+				},
+			})
 		}
 
+		lastIndex := len(reqMsgWithFile)
+		if lastIndex == 1 {
+			lastIndex = 0
+		}
+
+		reqMsgWithFile[lastIndex].Role = "user"
 		var filename string
 		var fileData string
 
@@ -940,9 +1141,12 @@ func prepareGPT41Request(
 			},
 		}
 
-		reqMsgWithFile[0].Content = append(reqMsgWithFile[0].Content, fi)
-		reqMsgWithFile[0].Content = append(
-			reqMsgWithFile[0].Content,
+		reqMsgWithFile[lastIndex].Content = append(
+			reqMsgWithFile[lastIndex].Content,
+			fi,
+		)
+		reqMsgWithFile[lastIndex].Content = append(
+			reqMsgWithFile[lastIndex].Content,
 			fileInputMessage{
 				Type: "text",
 				Text: userMsg,
@@ -954,15 +1158,35 @@ func prepareGPT41Request(
 		return request, nil
 	}
 
-	requestMessages := make([]requestMessage, 2)
-	requestMessages[0] = requestMessage(requestMessage{
-		Role:    "system",
-		Content: systemInst,
-	})
-	requestMessages[1] = requestMessage(requestMessage{
-		Role:    "user",
-		Content: userMsg,
-	})
+	hisLen := len(history)
+	requestMessages := make([]requestMessage, hisLen+2)
+	for i, his := range history {
+		requestMessages[i] = requestMessage(requestMessage{
+			Role:    his.Role,
+			Content: his.Content,
+		})
+	}
+
+	if hisLen == 0 {
+		requestMessages[0] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: systemInst,
+		})
+		requestMessages[1] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: userMsg,
+		})
+	}
+	if hisLen != 0 {
+		requestMessages[hisLen+1] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: systemInst,
+		})
+		requestMessages[hisLen+2] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: userMsg,
+		})
+	}
 
 	request.Messages = requestMessages
 
@@ -974,6 +1198,7 @@ func prepareO3MiniRequest(
 	requestedModel models.Model,
 	systemInst string,
 	userMsg string,
+	history []request.Message,
 ) (openAIRequest, error) {
 	o3Mini, ok := requestedModel.(models.O3Mini)
 	if !ok {
@@ -989,15 +1214,35 @@ func prepareO3MiniRequest(
 		}
 	}
 
-	requestMessages := make([]requestMessage, 2)
-	requestMessages[0] = requestMessage(requestMessage{
-		Role:    "system",
-		Content: systemInst,
-	})
-	requestMessages[1] = requestMessage(requestMessage{
-		Role:    "user",
-		Content: userMsg,
-	})
+	hisLen := len(history)
+	requestMessages := make([]requestMessage, hisLen+2)
+	for i, his := range history {
+		requestMessages[i] = requestMessage(requestMessage{
+			Role:    his.Role,
+			Content: his.Content,
+		})
+	}
+
+	if hisLen == 0 {
+		requestMessages[0] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: systemInst,
+		})
+		requestMessages[1] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: userMsg,
+		})
+	}
+	if hisLen != 0 {
+		requestMessages[hisLen+1] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: systemInst,
+		})
+		requestMessages[hisLen+2] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: userMsg,
+		})
+	}
 
 	request.Messages = requestMessages
 

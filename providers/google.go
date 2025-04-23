@@ -40,7 +40,8 @@ type geminiRequest struct {
 }
 
 type content struct {
-	Parts []any `json:"parts"`
+	Role  string `json:"role"`
+	Parts []any  `json:"parts"`
 }
 
 type systemInstruction struct {
@@ -313,7 +314,18 @@ func (g Google) doRequest(
 ) (response.Completion, int, error) {
 	model := req.Model
 	geminiReq := geminiRequest{
-		Contents: make([]content, 1),
+		Contents: make([]content, len(req.History)+1),
+	}
+	for _, his := range req.History {
+		geminiReq.Contents = append(
+			geminiReq.Contents,
+			content{
+				Role: his.Role,
+				Parts: []any{
+					part{Text: his.Content},
+				},
+			},
+		)
 	}
 
 	var requestBody []byte
@@ -521,8 +533,13 @@ func prepareGemini15FlashRequest(
 		Text: systemInst,
 	}
 
-	request.Contents[0].Parts = append(
-		request.Contents[0].Parts,
+	lastIndex := len(request.Contents)
+	if lastIndex == 1 {
+		lastIndex = 0
+	}
+
+	request.Contents[lastIndex].Parts = append(
+		request.Contents[lastIndex].Parts,
 		part{
 			Text: userMsg,
 		},
@@ -552,8 +569,13 @@ func prepareGemini15ProRequest(
 		Text: systemInst,
 	}
 
-	request.Contents[0].Parts = append(
-		request.Contents[0].Parts,
+	lastIndex := len(request.Contents)
+	if lastIndex == 1 {
+		lastIndex = 0
+	}
+
+	request.Contents[lastIndex].Parts = append(
+		request.Contents[lastIndex].Parts,
 		part{
 			Text: userMsg,
 		},
@@ -578,8 +600,8 @@ func prepareGemini15ProRequest(
 			fileURI = data
 		}
 
-		request.Contents[0].Parts = append(
-			request.Contents[0].Parts,
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
 			part{
 				FileData: fileData{
 					MimeType: mimeType,
@@ -620,8 +642,13 @@ func prepareGemini20FlashRequest(
 		Text: systemInst,
 	}
 
-	request.Contents[0].Parts = append(
-		request.Contents[0].Parts,
+	lastIndex := len(request.Contents)
+	if lastIndex == 1 {
+		lastIndex = 0
+	}
+
+	request.Contents[lastIndex].Parts = append(
+		request.Contents[lastIndex].Parts,
 		part{
 			Text: userMsg,
 		},
@@ -646,8 +673,8 @@ func prepareGemini20FlashRequest(
 			fileURI = data
 		}
 
-		request.Contents[0].Parts = append(
-			request.Contents[0].Parts,
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
 			part{
 				FileData: fileData{
 					MimeType: mimeType,
@@ -692,8 +719,13 @@ func prepareGemini20FlashLiteRequest(
 		Text: systemInst,
 	}
 
-	request.Contents[0].Parts = append(
-		request.Contents[0].Parts,
+	lastIndex := len(request.Contents)
+	if lastIndex == 1 {
+		lastIndex = 0
+	}
+
+	request.Contents[lastIndex].Parts = append(
+		request.Contents[lastIndex].Parts,
 		part{
 			Text: userMsg,
 		},
@@ -718,8 +750,8 @@ func prepareGemini20FlashLiteRequest(
 			fileURI = data
 		}
 
-		request.Contents[0].Parts = append(
-			request.Contents[0].Parts,
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
 			part{
 				FileData: fileData{
 					MimeType: mimeType,
@@ -764,8 +796,13 @@ func prepareGemini25FlashPreviewRequest(
 		Text: systemInst,
 	}
 
-	request.Contents[0].Parts = append(
-		request.Contents[0].Parts,
+	lastIndex := len(request.Contents)
+	if lastIndex == 1 {
+		lastIndex = 0
+	}
+
+	request.Contents[lastIndex].Parts = append(
+		request.Contents[lastIndex].Parts,
 		part{
 			Text: userMsg,
 		},
@@ -790,8 +827,8 @@ func prepareGemini25FlashPreviewRequest(
 			fileURI = data
 		}
 
-		request.Contents[0].Parts = append(
-			request.Contents[0].Parts,
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
 			part{
 				FileData: fileData{
 					MimeType: mimeType,
@@ -836,8 +873,13 @@ func prepareGemini25ProPreviewRequest(
 		Text: systemInst,
 	}
 
-	request.Contents[0].Parts = append(
-		request.Contents[0].Parts,
+	lastIndex := len(request.Contents)
+	if lastIndex == 1 {
+		lastIndex = 0
+	}
+
+	request.Contents[lastIndex].Parts = append(
+		request.Contents[lastIndex].Parts,
 		part{
 			Text: userMsg,
 		},
@@ -862,8 +904,8 @@ func prepareGemini25ProPreviewRequest(
 			fileURI = data
 		}
 
-		request.Contents[0].Parts = append(
-			request.Contents[0].Parts,
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
 			part{
 				FileData: fileData{
 					MimeType: mimeType,

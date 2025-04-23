@@ -90,19 +90,26 @@ func (p Perplexity) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
-	messages := make([]requestMessage, 2)
-	messages[0] = requestMessage(requestMessage{
+	requestMessages := make([]requestMessage, len(req.History)+2)
+	for i, his := range req.History {
+		requestMessages[i] = requestMessage(requestMessage{
+			Role:    his.Role,
+			Content: his.Content,
+		})
+	}
+
+	requestMessages[len(req.History)+1] = requestMessage(requestMessage{
 		Role:    "system",
 		Content: req.SystemMessage,
 	})
-	messages[1] = requestMessage(requestMessage{
+	requestMessages[len(req.History)+2] = requestMessage(requestMessage{
 		Role:    "user",
 		Content: req.UserMessage,
 	})
 
 	apiReq := openAIRequest{
 		Model:         req.Model.GetName(),
-		Messages:      messages,
+		Messages:      requestMessages,
 		Stream:        true,
 		StreamOptions: streamOptions{IncludeUsage: true},
 		Temperature:   1.0,

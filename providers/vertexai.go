@@ -117,6 +117,13 @@ func (v *VertexAI) doRequest(
 	// TODO: system instructions seems to not work with current SDK version
 	// systemInstructions := ""
 	var parts []*genai.Content
+	for _, his := range req.History {
+		parts = append(
+			parts,
+			genai.NewContentFromText(his.Content, genai.Role(his.Role)),
+		)
+	}
+
 	parts = append(
 		parts,
 		genai.NewContentFromText(req.UserMessage, genai.RoleUser),
