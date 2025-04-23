@@ -3,11 +3,20 @@ package models
 const GoogleProvider = "google"
 
 const (
-	Gemini15FlashModel      = "gemini-1.5-flash-002"
-	Gemini15ProModel        = "gemini-1.5-pro-002"
-	Gemini20FlashModel      = "gemini-2.0-flash-001"
-	Gemini20FlashLiteModel  = "gemini-2.0-flash-lite-001"
-	Gemini25ProPreviewModel = "gemini-2.5-pro-preview-03-25"
+	Gemini15FlashModel        = "gemini-1.5-flash-002"
+	Gemini15ProModel          = "gemini-1.5-pro-002"
+	Gemini20FlashModel        = "gemini-2.0-flash-001"
+	Gemini20FlashLiteModel    = "gemini-2.0-flash-lite-001"
+	Gemini25FlashPreviewModel = "gemini-2.5-flash-preview-04-17"
+	Gemini25ProPreviewModel   = "gemini-2.5-pro-preview-03-25"
+)
+
+type ThinkBudget string
+
+const (
+	HighThinkBudget   ThinkBudget = "thinking_budget.high"
+	MediumThinkBudget ThinkBudget = "thinking_budget.medium"
+	LowThinkBudget    ThinkBudget = "thinking_budget.low"
 )
 
 type GoogleTool []map[string]map[string]any
@@ -52,6 +61,7 @@ type Gemini15Pro struct {
 	StructuredOutput map[string]any
 	PdfFile          map[string]string
 	ImageFile        []GoogleImagePayload
+	Thinking         ThinkBudget
 }
 
 func (g Gemini15Pro) GetName() string {
@@ -64,7 +74,9 @@ func (g Gemini15Pro) GetProvider() string {
 
 var _ Model = new(Gemini15Pro)
 
-type Gemini15Flash struct{}
+type Gemini15Flash struct {
+	Thinking ThinkBudget
+}
 
 func (g Gemini15Flash) GetName() string {
 	return Gemini15FlashModel
@@ -92,6 +104,7 @@ type Gemini20Flash struct {
 	StructuredOutput map[string]any
 	PdfFile          map[string]string
 	ImageFile        []GoogleImagePayload
+	Thinking         ThinkBudget
 }
 
 func (g Gemini20Flash) GetName() string {
@@ -120,6 +133,7 @@ type Gemini20FlashLite struct {
 	StructuredOutput map[string]any
 	PdfFile          map[string]string
 	ImageFile        []GoogleImagePayload
+	Thinking         ThinkBudget
 }
 
 func (g Gemini20FlashLite) GetName() string {
@@ -131,6 +145,35 @@ func (g Gemini20FlashLite) GetProvider() string {
 }
 
 var _ Model = new(Gemini20FlashLite)
+
+type Gemini25FlashPreview struct {
+	Tools GoogleTool
+	// StructuredOutput represents a subset of the OpenAPI 3.0 Schema Object. Refer to gemini documentation for complete and up-to-date information. An example structure could be:
+	//
+	// 	var schemaGoogle = map[string]any{
+	// 		"type": "object",
+	// 		"properties": map[string]any{
+	// 			"final_answer": map[string]any{"type": "string"},
+	// 			"valuation": map[string]any{
+	// 				"type": "number",
+	// 			},
+	// 		},
+	// 	}
+	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []GoogleImagePayload
+	Thinking         ThinkBudget
+}
+
+func (g Gemini25FlashPreview) GetName() string {
+	return Gemini25FlashPreviewModel
+}
+
+func (g Gemini25FlashPreview) GetProvider() string {
+	return GoogleProvider
+}
+
+var _ Model = new(Gemini25ProPreview)
 
 type Gemini25ProPreview struct {
 	Tools GoogleTool
@@ -148,6 +191,7 @@ type Gemini25ProPreview struct {
 	StructuredOutput map[string]any
 	PdfFile          map[string]string
 	ImageFile        []GoogleImagePayload
+	Thinking         ThinkBudget
 }
 
 func (g Gemini25ProPreview) GetName() string {

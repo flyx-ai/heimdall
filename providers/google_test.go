@@ -78,6 +78,18 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 			},
 		},
 		{
+			name: "should complete request with gemini 2.5 flash experimental",
+			req: request.Completion{
+				Model:         models.Gemini25FlashPreview{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
 			name: "should complete request with gemini 2.5 pro experimental",
 			req: request.Completion{
 				Model:         models.Gemini25ProPreview{},
@@ -168,6 +180,18 @@ func TestGoogleModelsWithStreaming(t *testing.T) {
 			name: "should stream request with gemini 2.0 flash lite",
 			req: request.Completion{
 				Model:         models.Gemini20FlashLite{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with gemini 2.5 flash experimental",
+			req: request.Completion{
+				Model:         models.Gemini25FlashPreview{},
 				SystemMessage: systemInst,
 				UserMessage:   userMsg,
 				Temperature:   1,

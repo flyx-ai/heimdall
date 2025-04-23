@@ -404,6 +404,23 @@ func (g Google) doRequest(
 		}
 
 		requestBody = body
+	case models.Gemini25FlashPreviewModel:
+		request, err := prepareGemini25FlashPreviewRequest(
+			geminiReq,
+			model,
+			req.SystemMessage,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(request)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
@@ -493,7 +510,7 @@ func prepareGemini15FlashRequest(
 	userMsg string,
 ) (geminiRequest, error) {
 	// TODO: implement file, image etc on model
-	_, ok := requestedModel.(models.Gemini15Flash)
+	model, ok := requestedModel.(models.Gemini15Flash)
 	if !ok {
 		return request, errors.New(
 			"internal error; model type assertion to models.Gemini15Flash failed",
@@ -510,6 +527,10 @@ func prepareGemini15FlashRequest(
 			Text: userMsg,
 		},
 	)
+
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
+	}
 
 	return request, nil
 }
@@ -573,6 +594,10 @@ func prepareGemini15ProRequest(
 			"response_mime_type": "application/json",
 			"response_schema":    model.StructuredOutput,
 		}
+	}
+
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
 	}
 
 	return request, nil
@@ -643,6 +668,10 @@ func prepareGemini20FlashRequest(
 		request.Tools = model.Tools
 	}
 
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
+	}
+
 	return request, nil
 }
 
@@ -709,6 +738,82 @@ func prepareGemini20FlashLiteRequest(
 
 	if len(model.Tools) > 1 {
 		request.Tools = model.Tools
+	}
+
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
+	}
+
+	return request, nil
+}
+
+func prepareGemini25FlashPreviewRequest(
+	request geminiRequest,
+	requestedModel models.Model,
+	systemInst string,
+	userMsg string,
+) (geminiRequest, error) {
+	model, ok := requestedModel.(models.Gemini25FlashPreview)
+	if !ok {
+		return request, errors.New(
+			"internal error; model type assertion to models.Gemini25FlashPreview failed",
+		)
+	}
+
+	request.SystemInstruction.Parts = part{
+		Text: systemInst,
+	}
+
+	request.Contents[0].Parts = append(
+		request.Contents[0].Parts,
+		part{
+			Text: userMsg,
+		},
+	)
+
+	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
+		return geminiRequest{}, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		request = handleVisionData(request, model.ImageFile)
+	}
+
+	if len(model.PdfFile) == 1 {
+		var mimeType string
+		var fileURI string
+
+		for name, data := range model.PdfFile {
+			mimeType = name
+			fileURI = data
+		}
+
+		request.Contents[0].Parts = append(
+			request.Contents[0].Parts,
+			part{
+				FileData: fileData{
+					MimeType: mimeType,
+					FileURI:  fileURI,
+				},
+			},
+		)
+	}
+
+	if len(model.StructuredOutput) == 1 {
+		request.Config = map[string]any{
+			"response_mime_type": "application/json",
+			"response_schema":    model.StructuredOutput,
+		}
+	}
+
+	if len(model.Tools) > 1 {
+		request.Tools = model.Tools
+	}
+
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
 	}
 
 	return request, nil
@@ -779,6 +884,10 @@ func prepareGemini25ProPreviewRequest(
 		request.Tools = model.Tools
 	}
 
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
+	}
+
 	return request, nil
 }
 
@@ -821,6 +930,34 @@ func handleVisionData(
 					},
 				},
 			)
+		}
+	}
+
+	return request
+}
+
+func handleThinkingBudget(
+	request geminiRequest,
+	budget models.ThinkBudget,
+) geminiRequest {
+	switch budget {
+	case models.HighThinkBudget:
+		request.Config = map[string]any{
+			"thinkingConfig": map[string]int64{
+				"thinkingBudget": 24576,
+			},
+		}
+	case models.MediumThinkBudget:
+		request.Config = map[string]any{
+			"thinkingConfig": map[string]int64{
+				"thinkingBudget": 12288,
+			},
+		}
+	case models.LowThinkBudget:
+		request.Config = map[string]any{
+			"thinkingConfig": map[string]int64{
+				"thinkingBudget": 0,
+			},
 		}
 	}
 
