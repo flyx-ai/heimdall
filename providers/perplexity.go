@@ -90,7 +90,8 @@ func (p Perplexity) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
-	requestMessages := make([]requestMessage, len(req.History)+2)
+	hisLen := len(req.History)
+	requestMessages := make([]requestMessage, hisLen+2)
 	for i, his := range req.History {
 		requestMessages[i] = requestMessage(requestMessage{
 			Role:    his.Role,
@@ -98,14 +99,26 @@ func (p Perplexity) doRequest(
 		})
 	}
 
-	requestMessages[len(req.History)+1] = requestMessage(requestMessage{
-		Role:    "system",
-		Content: req.SystemMessage,
-	})
-	requestMessages[len(req.History)+2] = requestMessage(requestMessage{
-		Role:    "user",
-		Content: req.UserMessage,
-	})
+	if hisLen == 0 {
+		requestMessages[0] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: req.SystemMessage,
+		})
+		requestMessages[1] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: req.UserMessage,
+		})
+	}
+	if hisLen != 0 {
+		requestMessages[hisLen+1] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: req.SystemMessage,
+		})
+		requestMessages[hisLen+2] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: req.UserMessage,
+		})
+	}
 
 	apiReq := openAIRequest{
 		Model:         req.Model.GetName(),
