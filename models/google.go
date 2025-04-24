@@ -46,6 +46,11 @@ type GoogleImagePayload struct {
 	Data string
 }
 
+type (
+	MimeType string
+	FileURI  string
+)
+
 type Gemini15Pro struct {
 	// StructuredOutput represents a subset of the OpenAPI 3.0 Schema Object. Refer to gemini documentation for complete and up-to-date information. An example structure could be:
 	//
@@ -59,9 +64,10 @@ type Gemini15Pro struct {
 	// 		},
 	// 	}
 	StructuredOutput map[string]any
-	PdfFile          map[string]string
-	ImageFile        []GoogleImagePayload
-	Thinking         ThinkBudget
+	// PdfFile accepts a mimetype (see request/request.go for options) and a file uri
+	PdfFile   map[MimeType]FileURI
+	ImageFile []GoogleImagePayload
+	Thinking  ThinkBudget
 }
 
 func (g Gemini15Pro) GetName() string {
@@ -102,9 +108,10 @@ type Gemini20Flash struct {
 	// 		},
 	// 	}
 	StructuredOutput map[string]any
-	PdfFile          map[string]string
-	ImageFile        []GoogleImagePayload
-	Thinking         ThinkBudget
+	// PdfFile accepts a mimetype (see request/request.go for options) and a file uri
+	PdfFile   map[MimeType]FileURI
+	ImageFile []GoogleImagePayload
+	Thinking  ThinkBudget
 }
 
 func (g Gemini20Flash) GetName() string {
@@ -131,9 +138,10 @@ type Gemini20FlashLite struct {
 	// 		},
 	// 	}
 	StructuredOutput map[string]any
-	PdfFile          map[string]string
-	ImageFile        []GoogleImagePayload
-	Thinking         ThinkBudget
+	// PdfFile accepts a mimetype (see request/request.go for options) and a file uri
+	PdfFile   map[MimeType]FileURI
+	ImageFile []GoogleImagePayload
+	Thinking  ThinkBudget
 }
 
 func (g Gemini20FlashLite) GetName() string {
@@ -160,9 +168,10 @@ type Gemini25FlashPreview struct {
 	// 		},
 	// 	}
 	StructuredOutput map[string]any
-	PdfFile          map[string]string
-	ImageFile        []GoogleImagePayload
-	Thinking         ThinkBudget
+	// PdfFile accepts a mimetype (see request/request.go for options) and a file uri
+	PdfFile   map[MimeType]FileURI
+	ImageFile []GoogleImagePayload
+	Thinking  ThinkBudget
 }
 
 func (g Gemini25FlashPreview) GetName() string {
@@ -189,9 +198,10 @@ type Gemini25ProPreview struct {
 	// 		},
 	// 	}
 	StructuredOutput map[string]any
-	PdfFile          map[string]string
-	ImageFile        []GoogleImagePayload
-	Thinking         ThinkBudget
+	// PdfFile accepts a mimetype (see request/request.go for options) and a file uri
+	PdfFile   map[MimeType]FileURI
+	ImageFile []GoogleImagePayload
+	Thinking  ThinkBudget
 }
 
 func (g Gemini25ProPreview) GetName() string {
