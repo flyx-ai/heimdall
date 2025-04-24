@@ -316,23 +316,21 @@ func (g Google) doRequest(
 	geminiReq := geminiRequest{
 		Contents: make([]content, len(req.History)+1),
 	}
-	for _, his := range req.History {
-		geminiReq.Contents = append(
-			geminiReq.Contents,
-			content{
-				Role: his.Role,
-				Parts: []any{
-					part{Text: his.Content},
-				},
+
+	for i, his := range req.History {
+		geminiReq.Contents[i] = content{
+			Role: his.Role,
+			Parts: []any{
+				part{Text: his.Content},
 			},
-		)
+		}
 	}
 
 	var requestBody []byte
 
 	switch model.GetName() {
 	case models.Gemini15FlashModel:
-		request, err := prepareGemini15FlashRequest(
+		preparedReq, err := prepareGemini15FlashRequest(
 			geminiReq,
 			model,
 			req.SystemMessage,
@@ -342,14 +340,14 @@ func (g Google) doRequest(
 			return response.Completion{}, 0, err
 		}
 
-		body, err := json.Marshal(request)
+		body, err := json.Marshal(preparedReq)
 		if err != nil {
 			return response.Completion{}, 0, err
 		}
 
 		requestBody = body
 	case models.Gemini15ProModel:
-		request, err := prepareGemini15ProRequest(
+		preparedReq, err := prepareGemini15ProRequest(
 			geminiReq,
 			model,
 			req.SystemMessage,
@@ -359,14 +357,14 @@ func (g Google) doRequest(
 			return response.Completion{}, 0, err
 		}
 
-		body, err := json.Marshal(request)
+		body, err := json.Marshal(preparedReq)
 		if err != nil {
 			return response.Completion{}, 0, err
 		}
 
 		requestBody = body
 	case models.Gemini20FlashModel:
-		request, err := prepareGemini20FlashRequest(
+		preparedReq, err := prepareGemini20FlashRequest(
 			geminiReq,
 			model,
 			req.SystemMessage,
@@ -376,14 +374,14 @@ func (g Google) doRequest(
 			return response.Completion{}, 0, err
 		}
 
-		body, err := json.Marshal(request)
+		body, err := json.Marshal(preparedReq)
 		if err != nil {
 			return response.Completion{}, 0, err
 		}
 
 		requestBody = body
 	case models.Gemini20FlashLiteModel:
-		request, err := prepareGemini20FlashLiteRequest(
+		preparedReq, err := prepareGemini20FlashLiteRequest(
 			geminiReq,
 			model,
 			req.SystemMessage,
@@ -393,14 +391,14 @@ func (g Google) doRequest(
 			return response.Completion{}, 0, err
 		}
 
-		body, err := json.Marshal(request)
+		body, err := json.Marshal(preparedReq)
 		if err != nil {
 			return response.Completion{}, 0, err
 		}
 
 		requestBody = body
 	case models.Gemini25ProPreviewModel:
-		request, err := prepareGemini25ProPreviewRequest(
+		preparedReq, err := prepareGemini25ProPreviewRequest(
 			geminiReq,
 			model,
 			req.SystemMessage,
@@ -410,14 +408,14 @@ func (g Google) doRequest(
 			return response.Completion{}, 0, err
 		}
 
-		body, err := json.Marshal(request)
+		body, err := json.Marshal(preparedReq)
 		if err != nil {
 			return response.Completion{}, 0, err
 		}
 
 		requestBody = body
 	case models.Gemini25FlashPreviewModel:
-		request, err := prepareGemini25FlashPreviewRequest(
+		preparedReq, err := prepareGemini25FlashPreviewRequest(
 			geminiReq,
 			model,
 			req.SystemMessage,
@@ -427,7 +425,7 @@ func (g Google) doRequest(
 			return response.Completion{}, 0, err
 		}
 
-		body, err := json.Marshal(request)
+		body, err := json.Marshal(preparedReq)
 		if err != nil {
 			return response.Completion{}, 0, err
 		}
@@ -642,11 +640,12 @@ func prepareGemini20FlashRequest(
 		Text: systemInst,
 	}
 
-	lastIndex := len(request.Contents)
-	if lastIndex == 1 {
-		lastIndex = 0
+	lastIndex := 1
+	if len(request.Contents) >= 2 {
+		lastIndex = len(request.Contents) - 1
 	}
 
+	request.Contents[lastIndex].Role = "user"
 	request.Contents[lastIndex].Parts = append(
 		request.Contents[lastIndex].Parts,
 		part{
