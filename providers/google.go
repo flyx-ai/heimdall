@@ -318,8 +318,12 @@ func (g Google) doRequest(
 	}
 
 	for i, his := range req.History {
+		role := his.Role
+		if role == "assistant" {
+			role = "model"
+		}
 		geminiReq.Contents[i] = content{
-			Role: his.Role,
+			Role: role,
 			Parts: []any{
 				part{Text: his.Content},
 			},

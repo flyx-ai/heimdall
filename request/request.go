@@ -38,6 +38,7 @@ type Completion struct {
 }
 
 type Message struct {
+	// Role should either be 'user' or 'assistant'
 	Role    string
 	Content string
 }
