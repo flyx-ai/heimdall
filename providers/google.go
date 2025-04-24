@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -33,7 +34,7 @@ func NewGoogle(apiKeys []string) Google {
 }
 
 type geminiRequest struct {
-	SystemInstruction systemInstruction `json:"system_instruction,omitzero"`
+	SystemInstruction systemInstruction `json:"system_instruction"`
 	Contents          []content         `json:"contents"`
 	Tools             models.GoogleTool `json:"tools"`
 	Config            map[string]any    `json:"generationConfig"`
@@ -312,6 +313,12 @@ func (g Google) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
+	if req.SystemMessage == "" || req.UserMessage == "" {
+		return response.Completion{}, 0, errors.New(
+			"gemini models require both system message and user message",
+		)
+	}
+
 	model := req.Model
 	geminiReq := geminiRequest{
 		Contents: make([]content, len(req.History)+1),
@@ -450,6 +457,9 @@ func (g Google) doRequest(
 	}
 	defer resp.Body.Close()
 
+	b, _ := io.ReadAll(resp.Body)
+	slog.Info("$$$$$$$$$$$$$$$$", "b", string(b))
+
 	if resp.StatusCode != http.StatusOK {
 		return response.Completion{}, 0, errors.New(
 			"received non-200 status code",
@@ -535,9 +545,9 @@ func prepareGemini15FlashRequest(
 		Text: systemInst,
 	}
 
-	lastIndex := len(request.Contents)
-	if lastIndex == 1 {
-		lastIndex = 0
+	lastIndex := 0
+	if len(request.Contents) > 1 {
+		lastIndex = len(request.Contents) - 1
 	}
 
 	request.Contents[lastIndex].Parts = append(
@@ -571,9 +581,9 @@ func prepareGemini15ProRequest(
 		Text: systemInst,
 	}
 
-	lastIndex := len(request.Contents)
-	if lastIndex == 1 {
-		lastIndex = 0
+	lastIndex := 0
+	if len(request.Contents) > 1 {
+		lastIndex = len(request.Contents) - 1
 	}
 
 	request.Contents[lastIndex].Parts = append(
@@ -644,8 +654,8 @@ func prepareGemini20FlashRequest(
 		Text: systemInst,
 	}
 
-	lastIndex := 1
-	if len(request.Contents) >= 2 {
+	lastIndex := 0
+	if len(request.Contents) > 1 {
 		lastIndex = len(request.Contents) - 1
 	}
 
@@ -722,9 +732,9 @@ func prepareGemini20FlashLiteRequest(
 		Text: systemInst,
 	}
 
-	lastIndex := len(request.Contents)
-	if lastIndex == 1 {
-		lastIndex = 0
+	lastIndex := 0
+	if len(request.Contents) > 1 {
+		lastIndex = len(request.Contents) - 1
 	}
 
 	request.Contents[lastIndex].Parts = append(
@@ -799,9 +809,9 @@ func prepareGemini25FlashPreviewRequest(
 		Text: systemInst,
 	}
 
-	lastIndex := len(request.Contents)
-	if lastIndex == 1 {
-		lastIndex = 0
+	lastIndex := 0
+	if len(request.Contents) > 1 {
+		lastIndex = len(request.Contents) - 1
 	}
 
 	request.Contents[lastIndex].Parts = append(
@@ -876,9 +886,9 @@ func prepareGemini25ProPreviewRequest(
 		Text: systemInst,
 	}
 
-	lastIndex := len(request.Contents)
-	if lastIndex == 1 {
-		lastIndex = 0
+	lastIndex := 0
+	if len(request.Contents) > 1 {
+		lastIndex = len(request.Contents) - 1
 	}
 
 	request.Contents[lastIndex].Parts = append(

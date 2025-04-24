@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"log/slog"
 	"net/http"
 	"os"
@@ -21,33 +20,34 @@ type Schema struct {
 func main() {
 	ctx := context.Background()
 
-	// gApiKey := os.Getenv("GOOGLE_API_KEY")
+	gApiKey := os.Getenv("GOOGLE_API_KEY")
 	// oaApiKey := os.Getenv("OPENAI_API_KEY")
 
-	f, e := os.ReadFile("cmd/heimdall/doggo.jpeg")
-	if e != nil {
-		panic(e)
-	}
-
-	aApiKey := os.Getenv("ANTHROPIC_API_KEY")
-
-	// timeout := 1 * time.Minute
-	// g := providers.NewGoogle([]string{gApiKey})
-	a := providers.NewAnthropic([]string{aApiKey})
-	res, err := a.CompleteResponse(
+	// f, e := os.ReadFile("cmd/heimdall/doggo.jpeg")
+	// if e != nil {
+	// 	panic(e)
+	// }
+	//
+	// aApiKey := os.Getenv("ANTHROPIC_API_KEY")
+	//
+	// // timeout := 1 * time.Minute
+	g := providers.NewGoogle([]string{gApiKey})
+	// a := providers.NewAnthropic([]string{aApiKey})
+	res, err := g.CompleteResponse(
 		ctx,
 		request.Completion{
-			Model: models.Claude35Haiku{
-				ImageFile: map[models.AnthropicImageType]string{
-					models.AnthropicImageJpeg: base64.StdEncoding.EncodeToString(
-						f,
-					),
-				},
+			Model: models.Gemini20Flash{
+				// ImageFile: map[models.AnthropicImageType]string{
+				// 	models.AnthropicImageJpeg: base64.StdEncoding.EncodeToString(
+				// 		f,
+				// 	),
+				// },
 			},
-			UserMessage: "analyze the current performance of anthropic",
-			Temperature: 0,
-			TopP:        0,
-			Tags:        map[string]string{},
+			SystemMessage: "1",
+			UserMessage:   "analyze the current performance of anthropic",
+			Temperature:   0,
+			TopP:          0,
+			Tags:          map[string]string{},
 		},
 		http.Client{},
 		nil,
