@@ -598,8 +598,8 @@ func prepareGemini15ProRequest(
 		var fileURI string
 
 		for name, data := range model.PdfFile {
-			mimeType = name
-			fileURI = data
+			mimeType = string(name)
+			fileURI = string(data)
 		}
 
 		request.Contents[lastIndex].Parts = append(
@@ -672,8 +672,8 @@ func prepareGemini20FlashRequest(
 		var fileURI string
 
 		for name, data := range model.PdfFile {
-			mimeType = name
-			fileURI = data
+			mimeType = string(name)
+			fileURI = string(data)
 		}
 
 		request.Contents[lastIndex].Parts = append(
@@ -749,8 +749,8 @@ func prepareGemini20FlashLiteRequest(
 		var fileURI string
 
 		for name, data := range model.PdfFile {
-			mimeType = name
-			fileURI = data
+			mimeType = string(name)
+			fileURI = string(data)
 		}
 
 		request.Contents[lastIndex].Parts = append(
@@ -826,8 +826,8 @@ func prepareGemini25FlashPreviewRequest(
 		var fileURI string
 
 		for name, data := range model.PdfFile {
-			mimeType = name
-			fileURI = data
+			mimeType = string(name)
+			fileURI = string(data)
 		}
 
 		request.Contents[lastIndex].Parts = append(
@@ -903,8 +903,8 @@ func prepareGemini25ProPreviewRequest(
 		var fileURI string
 
 		for name, data := range model.PdfFile {
-			mimeType = name
-			fileURI = data
+			mimeType = string(name)
+			fileURI = string(data)
 		}
 
 		request.Contents[lastIndex].Parts = append(
