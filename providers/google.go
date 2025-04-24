@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -456,9 +455,6 @@ func (g Google) doRequest(
 		return response.Completion{}, 0, err
 	}
 	defer resp.Body.Close()
-
-	b, _ := io.ReadAll(resp.Body)
-	slog.Info("$$$$$$$$$$$$$$$$", "b", string(b))
 
 	if resp.StatusCode != http.StatusOK {
 		return response.Completion{}, 0, errors.New(
