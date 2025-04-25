@@ -589,34 +589,15 @@ func prepareGemini15ProRequest(
 		},
 	)
 
-	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
-		return geminiRequest{}, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
+	// Only one of image or PDF inputs may be provided
+	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
+		return geminiRequest{}, errors.New("only pdf file or image file can be provided, not both")
 	}
-
 	if len(model.ImageFile) > 0 {
 		request = handleVisionData(request, model.ImageFile)
 	}
-
-	if len(model.PdfFile) == 1 {
-		var mimeType string
-		var fileURI string
-
-		for name, data := range model.PdfFile {
-			mimeType = string(name)
-			fileURI = string(data)
-		}
-
-		request.Contents[lastIndex].Parts = append(
-			request.Contents[lastIndex].Parts,
-			part{
-				FileData: fileData{
-					MimeType: mimeType,
-					FileURI:  fileURI,
-				},
-			},
-		)
+	if len(model.PdfFiles) > 0 {
+		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
 	if len(model.StructuredOutput) == 1 {
@@ -658,39 +639,17 @@ func prepareGemini20FlashRequest(
 	request.Contents[lastIndex].Role = "user"
 	request.Contents[lastIndex].Parts = append(
 		request.Contents[lastIndex].Parts,
-		part{
-			Text: userMsg,
-		},
+		part{Text: userMsg},
 	)
-
-	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
-		return geminiRequest{}, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
+	// Only one of image or PDF inputs may be provided
+	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
+		return request, errors.New("only pdf file or image file can be provided, not both")
 	}
-
 	if len(model.ImageFile) > 0 {
 		request = handleVisionData(request, model.ImageFile)
 	}
-
-	if len(model.PdfFile) == 1 {
-		var mimeType string
-		var fileURI string
-
-		for name, data := range model.PdfFile {
-			mimeType = string(name)
-			fileURI = string(data)
-		}
-
-		request.Contents[lastIndex].Parts = append(
-			request.Contents[lastIndex].Parts,
-			part{
-				FileData: fileData{
-					MimeType: mimeType,
-					FileURI:  fileURI,
-				},
-			},
-		)
+	if len(model.PdfFiles) > 0 {
+		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
 	if len(model.StructuredOutput) == 1 {
@@ -735,39 +694,17 @@ func prepareGemini20FlashLiteRequest(
 
 	request.Contents[lastIndex].Parts = append(
 		request.Contents[lastIndex].Parts,
-		part{
-			Text: userMsg,
-		},
+		part{Text: userMsg},
 	)
-
-	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
-		return geminiRequest{}, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
+	// Only one of image or PDF inputs may be provided
+	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
+		return request, errors.New("only pdf file or image file can be provided, not both")
 	}
-
 	if len(model.ImageFile) > 0 {
 		request = handleVisionData(request, model.ImageFile)
 	}
-
-	if len(model.PdfFile) == 1 {
-		var mimeType string
-		var fileURI string
-
-		for name, data := range model.PdfFile {
-			mimeType = string(name)
-			fileURI = string(data)
-		}
-
-		request.Contents[lastIndex].Parts = append(
-			request.Contents[lastIndex].Parts,
-			part{
-				FileData: fileData{
-					MimeType: mimeType,
-					FileURI:  fileURI,
-				},
-			},
-		)
+	if len(model.PdfFiles) > 0 {
+		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
 	if len(model.StructuredOutput) == 1 {
@@ -812,39 +749,17 @@ func prepareGemini25FlashPreviewRequest(
 
 	request.Contents[lastIndex].Parts = append(
 		request.Contents[lastIndex].Parts,
-		part{
-			Text: userMsg,
-		},
+		part{Text: userMsg},
 	)
-
-	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
-		return geminiRequest{}, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
+	// Only one of image or PDF inputs may be provided
+	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
+		return request, errors.New("only pdf file or image file can be provided, not both")
 	}
-
 	if len(model.ImageFile) > 0 {
 		request = handleVisionData(request, model.ImageFile)
 	}
-
-	if len(model.PdfFile) == 1 {
-		var mimeType string
-		var fileURI string
-
-		for name, data := range model.PdfFile {
-			mimeType = string(name)
-			fileURI = string(data)
-		}
-
-		request.Contents[lastIndex].Parts = append(
-			request.Contents[lastIndex].Parts,
-			part{
-				FileData: fileData{
-					MimeType: mimeType,
-					FileURI:  fileURI,
-				},
-			},
-		)
+	if len(model.PdfFiles) > 0 {
+		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
 	if len(model.StructuredOutput) == 1 {
@@ -889,39 +804,17 @@ func prepareGemini25ProPreviewRequest(
 
 	request.Contents[lastIndex].Parts = append(
 		request.Contents[lastIndex].Parts,
-		part{
-			Text: userMsg,
-		},
+		part{Text: userMsg},
 	)
-
-	if len(model.PdfFile) == 1 && len(model.ImageFile) == 1 {
-		return geminiRequest{}, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
+	// Only one of image or PDF inputs may be provided
+	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
+		return request, errors.New("only pdf file or image file can be provided, not both")
 	}
-
 	if len(model.ImageFile) > 0 {
 		request = handleVisionData(request, model.ImageFile)
 	}
-
-	if len(model.PdfFile) == 1 {
-		var mimeType string
-		var fileURI string
-
-		for name, data := range model.PdfFile {
-			mimeType = string(name)
-			fileURI = string(data)
-		}
-
-		request.Contents[lastIndex].Parts = append(
-			request.Contents[lastIndex].Parts,
-			part{
-				FileData: fileData{
-					MimeType: mimeType,
-					FileURI:  fileURI,
-				},
-			},
-		)
+	if len(model.PdfFiles) > 0 {
+		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
 	if len(model.StructuredOutput) == 1 {
@@ -984,6 +877,31 @@ func handleVisionData(
 		}
 	}
 
+	return request
+}
+
+// handlePdfData appends PDF inputs (URIs or base64) to request contents at given index
+func handlePdfData(request geminiRequest, pdfs []models.GooglePdfPayload, contentIdx int) geminiRequest {
+	for _, pdf := range pdfs {
+		if strings.HasPrefix(pdf.Data, "https://") {
+			// external URI
+			request.Contents[contentIdx].Parts = append(
+				request.Contents[contentIdx].Parts,
+				filePart{InlineData: fileData{MimeType: pdf.MimeType, FileURI: pdf.Data}},
+			)
+		} else {
+			// inline base64
+			data := pdf.Data
+			prefix := fmt.Sprintf("data:%s;base64,", pdf.MimeType)
+			if parts := strings.SplitN(pdf.Data, prefix, 2); len(parts) == 2 {
+				data = parts[1]
+			}
+			request.Contents[contentIdx].Parts = append(
+				request.Contents[contentIdx].Parts,
+				filePart{InlineData: imageData{MimeType: pdf.MimeType, Data: data}},
+			)
+		}
+	}
 	return request
 }
 
