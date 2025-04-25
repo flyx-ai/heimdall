@@ -46,7 +46,8 @@ type GoogleImagePayload struct {
 	Data string
 }
 
-// GooglePdfPayload represents a PDF input, either as a URI or base64 data
+// Deprecated: Use GooglePdf instead
+// GooglePdfPayload is kept for backward compatibility
 type GooglePdfPayload struct {
 	MimeType string
 	// Data can be either a base64 encoded PDF or a file URI (https://...)
@@ -57,6 +58,11 @@ type GooglePdfPayload struct {
 type (
 	MimeType string
 	FileURI  string
+	// GooglePdf represents a PDF input, either as a URI or base64 data
+	// The string can be either:
+	// - A file URI (starts with "https://")
+	// - Base64 encoded PDF data (with or without the data:application/pdf;base64, prefix)
+	GooglePdf string
 )
 
 type Gemini15Pro struct {
@@ -73,7 +79,7 @@ type Gemini15Pro struct {
 	// 	}
 	StructuredOutput map[string]any
 	// PdfFiles accepts one or more PDFs, either URIs or base64 data
-	PdfFiles  []GooglePdfPayload
+	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
 	Thinking  ThinkBudget
 }
@@ -117,7 +123,7 @@ type Gemini20Flash struct {
 	// 	}
 	StructuredOutput map[string]any
 	// PdfFiles accepts one or more PDFs, either URIs or base64 data
-	PdfFiles  []GooglePdfPayload
+	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
 	Thinking  ThinkBudget
 }
@@ -147,7 +153,7 @@ type Gemini20FlashLite struct {
 	// 	}
 	StructuredOutput map[string]any
 	// PdfFiles accepts one or more PDFs, either URIs or base64 data
-	PdfFiles  []GooglePdfPayload
+	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
 	Thinking  ThinkBudget
 }
@@ -177,7 +183,7 @@ type Gemini25FlashPreview struct {
 	// 	}
 	StructuredOutput map[string]any
 	// PdfFiles accepts one or more PDFs, either URIs or base64 data
-	PdfFiles  []GooglePdfPayload
+	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
 	Thinking  ThinkBudget
 }
@@ -207,7 +213,7 @@ type Gemini25ProPreview struct {
 	// 	}
 	StructuredOutput map[string]any
 	// PdfFiles accepts one or more PDFs, either URIs or base64 data
-	PdfFiles  []GooglePdfPayload
+	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
 	Thinking  ThinkBudget
 }

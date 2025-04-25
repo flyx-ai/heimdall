@@ -881,24 +881,28 @@ func handleVisionData(
 }
 
 // handlePdfData appends PDF inputs (URIs or base64) to request contents at given index
-func handlePdfData(request geminiRequest, pdfs []models.GooglePdfPayload, contentIdx int) geminiRequest {
+func handlePdfData(request geminiRequest, pdfs []models.GooglePdf, contentIdx int) geminiRequest {
+	const pdfMimeType = "application/pdf"
+	
 	for _, pdf := range pdfs {
-		if strings.HasPrefix(pdf.Data, "https://") {
+		pdfStr := string(pdf)
+		
+		if strings.HasPrefix(pdfStr, "https://") {
 			// external URI
 			request.Contents[contentIdx].Parts = append(
 				request.Contents[contentIdx].Parts,
-				filePart{InlineData: fileData{MimeType: pdf.MimeType, FileURI: pdf.Data}},
+				filePart{InlineData: fileData{MimeType: pdfMimeType, FileURI: pdfStr}},
 			)
 		} else {
 			// inline base64
-			data := pdf.Data
-			prefix := fmt.Sprintf("data:%s;base64,", pdf.MimeType)
-			if parts := strings.SplitN(pdf.Data, prefix, 2); len(parts) == 2 {
+			data := pdfStr
+			prefix := fmt.Sprintf("data:%s;base64,", pdfMimeType)
+			if parts := strings.SplitN(pdfStr, prefix, 2); len(parts) == 2 {
 				data = parts[1]
 			}
 			request.Contents[contentIdx].Parts = append(
 				request.Contents[contentIdx].Parts,
-				filePart{InlineData: imageData{MimeType: pdf.MimeType, Data: data}},
+				filePart{InlineData: imageData{MimeType: pdfMimeType, Data: data}},
 			)
 		}
 	}
