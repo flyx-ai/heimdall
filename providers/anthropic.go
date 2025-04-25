@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -32,16 +33,16 @@ func NewAnthropic(apiKeys []string) Anthropic {
 }
 
 type (
-	visionSource struct {
+	mediaSource struct {
 		Type      string `json:"type"`
 		MediaType string `json:"media_type"`
 		Data      string `json:"data"`
 	}
-	anthropicVisionPayload struct {
-		Type   string       `json:"type"`
-		Source visionSource `json:"source"`
+	anthropicMediaPayload struct {
+		Type   string      `json:"type"`
+		Source mediaSource `json:"source"`
 	}
-	anthropicVisionTextPayload struct {
+	anthropicTextPayload struct {
 		Type string `json:"type"`
 		Text string `json:"text"`
 	}
@@ -449,8 +450,49 @@ func prepareClaude3Opus(
 		)
 	}
 
-	if len(model.ImageFile) == 1 {
-		return handleVision(userMsg, model.ImageFile), nil
+	// disallow both image and pdf files
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	// handle image if provided
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		// validate pdf files: correct mimetype and base64 encoding
+		const prefix = "data:application/pdf;base64,"
+		for _, pdfFile := range model.PdfFiles {
+			for pdfType, val := range pdfFile {
+				if pdfType != models.AnthropicPdf {
+					return nil, fmt.Errorf(
+						"invalid mimetype for pdf files: %s",
+						pdfType,
+					)
+				}
+
+				raw := val
+				var b64str string
+
+				if strings.HasPrefix(raw, prefix) {
+					b64str = strings.TrimPrefix(raw, prefix)
+				}
+				if !strings.HasPrefix(raw, prefix) {
+					b64str = raw
+				}
+
+				if _, err := base64.StdEncoding.DecodeString(b64str); err != nil {
+					return nil, fmt.Errorf(
+						"pdf data is not valid base64 encoding: %w",
+						err,
+					)
+				}
+			}
+		}
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
 	return []anthropicMsg{
@@ -472,8 +514,49 @@ func prepareClaude35Sonnet(
 		)
 	}
 
-	if len(model.ImageFile) == 1 {
-		return handleVision(userMsg, model.ImageFile), nil
+	// disallow both image and pdf files
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	// handle image if provided
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		// validate pdf files: correct mimetype and base64 encoding
+		const prefix = "data:application/pdf;base64,"
+		for _, pdfFile := range model.PdfFiles {
+			for pdfType, val := range pdfFile {
+				if pdfType != models.AnthropicPdf {
+					return nil, fmt.Errorf(
+						"invalid mimetype for pdf files: %s",
+						pdfType,
+					)
+				}
+
+				raw := val
+				var b64str string
+
+				if strings.HasPrefix(raw, prefix) {
+					b64str = strings.TrimPrefix(raw, prefix)
+				}
+				if !strings.HasPrefix(raw, prefix) {
+					b64str = raw
+				}
+
+				if _, err := base64.StdEncoding.DecodeString(b64str); err != nil {
+					return nil, fmt.Errorf(
+						"pdf data is not valid base64 encoding: %w",
+						err,
+					)
+				}
+			}
+		}
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
 	return []anthropicMsg{
@@ -495,8 +578,48 @@ func prepareClaude35Haiku(
 		)
 	}
 
-	if len(model.ImageFile) == 1 {
-		return handleVision(userMsg, model.ImageFile), nil
+	// disallow both image and pdf files
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	// handle image if provided
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		const prefix = "data:application/pdf;base64,"
+		for _, pdfFile := range model.PdfFiles {
+			for pdfType, val := range pdfFile {
+				if pdfType != models.AnthropicPdf {
+					return nil, fmt.Errorf(
+						"invalid mimetype for pdf files: %s",
+						pdfType,
+					)
+				}
+
+				raw := val
+				var b64str string
+
+				if strings.HasPrefix(raw, prefix) {
+					b64str = strings.TrimPrefix(raw, prefix)
+				}
+				if !strings.HasPrefix(raw, prefix) {
+					b64str = raw
+				}
+
+				if _, err := base64.StdEncoding.DecodeString(b64str); err != nil {
+					return nil, fmt.Errorf(
+						"pdf data is not valid base64 encoding: %w",
+						err,
+					)
+				}
+			}
+		}
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
 	return []anthropicMsg{
@@ -518,8 +641,46 @@ func prepareClaude37Sonnet(
 		)
 	}
 
-	if len(model.ImageFile) == 1 {
-		return handleVision(userMsg, model.ImageFile), nil
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		const prefix = "data:application/pdf;base64,"
+		for _, pdfFile := range model.PdfFiles {
+			for pdfType, val := range pdfFile {
+				if pdfType != models.AnthropicPdf {
+					return nil, fmt.Errorf(
+						"invalid mimetype for pdf files: %s",
+						pdfType,
+					)
+				}
+
+				raw := val
+				var b64str string
+
+				if strings.HasPrefix(raw, prefix) {
+					b64str = strings.TrimPrefix(raw, prefix)
+				}
+				if !strings.HasPrefix(raw, prefix) {
+					b64str = raw
+				}
+
+				if _, err := base64.StdEncoding.DecodeString(b64str); err != nil {
+					return nil, fmt.Errorf(
+						"pdf data is not valid base64 encoding: %w",
+						err,
+					)
+				}
+			}
+		}
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
 	return []anthropicMsg{
@@ -530,34 +691,70 @@ func prepareClaude37Sonnet(
 	}, nil
 }
 
-func handleVision(
+func handleMedia(
 	userMsg string,
 	imageFile map[models.AnthropicImageType]string,
+	pdfFiles []map[models.AnthropicPdfType]string,
 ) []anthropicMsg {
-	mediaType := ""
-	data := ""
-	for t, val := range imageFile {
-		mediaType = string(t)
-		data = val
+	content := []any{}
+
+	// Handle image if present
+	if len(imageFile) > 0 {
+		mediaType := ""
+		data := ""
+		for t, val := range imageFile {
+			mediaType = string(t)
+			data = val
+		}
+
+		content = append(content, anthropicMediaPayload{
+			Type: "image",
+			Source: mediaSource{
+				Type:      "base64",
+				MediaType: mediaType,
+				Data:      data,
+			},
+		})
 	}
 
-	return []anthropicMsg{
-		{
-			Role: "user",
-			Content: []any{
-				anthropicVisionPayload{
-					Type: "image",
-					Source: visionSource{
+	// Handle PDF files if present
+	if len(pdfFiles) > 0 {
+		for _, pdfFile := range pdfFiles {
+			for t, val := range pdfFile {
+				mediaType := string(t)
+				data := val
+
+				// Ensure the PDF data is properly formatted
+				if !strings.HasPrefix(data, "data:application/pdf;base64,") {
+					// If it doesn't have the prefix, assume it's just the base64 data
+					data = strings.TrimPrefix(
+						data,
+						"data:application/pdf;base64,",
+					)
+				}
+
+				content = append(content, anthropicMediaPayload{
+					Type: "file",
+					Source: mediaSource{
 						Type:      "base64",
 						MediaType: mediaType,
 						Data:      data,
 					},
-				},
-				anthropicVisionTextPayload{
-					Type: "text",
-					Text: userMsg,
-				},
-			},
+				})
+			}
+		}
+	}
+
+	// Add the text content
+	content = append(content, anthropicTextPayload{
+		Type: "text",
+		Text: userMsg,
+	})
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: content,
 		},
 	}
 }
