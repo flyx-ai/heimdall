@@ -57,6 +57,10 @@ type imageData struct {
 	Data     string `json:"data,omitzero"`
 }
 
+type fileURI struct {
+	FileData fileData `json:"file_data"`
+}
+
 type filePart struct {
 	InlineData any `json:"inline_data,omitzero"`
 }
@@ -912,8 +916,8 @@ func handlePdfData(
 		if strings.HasPrefix(pdfStr, "https://") {
 			request.Contents[contentIdx].Parts = append(
 				request.Contents[contentIdx].Parts,
-				filePart{
-					InlineData: fileData{
+				fileURI{
+					FileData: fileData{
 						MimeType: pdfMimeType,
 						FileURI:  pdfStr,
 					},
