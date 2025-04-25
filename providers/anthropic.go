@@ -32,16 +32,16 @@ func NewAnthropic(apiKeys []string) Anthropic {
 }
 
 type (
-	visionSource struct {
+	mediaSource struct {
 		Type      string `json:"type"`
 		MediaType string `json:"media_type"`
 		Data      string `json:"data"`
 	}
-	anthropicVisionPayload struct {
-		Type   string       `json:"type"`
-		Source visionSource `json:"source"`
+	anthropicMediaPayload struct {
+		Type   string      `json:"type"`
+		Source mediaSource `json:"source"`
 	}
-	anthropicVisionTextPayload struct {
+	anthropicTextPayload struct {
 		Type string `json:"type"`
 		Text string `json:"text"`
 	}
@@ -112,7 +112,7 @@ func (a Anthropic) CompleteResponse(
 		})
 	}
 
-	return a.tryWithBackup(ctx, req, client, nil, requestLog)
+	return a.tryWithBackup(ctx, req, client, nil, reqLog)
 }
 
 // doRequest implements LLMProvider.
@@ -449,8 +449,18 @@ func prepareClaude3Opus(
 		)
 	}
 
-	if len(model.ImageFile) == 1 {
-		return handleVision(userMsg, model.ImageFile), nil
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
 	return []anthropicMsg{
@@ -472,8 +482,18 @@ func prepareClaude35Sonnet(
 		)
 	}
 
-	if len(model.ImageFile) == 1 {
-		return handleVision(userMsg, model.ImageFile), nil
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
 	return []anthropicMsg{
@@ -495,8 +515,18 @@ func prepareClaude35Haiku(
 		)
 	}
 
-	if len(model.ImageFile) == 1 {
-		return handleVision(userMsg, model.ImageFile), nil
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
 	return []anthropicMsg{
@@ -518,8 +548,18 @@ func prepareClaude37Sonnet(
 		)
 	}
 
-	if len(model.ImageFile) == 1 {
-		return handleVision(userMsg, model.ImageFile), nil
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
 	return []anthropicMsg{
@@ -530,34 +570,53 @@ func prepareClaude37Sonnet(
 	}, nil
 }
 
-func handleVision(
+func handleMedia(
 	userMsg string,
 	imageFile map[models.AnthropicImageType]string,
+	pdfFiles []models.AnthropicPdf,
 ) []anthropicMsg {
-	mediaType := ""
-	data := ""
-	for t, val := range imageFile {
-		mediaType = string(t)
-		data = val
+	content := []any{}
+
+	if len(imageFile) > 0 {
+		mediaType := ""
+		data := ""
+		for t, val := range imageFile {
+			mediaType = string(t)
+			data = val
+		}
+
+		content = append(content, anthropicMediaPayload{
+			Type: "image",
+			Source: mediaSource{
+				Type:      "base64",
+				MediaType: mediaType,
+				Data:      data,
+			},
+		})
 	}
+
+	if len(pdfFiles) > 0 {
+		for _, pdfFile := range pdfFiles {
+			content = append(content, anthropicMediaPayload{
+				Type: "document",
+				Source: mediaSource{
+					Type:      "base64",
+					MediaType: "application/pdf",
+					Data:      string(pdfFile),
+				},
+			})
+		}
+	}
+
+	content = append(content, anthropicTextPayload{
+		Type: "text",
+		Text: userMsg,
+	})
 
 	return []anthropicMsg{
 		{
-			Role: "user",
-			Content: []any{
-				anthropicVisionPayload{
-					Type: "image",
-					Source: visionSource{
-						Type:      "base64",
-						MediaType: mediaType,
-						Data:      data,
-					},
-				},
-				anthropicVisionTextPayload{
-					Type: "text",
-					Text: userMsg,
-				},
-			},
+			Role:    "user",
+			Content: content,
 		},
 	}
 }

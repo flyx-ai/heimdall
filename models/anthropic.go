@@ -9,7 +9,10 @@ const (
 	AnthropicClaude37SonnetAlias = "claude-3-7-sonnet-latest"
 )
 
-type AnthropicImageType string
+type (
+	AnthropicImageType string
+	AnthropicPdf       string
+)
 
 const (
 	AnthropicImageJpeg AnthropicImageType = "image/jpeg"
@@ -17,6 +20,7 @@ const (
 
 type Claude3Opus struct {
 	ImageFile map[AnthropicImageType]string
+	PdfFiles  []AnthropicPdf
 }
 
 func (c Claude3Opus) GetName() string {
@@ -31,6 +35,7 @@ var _ Model = new(Claude3Opus)
 
 type Claude35Sonnet struct {
 	ImageFile map[AnthropicImageType]string
+	PdfFiles  []AnthropicPdf
 }
 
 func (c Claude35Sonnet) GetName() string {
@@ -45,6 +50,7 @@ var _ Model = new(Claude35Sonnet)
 
 type Claude35Haiku struct {
 	ImageFile map[AnthropicImageType]string
+	PdfFiles  []AnthropicPdf
 }
 
 func (c Claude35Haiku) GetName() string {
@@ -59,6 +65,7 @@ var _ Model = new(Claude35Haiku)
 
 type Claude37Sonnet struct {
 	ImageFile map[AnthropicImageType]string
+	PdfFiles  []AnthropicPdf
 }
 
 func (c Claude37Sonnet) GetName() string {
