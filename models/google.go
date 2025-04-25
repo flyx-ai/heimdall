@@ -46,18 +46,7 @@ type GoogleImagePayload struct {
 	Data string
 }
 
-// Deprecated: Use GooglePdf instead
-// GooglePdfPayload is kept for backward compatibility
-type GooglePdfPayload struct {
-	MimeType string
-	// Data can be either a base64 encoded PDF or a file URI (https://...)
-	// If base64, omit the `data:application/pdf;base64,` prefix
-	Data string
-}
-
 type (
-	MimeType string
-	FileURI  string
 	// GooglePdf represents a PDF input, either as a URI or base64 data
 	// The string can be either:
 	// - A file URI (starts with "https://")
