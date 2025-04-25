@@ -450,20 +450,17 @@ func prepareClaude3Opus(
 		)
 	}
 
-	// disallow both image and pdf files
 	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
 		return nil, errors.New(
 			"only image file or pdf files can be provided, not both",
 		)
 	}
 
-	// handle image if provided
 	if len(model.ImageFile) > 0 {
 		return handleMedia(userMsg, model.ImageFile, nil), nil
 	}
 
 	if len(model.PdfFiles) > 0 {
-		// validate pdf files: correct mimetype and base64 encoding
 		const prefix = "data:application/pdf;base64,"
 		for _, pdfFile := range model.PdfFiles {
 			for pdfType, val := range pdfFile {
@@ -514,20 +511,17 @@ func prepareClaude35Sonnet(
 		)
 	}
 
-	// disallow both image and pdf files
 	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
 		return nil, errors.New(
 			"only image file or pdf files can be provided, not both",
 		)
 	}
 
-	// handle image if provided
 	if len(model.ImageFile) > 0 {
 		return handleMedia(userMsg, model.ImageFile, nil), nil
 	}
 
 	if len(model.PdfFiles) > 0 {
-		// validate pdf files: correct mimetype and base64 encoding
 		const prefix = "data:application/pdf;base64,"
 		for _, pdfFile := range model.PdfFiles {
 			for pdfType, val := range pdfFile {
@@ -578,14 +572,12 @@ func prepareClaude35Haiku(
 		)
 	}
 
-	// disallow both image and pdf files
 	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
 		return nil, errors.New(
 			"only image file or pdf files can be provided, not both",
 		)
 	}
 
-	// handle image if provided
 	if len(model.ImageFile) > 0 {
 		return handleMedia(userMsg, model.ImageFile, nil), nil
 	}
@@ -698,7 +690,6 @@ func handleMedia(
 ) []anthropicMsg {
 	content := []any{}
 
-	// Handle image if present
 	if len(imageFile) > 0 {
 		mediaType := ""
 		data := ""
@@ -717,16 +708,13 @@ func handleMedia(
 		})
 	}
 
-	// Handle PDF files if present
 	if len(pdfFiles) > 0 {
 		for _, pdfFile := range pdfFiles {
 			for t, val := range pdfFile {
 				mediaType := string(t)
 				data := val
 
-				// Ensure the PDF data is properly formatted
 				if !strings.HasPrefix(data, "data:application/pdf;base64,") {
-					// If it doesn't have the prefix, assume it's just the base64 data
 					data = strings.TrimPrefix(
 						data,
 						"data:application/pdf;base64,",
@@ -745,7 +733,6 @@ func handleMedia(
 		}
 	}
 
-	// Add the text content
 	content = append(content, anthropicTextPayload{
 		Type: "text",
 		Text: userMsg,
