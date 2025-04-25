@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -113,7 +112,7 @@ func (a Anthropic) CompleteResponse(
 		})
 	}
 
-	return a.tryWithBackup(ctx, req, client, nil, requestLog)
+	return a.tryWithBackup(ctx, req, client, nil, reqLog)
 }
 
 // doRequest implements LLMProvider.
@@ -461,34 +460,6 @@ func prepareClaude3Opus(
 	}
 
 	if len(model.PdfFiles) > 0 {
-		const prefix = "data:application/pdf;base64,"
-		for _, pdfFile := range model.PdfFiles {
-			for pdfType, val := range pdfFile {
-				if pdfType != models.AnthropicPdf {
-					return nil, fmt.Errorf(
-						"invalid mimetype for pdf files: %s",
-						pdfType,
-					)
-				}
-
-				raw := val
-				var b64str string
-
-				if strings.HasPrefix(raw, prefix) {
-					b64str = strings.TrimPrefix(raw, prefix)
-				}
-				if !strings.HasPrefix(raw, prefix) {
-					b64str = raw
-				}
-
-				if _, err := base64.StdEncoding.DecodeString(b64str); err != nil {
-					return nil, fmt.Errorf(
-						"pdf data is not valid base64 encoding: %w",
-						err,
-					)
-				}
-			}
-		}
 		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
@@ -522,34 +493,6 @@ func prepareClaude35Sonnet(
 	}
 
 	if len(model.PdfFiles) > 0 {
-		const prefix = "data:application/pdf;base64,"
-		for _, pdfFile := range model.PdfFiles {
-			for pdfType, val := range pdfFile {
-				if pdfType != models.AnthropicPdf {
-					return nil, fmt.Errorf(
-						"invalid mimetype for pdf files: %s",
-						pdfType,
-					)
-				}
-
-				raw := val
-				var b64str string
-
-				if strings.HasPrefix(raw, prefix) {
-					b64str = strings.TrimPrefix(raw, prefix)
-				}
-				if !strings.HasPrefix(raw, prefix) {
-					b64str = raw
-				}
-
-				if _, err := base64.StdEncoding.DecodeString(b64str); err != nil {
-					return nil, fmt.Errorf(
-						"pdf data is not valid base64 encoding: %w",
-						err,
-					)
-				}
-			}
-		}
 		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
@@ -583,34 +526,6 @@ func prepareClaude35Haiku(
 	}
 
 	if len(model.PdfFiles) > 0 {
-		const prefix = "data:application/pdf;base64,"
-		for _, pdfFile := range model.PdfFiles {
-			for pdfType, val := range pdfFile {
-				if pdfType != models.AnthropicPdf {
-					return nil, fmt.Errorf(
-						"invalid mimetype for pdf files: %s",
-						pdfType,
-					)
-				}
-
-				raw := val
-				var b64str string
-
-				if strings.HasPrefix(raw, prefix) {
-					b64str = strings.TrimPrefix(raw, prefix)
-				}
-				if !strings.HasPrefix(raw, prefix) {
-					b64str = raw
-				}
-
-				if _, err := base64.StdEncoding.DecodeString(b64str); err != nil {
-					return nil, fmt.Errorf(
-						"pdf data is not valid base64 encoding: %w",
-						err,
-					)
-				}
-			}
-		}
 		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
@@ -644,34 +559,34 @@ func prepareClaude37Sonnet(
 	}
 
 	if len(model.PdfFiles) > 0 {
-		const prefix = "data:application/pdf;base64,"
-		for _, pdfFile := range model.PdfFiles {
-			for pdfType, val := range pdfFile {
-				if pdfType != models.AnthropicPdf {
-					return nil, fmt.Errorf(
-						"invalid mimetype for pdf files: %s",
-						pdfType,
-					)
-				}
-
-				raw := val
-				var b64str string
-
-				if strings.HasPrefix(raw, prefix) {
-					b64str = strings.TrimPrefix(raw, prefix)
-				}
-				if !strings.HasPrefix(raw, prefix) {
-					b64str = raw
-				}
-
-				if _, err := base64.StdEncoding.DecodeString(b64str); err != nil {
-					return nil, fmt.Errorf(
-						"pdf data is not valid base64 encoding: %w",
-						err,
-					)
-				}
-			}
-		}
+		// const prefix = "data:application/pdf;base64,"
+		// for _, pdfFile := range model.PdfFiles {
+		// 	for pdfType, val := range pdfFile {
+		// 		if pdfType != models.AnthropicPdf {
+		// 			return nil, fmt.Errorf(
+		// 				"invalid mimetype for pdf files: %s",
+		// 				pdfType,
+		// 			)
+		// 		}
+		//
+		// 		raw := val
+		// 		var b64str string
+		//
+		// 		if strings.HasPrefix(raw, prefix) {
+		// 			b64str = strings.TrimPrefix(raw, prefix)
+		// 		}
+		// 		if !strings.HasPrefix(raw, prefix) {
+		// 			b64str = raw
+		// 		}
+		//
+		// 		if _, err := base64.StdEncoding.DecodeString(b64str); err != nil {
+		// 			return nil, fmt.Errorf(
+		// 				"pdf data is not valid base64 encoding: %w",
+		// 				err,
+		// 			)
+		// 		}
+		// 	}
+		// }
 		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
@@ -686,7 +601,7 @@ func prepareClaude37Sonnet(
 func handleMedia(
 	userMsg string,
 	imageFile map[models.AnthropicImageType]string,
-	pdfFiles []map[models.AnthropicPdfType]string,
+	pdfFiles []models.AnthropicPdf,
 ) []anthropicMsg {
 	content := []any{}
 
@@ -710,26 +625,14 @@ func handleMedia(
 
 	if len(pdfFiles) > 0 {
 		for _, pdfFile := range pdfFiles {
-			for t, val := range pdfFile {
-				mediaType := string(t)
-				data := val
-
-				if !strings.HasPrefix(data, "data:application/pdf;base64,") {
-					data = strings.TrimPrefix(
-						data,
-						"data:application/pdf;base64,",
-					)
-				}
-
-				content = append(content, anthropicMediaPayload{
-					Type: "file",
-					Source: mediaSource{
-						Type:      "base64",
-						MediaType: mediaType,
-						Data:      data,
-					},
-				})
-			}
+			content = append(content, anthropicMediaPayload{
+				Type: "document",
+				Source: mediaSource{
+					Type:      "base64",
+					MediaType: "application/pdf",
+					Data:      string(pdfFile),
+				},
+			})
 		}
 	}
 
