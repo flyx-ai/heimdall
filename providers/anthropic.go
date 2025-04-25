@@ -559,34 +559,6 @@ func prepareClaude37Sonnet(
 	}
 
 	if len(model.PdfFiles) > 0 {
-		// const prefix = "data:application/pdf;base64,"
-		// for _, pdfFile := range model.PdfFiles {
-		// 	for pdfType, val := range pdfFile {
-		// 		if pdfType != models.AnthropicPdf {
-		// 			return nil, fmt.Errorf(
-		// 				"invalid mimetype for pdf files: %s",
-		// 				pdfType,
-		// 			)
-		// 		}
-		//
-		// 		raw := val
-		// 		var b64str string
-		//
-		// 		if strings.HasPrefix(raw, prefix) {
-		// 			b64str = strings.TrimPrefix(raw, prefix)
-		// 		}
-		// 		if !strings.HasPrefix(raw, prefix) {
-		// 			b64str = raw
-		// 		}
-		//
-		// 		if _, err := base64.StdEncoding.DecodeString(b64str); err != nil {
-		// 			return nil, fmt.Errorf(
-		// 				"pdf data is not valid base64 encoding: %w",
-		// 				err,
-		// 			)
-		// 		}
-		// 	}
-		// }
 		return handleMedia(userMsg, nil, model.PdfFiles), nil
 	}
 
