@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -460,6 +461,9 @@ func (g Google) doRequest(
 	}
 	defer resp.Body.Close()
 
+	b, _ := io.ReadAll(resp.Body)
+	slog.Info("THIS IS BODY", "b", string(b))
+
 	if resp.StatusCode != http.StatusOK {
 		return response.Completion{}, 0, errors.New(
 			"received non-200 status code",
@@ -637,6 +641,7 @@ func prepareGemini20FlashRequest(
 	request.SystemInstruction.Parts = part{
 		Text: systemInst,
 	}
+	request.Config = make(map[string]any)
 
 	lastIndex := 0
 	if len(request.Contents) > 1 {
@@ -648,6 +653,11 @@ func prepareGemini20FlashRequest(
 		request.Contents[lastIndex].Parts,
 		part{Text: userMsg},
 	)
+
+	// Check if image generation is requested via the model config
+	if model.GenerateImage { // Check the new field
+		request.Config["responseModalities"] = []string{"TEXT", "IMAGE"}
+	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
 		return request, errors.New(
@@ -664,10 +674,8 @@ func prepareGemini20FlashRequest(
 	}
 
 	if len(model.StructuredOutput) == 1 {
-		request.Config = map[string]any{
-			"response_mime_type": "application/json",
-			"response_schema":    model.StructuredOutput,
-		}
+		request.Config["response_mime_type"] = "application/json"
+		request.Config["response_schema"] = model.StructuredOutput
 	}
 
 	if len(model.Tools) > 1 {
