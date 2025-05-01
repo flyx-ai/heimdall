@@ -246,3 +246,66 @@ func (g GPT4OMini) GetProvider() string {
 }
 
 var _ Model = new(GPT4OMini)
+
+// --- DALL-E 3 Model ---
+
+// Dalle3Alias is the alias for the DALL·E 3 model.
+const Dalle3Alias = "dall-e-3"
+
+// Constants for DALL·E 3 image generation parameters
+const (
+	// Allowed sizes for DALL·E 3
+	Dalle3Size1024x1024 = "1024x1024"
+	Dalle3Size1792x1024 = "1792x1024"
+	Dalle3Size1024x1792 = "1024x1792"
+
+	// Allowed quality settings for DALL·E 3
+	Dalle3QualityStandard = "standard"
+	Dalle3QualityHD       = "hd"
+
+	// Allowed style settings for DALL·E 3
+	Dalle3StyleVivid   = "vivid"
+	Dalle3StyleNatural = "natural"
+)
+
+// Dalle3 represents the DALL·E 3 model.
+type Dalle3 struct {
+	// Prompt is the text prompt for image generation. This will typically be
+	// sourced from the request.HeimdallRequest.Prompt field.
+	Prompt string `json:"-"` // Ignored in standard model params, used by provider
+
+	// N is the number of images to generate. Must be 1 for DALL·E 3.
+	// Although the API docs mention 'n', DALL-E 3 currently only supports n=1.
+	// We keep it for potential future compatibility but default/validate to 1.
+	N int `json:"n,omitempty"`
+
+	// Size of the generated images. Defaults to "1024x1024".
+	Size string `json:"size,omitempty"`
+
+	// Quality of the image that will be generated. Defaults to "standard".
+	Quality string `json:"quality,omitempty"`
+
+	// Style of the generated images. Defaults to "vivid".
+	Style string `json:"style,omitempty"`
+
+	// ResponseFormat specifies the format in which the generated images are returned.
+	// Must be one of url or b64_json. Defaults to "url".
+	// Note: Heimdall currently only processes the URL.
+	ResponseFormat string `json:"response_format,omitempty"`
+
+	// User is an optional unique identifier representing your end-user,
+	// which can help OpenAI monitor and detect abuse.
+	User string `json:"user,omitempty"`
+}
+
+// GetName returns the name of the DALL·E 3 model.
+func (d *Dalle3) GetName() string {
+	return Dalle3Alias
+}
+
+// GetProvider returns the provider for the DALL·E 3 model.
+func (d *Dalle3) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(Dalle3)
