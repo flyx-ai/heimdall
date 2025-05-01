@@ -2,6 +2,16 @@ package models
 
 const OpenaiProvider = "openai"
 
+// OpenAI specific tool types
+const (
+	OpenAIToolTypeWebSearch = "web_search"
+)
+
+// OpenAITool represents a tool the model can use.
+type OpenAITool struct {
+	Type string `json:"type"`
+}
+
 const (
 	O3MiniAlias    = "o3-mini-2025-01-31"
 	GPT4OAlias     = "gpt-4o-2024-11-20"
@@ -23,6 +33,9 @@ type OpenaiImagePayload struct {
 }
 
 type GPT41 struct {
+	// EnableWebSearch allows the model to use the web_search tool.
+	EnableWebSearch bool
+
 	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
 	//
 	//  var schema = map[string]any{
@@ -87,6 +100,9 @@ func (o O3Mini) GetProvider() string {
 var _ Model = new(O3Mini)
 
 type O1 struct {
+	// EnableWebSearch allows the model to use the web_search tool.
+	EnableWebSearch bool
+
 	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
 	//
 	//  var schema = map[string]any{
@@ -172,6 +188,9 @@ func (g GPT4Turbo) GetProvider() string {
 var _ Model = new(GPT4Turbo)
 
 type GPT4O struct {
+	// EnableWebSearch allows the model to use the web_search tool.
+	EnableWebSearch bool
+
 	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
 	//
 	//  var schema = map[string]any{
@@ -210,6 +229,9 @@ var _ Model = new(GPT4O)
 
 type (
 	GPT4OMini struct {
+		// EnableWebSearch allows the model to use the web_search tool.
+		EnableWebSearch bool
+
 		// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
 		//
 		//  var schema = map[string]any{

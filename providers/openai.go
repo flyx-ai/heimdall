@@ -78,13 +78,15 @@ type streamOptions struct {
 }
 
 type openAIRequest struct {
-	Model          string         `json:"model"`
-	Messages       any            `json:"messages"`
-	Stream         bool           `json:"stream"`
-	StreamOptions  streamOptions  `json:"stream_options"`
-	Temperature    float32        `json:"temperature,omitempty"`
-	TopP           float32        `json:"top_p,omitempty"`
-	ResponseFormat map[string]any `json:"response_format,omitempty"`
+	Model          string              `json:"model"`
+	Messages       any                 `json:"messages"`
+	Stream         bool                `json:"stream"`
+	StreamOptions  streamOptions       `json:"stream_options"`
+	Temperature    float32             `json:"temperature,omitempty"`
+	TopP           float32             `json:"top_p,omitempty"`
+	ResponseFormat map[string]any      `json:"response_format,omitempty"`
+	Tools          []models.OpenAITool `json:"tools,omitempty"`
+	ToolChoice     any                 `json:"tool_choice,omitempty"` // Can be string "auto" or object
 }
 
 type Openai struct {
@@ -110,9 +112,34 @@ func (oa Openai) doRequest(
 		Model:         model,
 		Stream:        true,
 		StreamOptions: streamOptions{IncludeUsage: true},
-		Temperature:   1.0,
+		Temperature:   1.0, // Default, can be overridden by req options if added later
+		// Set TopP from request if non-zero
+	}
+	if req.TopP > 0 {
+		openaiRequest.TopP = req.TopP
 	}
 
+	// Check EnableWebSearch flag based on model type
+	webSearchEnabled := false
+	switch m := req.Model.(type) {
+	case models.GPT4O:
+		webSearchEnabled = m.EnableWebSearch
+	case models.GPT4OMini:
+		webSearchEnabled = m.EnableWebSearch
+	case models.GPT41:
+		webSearchEnabled = m.EnableWebSearch
+	case models.O1:
+		webSearchEnabled = m.EnableWebSearch
+		// Add cases for other models supporting web search if needed
+	}
+
+	// Conditionally add web search tool
+	if webSearchEnabled {
+		openaiRequest.Tools = []models.OpenAITool{
+			{Type: models.OpenAIToolTypeWebSearch},
+		}
+		openaiRequest.ToolChoice = "auto"
+	}
 	var requestBody []byte
 
 	switch model {
