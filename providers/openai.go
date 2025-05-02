@@ -416,7 +416,7 @@ func (oa Openai) CompleteResponse(
 	client http.Client,
 	requestLog *response.Logging,
 ) (response.Completion, error) {
-	if _, ok := req.Model.(*models.Dalle3); ok {
+	if _, ok := req.Model.(*models.GPTImage); ok {
 		reqLog := requestLog
 		if reqLog == nil {
 			req.Tags["request_type"] = "image_generation"
@@ -561,7 +561,7 @@ func (oa Openai) StreamResponse(
 	chunkHandler func(chunk string) error,
 	requestLog *response.Logging,
 ) (response.Completion, error) {
-	if _, ok := req.Model.(*models.Dalle3); ok {
+	if _, ok := req.Model.(*models.GPTImage); ok {
 		logCtx := requestLog
 		if logCtx == nil {
 			logCtx = &response.Logging{
@@ -644,31 +644,42 @@ func (oa Openai) callImageGenerationAPI(
 	client http.Client,
 	key string,
 ) (response.Completion, int, error) {
-	dalleModel, ok := req.Model.(*models.Dalle3)
+	gptImageModel, ok := req.Model.(*models.GPTImage)
 	if !ok {
 		return response.Completion{}, 0, errors.New(
-			"internal error: model is not Dalle3",
+			"internal error: model is not GPTImage",
 		)
 	}
 
 	imageReqPayload := map[string]any{
-		"model":  dalleModel.GetName(),
+		"model":  gptImageModel.GetName(),
 		"prompt": req.UserMessage,
 		"n":      1,
-		"size":   models.Dalle3Size1024x1024,
+		"size":   models.GPTImageSize1024x1024,
 	}
 
-	if dalleModel.Size != "" {
-		imageReqPayload["size"] = dalleModel.Size
+	if gptImageModel.Background != "" {
+		imageReqPayload["background"] = gptImageModel.Background
 	}
-	if dalleModel.Quality != "" {
-		imageReqPayload["quality"] = dalleModel.Quality
+	if gptImageModel.Size != "" {
+		imageReqPayload["size"] = gptImageModel.Size
 	}
-	if dalleModel.Style != "" {
-		imageReqPayload["style"] = dalleModel.Style
+	if gptImageModel.Quality != "" {
+		imageReqPayload["quality"] = gptImageModel.Quality
 	}
-	if dalleModel.User != "" {
-		imageReqPayload["user"] = dalleModel.User
+	if gptImageModel.User != "" {
+		imageReqPayload["user"] = gptImageModel.User
+	}
+	if gptImageModel.OutputFormat != "" {
+		imageReqPayload["output_format"] = gptImageModel.OutputFormat
+	}
+	if gptImageModel.OutputFormat == "jpeg" ||
+		gptImageModel.OutputFormat == "webp" &&
+			gptImageModel.OutputCompression != "" {
+		imageReqPayload["output_compression"] = gptImageModel.OutputCompression
+	}
+	if gptImageModel.Moderation != "" {
+		imageReqPayload["moderation"] = gptImageModel.Moderation
 	}
 
 	bodyBytes, err := json.Marshal(imageReqPayload)
