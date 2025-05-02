@@ -19,121 +19,6 @@ import (
 	"github.com/flyx-ai/heimdall/response"
 )
 
-// callImageGenerationAPI handles the request to the OpenAI image generation endpoint.
-func (oa Openai) callImageGenerationAPI(
-	ctx context.Context,
-	req request.Completion,
-	client http.Client,
-	key string,
-) (response.Completion, int, error) {
-	dalleModel, ok := req.Model.(*models.Dalle3)
-	if !ok {
-		return response.Completion{}, 0, errors.New("internal error: model is not Dalle3")
-	}
-
-	// Construct the image generation request payload
-	imageReqPayload := map[string]any{
-		"model":           dalleModel.GetName(),
-		"prompt":          req.UserMessage,            // Use the main user message as the prompt
-		"n":               1,                          // DALL-E 3 only supports n=1
-		"size":            models.Dalle3Size1024x1024, // Default size
-		"response_format": "url",                      // Heimdall handles URLs
-	}
-
-	// Apply optional parameters if provided
-	if dalleModel.Size != "" {
-		// TODO: Add validation for allowed sizes (1024x1024, 1792x1024, 1024x1792)
-		imageReqPayload["size"] = dalleModel.Size
-	}
-	if dalleModel.Quality != "" {
-		// TODO: Add validation for allowed quality (standard, hd)
-		imageReqPayload["quality"] = dalleModel.Quality
-	}
-	if dalleModel.Style != "" {
-		// TODO: Add validation for allowed styles (vivid, natural)
-		imageReqPayload["style"] = dalleModel.Style
-	}
-	if dalleModel.User != "" {
-		imageReqPayload["user"] = dalleModel.User
-	}
-
-	bodyBytes, err := json.Marshal(imageReqPayload)
-	if err != nil {
-		return response.Completion{}, 0, fmt.Errorf("marshal image request: %w", err)
-	}
-
-	// Create the HTTP request
-	httpReq, err := http.NewRequestWithContext(ctx, "POST",
-		fmt.Sprintf("%s/images/generations", openAIBaseURL),
-		bytes.NewReader(bodyBytes))
-	if err != nil {
-		return response.Completion{}, 0, fmt.Errorf("create image request: %w", err)
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+key)
-
-	// Execute the request
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		// Return 0 for status code on client-side errors
-		return response.Completion{}, 0, fmt.Errorf("image request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Handle non-200 status codes
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body) // Read body for error details
-		return response.Completion{}, resp.StatusCode, fmt.Errorf(
-			"received non-200 status code (%d) from image generation API: %s",
-			resp.StatusCode, string(bodyBytes),
-		)
-	}
-
-	// Parse the response
-	// Expected response structure:
-	// { "created": ..., "data": [ { "url": "...", "revised_prompt": "..." } ] }
-	var imageResp struct {
-		Created int64 `json:"created"`
-		Data    []struct {
-			URL           string `json:"url"`
-			RevisedPrompt string `json:"revised_prompt"`
-			// Base64JSON string `json:"b64_json"` // We are requesting URL format
-		} `json:"data"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&imageResp); err != nil {
-		// Return original status code on successful request but bad body
-		return response.Completion{}, resp.StatusCode, fmt.Errorf("decode image response: %w", err)
-	}
-
-	// Format the response content (URLs separated by newline)
-	var contentBuilder strings.Builder
-	for i, imgData := range imageResp.Data {
-		if i > 0 {
-			contentBuilder.WriteString("\n")
-		}
-		contentBuilder.WriteString(imgData.URL)
-		// Optionally include revised prompt if needed in the future
-		// contentBuilder.WriteString("\nRevised Prompt: " + imgData.RevisedPrompt)
-	}
-
-	// TODO: Image generation doesn't provide token usage in the same way.
-	// We might need to estimate or return zero usage. Heimdall expects Usage.
-	usage := response.Usage{
-		PromptTokens:     0, // Not directly available for images
-		CompletionTokens: 0, // Not directly available for images
-		TotalTokens:      0, // Not directly available for images
-	}
-
-	return response.Completion{
-		Content: contentBuilder.String(),
-		Model:   req.Model.GetName(),
-		Usage:   usage,
-		// FinishReason could be set to "stop" or similar if applicable
-	}, resp.StatusCode, nil
-}
-
 const openAIBaseURL = "https://api.openai.com/v1"
 
 type requestMessage struct {
@@ -531,80 +416,99 @@ func (oa Openai) CompleteResponse(
 	client http.Client,
 	requestLog *response.Logging,
 ) (response.Completion, error) {
-
-	// --- START DALLE3 check ---
-	// Check if the model is Dalle3 and handle non-streaming image generation.
 	if _, ok := req.Model.(*models.Dalle3); ok {
-		reqLog := requestLog // Use provided log or create if nil
+		reqLog := requestLog
 		if reqLog == nil {
-			req.Tags["request_type"] = "image_generation" // Mark as non-streaming
+			req.Tags["request_type"] = "image_generation"
 			reqLog = &response.Logging{
-				Events:    []response.Event{{Timestamp: time.Now(), Description: "start of call to CompleteResponse (DALL-E 3)"}},
+				Events: []response.Event{
+					{
+						Timestamp:   time.Now(),
+						Description: "start of call to CompleteResponse (DALL-E 3)",
+					},
+				},
 				SystemMsg: req.SystemMessage, // Might not be applicable
 				UserMsg:   req.UserMessage,
 				Start:     time.Now(),
 			}
-		} else {
-			// Ensure Start time is set if using existing log
+		}
+		if reqLog != nil {
+
 			if reqLog.Start.IsZero() {
 				reqLog.Start = time.Now()
 			}
-			reqLog.Events = append(reqLog.Events, response.Event{Timestamp: time.Now(), Description: "Handling DALL-E 3 request in CompleteResponse"})
+			reqLog.Events = append(
+				reqLog.Events,
+				response.Event{
+					Timestamp:   time.Now(),
+					Description: "Handling DALL-E 3 request in CompleteResponse",
+				},
+			)
 		}
 
-		// Try keys sequentially. Add exponential backoff if needed.
 		var lastErr error
 		var lastStatusCode int
 		for i, key := range oa.apiKeys {
 			reqLog.Events = append(reqLog.Events, response.Event{
-				Timestamp:   time.Now(),
-				Description: fmt.Sprintf("Attempting DALL-E 3 request with key_number: %d", i),
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"Attempting DALL-E 3 request with key_number: %d",
+					i,
+				),
 			})
 
-			res, statusCode, err := oa.callImageGenerationAPI(ctx, req, client, key)
+			res, statusCode, err := oa.callImageGenerationAPI(
+				ctx,
+				req,
+				client,
+				key,
+			)
 
-			lastStatusCode = statusCode // Store the status code from the attempt
+			lastStatusCode = statusCode
 
 			if err == nil {
 				reqLog.Events = append(reqLog.Events, response.Event{
-					Timestamp:   time.Now(),
-					Description: fmt.Sprintf("DALL-E 3 request succeeded with key_number: %d, status: %d", i, statusCode),
+					Timestamp: time.Now(),
+					Description: fmt.Sprintf(
+						"DALL-E 3 request succeeded with key_number: %d, status: %d",
+						i,
+						statusCode,
+					),
 				})
-				// TODO: Add duration logging if reqLog is used
-				// if reqLog != nil {
-				// 	reqLog.Latency = time.Since(reqLog.Start)
-				// 	// reqLog.FinalResponse = res // Might be too verbose to log full response
-				// }
+
 				return res, nil
 			}
 
-			lastErr = err // Store the error from the attempt
+			lastErr = err
 			reqLog.Events = append(reqLog.Events, response.Event{
-				Timestamp:   time.Now(),
-				Description: fmt.Sprintf("DALL-E 3 request failed with key_number: %d, status: %d, err: %v", i, statusCode, err),
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"DALL-E 3 request failed with key_number: %d, status: %d, err: %v",
+					i,
+					statusCode,
+					err,
+				),
 			})
 
-			// TODO: Implement more sophisticated retry logic here if needed.
-			// Should we retry on specific status codes (e.g., 429, 5xx)?
-			// For now, just try the next key. Check if the error indicates a potentially retryable issue with the key itself.
-			if statusCode == http.StatusUnauthorized || statusCode == http.StatusForbidden || statusCode == http.StatusTooManyRequests {
-				// Potentially key-related or rate limit, good reason to try next key.
+			if statusCode == http.StatusUnauthorized ||
+				statusCode == http.StatusForbidden ||
+				statusCode == http.StatusTooManyRequests {
 				continue
 			}
-			// If it's another error (e.g., bad request 400, server error 5xx), maybe don't try other keys.
-			// For simplicity now, we try all keys regardless of error type, but this could be refined.
 		}
 
-		// If all keys failed
-		// Make sure lastErr is not nil before returning
 		if lastErr == nil {
-			lastErr = errors.New("image generation failed after trying all keys with unknown error")
+			lastErr = errors.New(
+				"image generation failed after trying all keys with unknown error",
+			)
 		}
-		return response.Completion{}, fmt.Errorf("image generation failed after trying all keys (last status %d): %w", lastStatusCode, lastErr)
+		return response.Completion{}, fmt.Errorf(
+			"image generation failed after trying all keys (last status %d): %w",
+			lastStatusCode,
+			lastErr,
+		)
 	}
-	// --- END DALLE3 check ---
 
-	// Existing logic for non-streaming text completions...
 	reqLog := &response.Logging{}
 	if requestLog == nil {
 		req.Tags["request_type"] = "completion" // Corrected tag to 'completion'
@@ -657,29 +561,38 @@ func (oa Openai) StreamResponse(
 	chunkHandler func(chunk string) error,
 	requestLog *response.Logging,
 ) (response.Completion, error) {
-
-	// --- START DALLE3 check ---
-	// If the model is Dalle3, delegate to CompleteResponse as image generation is not streaming.
 	if _, ok := req.Model.(*models.Dalle3); ok {
-		// Ensure logging context is passed correctly
 		logCtx := requestLog
 		if logCtx == nil {
-			logCtx = &response.Logging{Start: time.Now()} // Minimal log if none provided
-			logCtx.Events = append(logCtx.Events, response.Event{Timestamp: time.Now(), Description: "Initiating non-streaming call for DALL-E 3 from StreamResponse"})
-		} else {
-			// Ensure Start time is set if using existing log
+			logCtx = &response.Logging{
+				Start: time.Now(),
+			}
+			logCtx.Events = append(
+				logCtx.Events,
+				response.Event{
+					Timestamp:   time.Now(),
+					Description: "Initiating non-streaming call for DALL-E 3 from StreamResponse",
+				},
+			)
+		}
+
+		if logCtx != nil {
 			if logCtx.Start.IsZero() {
 				logCtx.Start = time.Now()
 			}
-			// Add event indicating delegation
-			logCtx.Events = append(logCtx.Events, response.Event{Timestamp: time.Now(), Description: "Delegating DALL-E 3 request from StreamResponse to CompleteResponse"})
+
+			logCtx.Events = append(
+				logCtx.Events,
+				response.Event{
+					Timestamp:   time.Now(),
+					Description: "Delegating DALL-E 3 request from StreamResponse to CompleteResponse",
+				},
+			)
 		}
-		// Pass the potentially initialized/updated logCtx
+
 		return oa.CompleteResponse(ctx, req, client, logCtx)
 	}
-	// --- END DALLE3 check ---
 
-	// Existing logic for streaming text completions...
 	reqLog := &response.Logging{}
 	if requestLog == nil {
 		req.Tags["request_type"] = "streaming"
@@ -723,6 +636,114 @@ func (oa Openai) StreamResponse(
 	}
 
 	return oa.tryWithBackup(ctx, req, client, chunkHandler, reqLog)
+}
+
+func (oa Openai) callImageGenerationAPI(
+	ctx context.Context,
+	req request.Completion,
+	client http.Client,
+	key string,
+) (response.Completion, int, error) {
+	dalleModel, ok := req.Model.(*models.Dalle3)
+	if !ok {
+		return response.Completion{}, 0, errors.New(
+			"internal error: model is not Dalle3",
+		)
+	}
+
+	imageReqPayload := map[string]any{
+		"model":  dalleModel.GetName(),
+		"prompt": req.UserMessage,
+		"n":      1,
+		"size":   models.Dalle3Size1024x1024,
+	}
+
+	if dalleModel.Size != "" {
+		imageReqPayload["size"] = dalleModel.Size
+	}
+	if dalleModel.Quality != "" {
+		imageReqPayload["quality"] = dalleModel.Quality
+	}
+	if dalleModel.Style != "" {
+		imageReqPayload["style"] = dalleModel.Style
+	}
+	if dalleModel.User != "" {
+		imageReqPayload["user"] = dalleModel.User
+	}
+
+	bodyBytes, err := json.Marshal(imageReqPayload)
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf(
+			"marshal image request: %w",
+			err,
+		)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST",
+		fmt.Sprintf("%s/images/generations", openAIBaseURL),
+		bytes.NewReader(bodyBytes))
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf(
+			"create image request: %w",
+			err,
+		)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+key)
+
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf(
+			"image request failed: %w",
+			err,
+		)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return response.Completion{}, resp.StatusCode, fmt.Errorf(
+			"received non-200 status code (%d) from image generation API: %s",
+			resp.StatusCode, string(bodyBytes),
+		)
+	}
+
+	var imageResp struct {
+		Created int64 `json:"created"`
+		Data    []struct {
+			Base64JSON    string `json:"b64_json"`
+			RevisedPrompt string `json:"revised_prompt"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&imageResp); err != nil {
+		return response.Completion{}, resp.StatusCode, fmt.Errorf(
+			"decode image response: %w",
+			err,
+		)
+	}
+
+	var contentBuilder strings.Builder
+	for i, imgData := range imageResp.Data {
+		if i > 0 {
+			contentBuilder.WriteString("\n")
+		}
+		contentBuilder.WriteString(imgData.Base64JSON)
+	}
+
+	// TODO
+	usage := response.Usage{
+		PromptTokens:     0,
+		CompletionTokens: 0,
+		TotalTokens:      0,
+	}
+
+	return response.Completion{
+		Content: contentBuilder.String(),
+		Model:   req.Model.GetName(),
+		Usage:   usage,
+	}, resp.StatusCode, nil
 }
 
 var _ LLMProvider = new(Openai)
