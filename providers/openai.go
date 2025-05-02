@@ -511,7 +511,7 @@ func (oa Openai) CompleteResponse(
 
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		req.Tags["request_type"] = "completion" // Corrected tag to 'completion'
+		req.Tags["request_type"] = "completion"
 
 		reqLog = &response.Logging{
 			Events: []response.Event{
@@ -571,7 +571,7 @@ func (oa Openai) StreamResponse(
 				logCtx.Events,
 				response.Event{
 					Timestamp:   time.Now(),
-					Description: "Initiating non-streaming call for DALL-E 3 from StreamResponse",
+					Description: "Initiating non-streaming call for GPTImage from StreamResponse",
 				},
 			)
 		}
@@ -585,7 +585,7 @@ func (oa Openai) StreamResponse(
 				logCtx.Events,
 				response.Event{
 					Timestamp:   time.Now(),
-					Description: "Delegating DALL-E 3 request from StreamResponse to CompleteResponse",
+					Description: "Delegating GPTImage request from StreamResponse to CompleteResponse",
 				},
 			)
 		}
