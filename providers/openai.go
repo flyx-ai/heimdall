@@ -416,9 +416,102 @@ func (oa Openai) CompleteResponse(
 	client http.Client,
 	requestLog *response.Logging,
 ) (response.Completion, error) {
+	if _, ok := req.Model.(*models.GPTImage); ok {
+		reqLog := requestLog
+		if reqLog == nil {
+			req.Tags["request_type"] = "image_generation"
+			reqLog = &response.Logging{
+				Events: []response.Event{
+					{
+						Timestamp:   time.Now(),
+						Description: "start of call to CompleteResponse (DALL-E 3)",
+					},
+				},
+				SystemMsg: req.SystemMessage, // Might not be applicable
+				UserMsg:   req.UserMessage,
+				Start:     time.Now(),
+			}
+		}
+		if reqLog != nil {
+
+			if reqLog.Start.IsZero() {
+				reqLog.Start = time.Now()
+			}
+			reqLog.Events = append(
+				reqLog.Events,
+				response.Event{
+					Timestamp:   time.Now(),
+					Description: "Handling DALL-E 3 request in CompleteResponse",
+				},
+			)
+		}
+
+		var lastErr error
+		var lastStatusCode int
+		for i, key := range oa.apiKeys {
+			reqLog.Events = append(reqLog.Events, response.Event{
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"Attempting DALL-E 3 request with key_number: %d",
+					i,
+				),
+			})
+
+			res, statusCode, err := oa.callImageGenerationAPI(
+				ctx,
+				req,
+				client,
+				key,
+			)
+
+			lastStatusCode = statusCode
+
+			if err == nil {
+				reqLog.Events = append(reqLog.Events, response.Event{
+					Timestamp: time.Now(),
+					Description: fmt.Sprintf(
+						"DALL-E 3 request succeeded with key_number: %d, status: %d",
+						i,
+						statusCode,
+					),
+				})
+
+				return res, nil
+			}
+
+			lastErr = err
+			reqLog.Events = append(reqLog.Events, response.Event{
+				Timestamp: time.Now(),
+				Description: fmt.Sprintf(
+					"DALL-E 3 request failed with key_number: %d, status: %d, err: %v",
+					i,
+					statusCode,
+					err,
+				),
+			})
+
+			if statusCode == http.StatusUnauthorized ||
+				statusCode == http.StatusForbidden ||
+				statusCode == http.StatusTooManyRequests {
+				continue
+			}
+		}
+
+		if lastErr == nil {
+			lastErr = errors.New(
+				"image generation failed after trying all keys with unknown error",
+			)
+		}
+		return response.Completion{}, fmt.Errorf(
+			"image generation failed after trying all keys (last status %d): %w",
+			lastStatusCode,
+			lastErr,
+		)
+	}
+
 	reqLog := &response.Logging{}
 	if requestLog == nil {
-		req.Tags["request_type"] = "streaming"
+		req.Tags["request_type"] = "completion"
 
 		reqLog = &response.Logging{
 			Events: []response.Event{
@@ -468,6 +561,38 @@ func (oa Openai) StreamResponse(
 	chunkHandler func(chunk string) error,
 	requestLog *response.Logging,
 ) (response.Completion, error) {
+	if _, ok := req.Model.(*models.GPTImage); ok {
+		logCtx := requestLog
+		if logCtx == nil {
+			logCtx = &response.Logging{
+				Start: time.Now(),
+			}
+			logCtx.Events = append(
+				logCtx.Events,
+				response.Event{
+					Timestamp:   time.Now(),
+					Description: "Initiating non-streaming call for GPTImage from StreamResponse",
+				},
+			)
+		}
+
+		if logCtx != nil {
+			if logCtx.Start.IsZero() {
+				logCtx.Start = time.Now()
+			}
+
+			logCtx.Events = append(
+				logCtx.Events,
+				response.Event{
+					Timestamp:   time.Now(),
+					Description: "Delegating GPTImage request from StreamResponse to CompleteResponse",
+				},
+			)
+		}
+
+		return oa.CompleteResponse(ctx, req, client, logCtx)
+	}
+
 	reqLog := &response.Logging{}
 	if requestLog == nil {
 		req.Tags["request_type"] = "streaming"
@@ -511,6 +636,125 @@ func (oa Openai) StreamResponse(
 	}
 
 	return oa.tryWithBackup(ctx, req, client, chunkHandler, reqLog)
+}
+
+func (oa Openai) callImageGenerationAPI(
+	ctx context.Context,
+	req request.Completion,
+	client http.Client,
+	key string,
+) (response.Completion, int, error) {
+	gptImageModel, ok := req.Model.(*models.GPTImage)
+	if !ok {
+		return response.Completion{}, 0, errors.New(
+			"internal error: model is not GPTImage",
+		)
+	}
+
+	imageReqPayload := map[string]any{
+		"model":  gptImageModel.GetName(),
+		"prompt": req.UserMessage,
+		"n":      1,
+		"size":   models.GPTImageSize1024x1024,
+	}
+
+	if gptImageModel.Background != "" {
+		imageReqPayload["background"] = gptImageModel.Background
+	}
+	if gptImageModel.Size != "" {
+		imageReqPayload["size"] = gptImageModel.Size
+	}
+	if gptImageModel.Quality != "" {
+		imageReqPayload["quality"] = gptImageModel.Quality
+	}
+	if gptImageModel.User != "" {
+		imageReqPayload["user"] = gptImageModel.User
+	}
+	if gptImageModel.OutputFormat != "" {
+		imageReqPayload["output_format"] = gptImageModel.OutputFormat
+	}
+	if gptImageModel.OutputFormat == "jpeg" ||
+		gptImageModel.OutputFormat == "webp" &&
+			gptImageModel.OutputCompression != "" {
+		imageReqPayload["output_compression"] = gptImageModel.OutputCompression
+	}
+	if gptImageModel.Moderation != "" {
+		imageReqPayload["moderation"] = gptImageModel.Moderation
+	}
+
+	bodyBytes, err := json.Marshal(imageReqPayload)
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf(
+			"marshal image request: %w",
+			err,
+		)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST",
+		fmt.Sprintf("%s/images/generations", openAIBaseURL),
+		bytes.NewReader(bodyBytes))
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf(
+			"create image request: %w",
+			err,
+		)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+key)
+
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf(
+			"image request failed: %w",
+			err,
+		)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return response.Completion{}, resp.StatusCode, fmt.Errorf(
+			"received non-200 status code (%d) from image generation API: %s",
+			resp.StatusCode, string(bodyBytes),
+		)
+	}
+
+	var imageResp struct {
+		Created int64 `json:"created"`
+		Data    []struct {
+			Base64JSON    string `json:"b64_json"`
+			RevisedPrompt string `json:"revised_prompt"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&imageResp); err != nil {
+		return response.Completion{}, resp.StatusCode, fmt.Errorf(
+			"decode image response: %w",
+			err,
+		)
+	}
+
+	var contentBuilder strings.Builder
+	for i, imgData := range imageResp.Data {
+		if i > 0 {
+			contentBuilder.WriteString("\n")
+		}
+		contentBuilder.WriteString(imgData.Base64JSON)
+	}
+
+	// TODO
+	usage := response.Usage{
+		PromptTokens:     0,
+		CompletionTokens: 0,
+		TotalTokens:      0,
+	}
+
+	return response.Completion{
+		Content: contentBuilder.String(),
+		Model:   req.Model.GetName(),
+		Usage:   usage,
+	}, resp.StatusCode, nil
 }
 
 var _ LLMProvider = new(Openai)

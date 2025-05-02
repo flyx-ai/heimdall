@@ -246,3 +246,59 @@ func (g GPT4OMini) GetProvider() string {
 }
 
 var _ Model = new(GPT4OMini)
+
+const ImageModelAlias = "gpt-image-1"
+
+const (
+	GPTImageSize1024x1024 = "1024x1024"
+	GPTImageSize1792x1024 = "1792x1024"
+	GPTImageSize1024x1792 = "1024x1792"
+
+	GPTImageQualityHigh   = "high"
+	GPTImageQualityMedium = "medium"
+	GPTImageQualityLow    = "low"
+)
+
+type GPTImage struct {
+	// Allows to set transparency for the background of the generated image(s).
+	// Must be one of transparent, opaque or auto (default value).
+	// When auto is used, the model will automatically determine the best background for the image.
+	// If transparent, the output format needs to support transparency, so it should be set to either png (default value) or webp.
+	Background string
+
+	// N is the number of images to generate. Must be 1 for DALL·E 3.
+	// Although the API docs mention 'n', DALL-E 3 currently only supports n=1.
+	// We keep it for potential future compatibility but default/validate to 1.
+	N int
+
+	// Size of the generated images. Defaults to "1024x1024".
+	Size string
+
+	// Quality of the image that will be generated. Defaults to "auto".
+	Quality string
+
+	// The compression level (0-100%) for the generated images.
+	// This parameter is only supported the webp or jpeg output formats, and defaults to 100.
+	OutputCompression string
+
+	// The format in which the generated images are returned.
+	// Must be one of png, jpeg, or webp.
+	OutputFormat string
+
+	// Must be either low for less restrictive filtering or auto (default value).
+	Moderation string
+
+	// User is an optional unique identifier representing your end-user,
+	// which can help OpenAI monitor and detect abuse.
+	User string
+}
+
+func (d *GPTImage) GetName() string {
+	return ImageModelAlias
+}
+
+func (d *GPTImage) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPTImage)
