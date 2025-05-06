@@ -12,3 +12,40 @@ type StructuredOutput interface {
 type FileReader interface {
 	GetFileData() map[string][]byte
 }
+
+// GetAll returns all model names
+func GetAll() []string {
+	return []string{
+		AnthropicClaude3OpusAlias,
+		AnthropicClaude35SonnetAlias,
+		AnthropicClaude35HaikuAlias,
+		AnthropicClaude37SonnetAlias,
+
+		Gemini15FlashModel,
+		Gemini15ProModel,
+		Gemini20FlashModel,
+		Gemini20FlashLiteModel,
+		Gemini25FlashPreviewModel,
+		Gemini25ProPreviewModel,
+
+		O3MiniAlias,
+		GPT4OAlias,
+		GPT4OMiniAlias,
+		O1Alias,
+		O1MiniAlias,
+		O1PreviewAlias,
+		GPT4Alias,
+		GPT4TurboAlias,
+		GPT41Alias,
+
+		"sonar-reasoning-pro",
+		"sonar-reasoning",
+		"sonar-pro",
+		"sonar",
+
+		"gemini-1.5-flash-002",
+		"gemini-1.5-pro-002",
+		"gemini-2.0-flash-001",
+		"gemini-2.0-flash-lite-001",
+	}
+}
