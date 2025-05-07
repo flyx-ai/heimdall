@@ -479,8 +479,6 @@ func (g Google) ListCachedContents(
 	key := g.apiKeys[0]
 	baseURL := "https://generativelanguage.googleapis.com/v1beta/cachedContents?key=" + key
 
-	// url := fmt.Sprintf("%s?%s", baseURL, query.Encode())
-
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
@@ -533,8 +531,6 @@ func (g Google) DeleteCachedContent(
 		cacheName,
 		key,
 	)
-
-	// url := fmt.Sprintf("%s?%s", baseURL, query.Encode())
 
 	req, err := http.NewRequestWithContext(
 		ctx,
