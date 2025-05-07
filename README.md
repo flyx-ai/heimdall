@@ -102,6 +102,31 @@ anthropicProvider := providers.NewAnthropic([]string{"your-api-key"})
 googleProvider := providers.NewGoogle([]string{"your-api-key"})
 ```
 
+Heimdall also supports caching tokens for Google provider to reduce latency and improve performance for repeated requests. 
+
+```go
+func main() {
+	ctx := context.Background()
+
+	googleApiKey := os.Getenv("GOOGLE_API_KEY")
+	g := providers.NewGoogle([]string{googleApiKey})
+    
+	key, err := g.CacheContent(
+		ctx,
+		models.Gemini15Pro{}.GetName(),
+		providers.CacheContentPayload{
+			FileData: map[string]string{
+                // Add your file data here
+				<mime_type_here>: <file_uri_here>,
+			},
+		},
+		<system_prompt>,
+		10*time.Minute,
+	)
+}
+
+```
+
 ### Perplexity
 
 ```go
