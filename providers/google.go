@@ -25,6 +25,26 @@ type Google struct {
 	apiKeys []string
 }
 
+type cacheContentRequest struct {
+	Model             string        `json:"model"`
+	Contents          []content     `json:"contents"`
+	SystemInstruction systemContent `json:"system_instruction"`
+	TTL               string        `json:"ttl"`
+}
+
+type systemContent struct {
+	Parts []part `json:"parts"`
+	Role  string `json:"role"`
+}
+
+type cacheContentResponse struct {
+	Name       string    `json:"name"`
+	Model      string    `json:"model"`
+	CreateTime time.Time `json:"createTime"`
+	UpdateTime time.Time `json:"updateTime"`
+	ExpireTime time.Time `json:"expireTime"`
+}
+
 // NewGoogle register google as a provider on the router.
 func NewGoogle(apiKeys []string) Google {
 	return Google{
@@ -252,6 +272,300 @@ func (g Google) tryWithBackup(
 
 func (g Google) Name() string {
 	return models.GoogleProvider
+}
+
+// CacheContentPayload represents the data to be cached. Must be either text or fileData but not both.
+type CacheContentPayload struct {
+	Text     string
+	FileData map[string]string
+}
+
+// CacheContent caches the provided content with the specified TTL and returns a content ID
+// that can be used to reference this content in subsequent requests.
+func (g Google) CacheContent(
+	ctx context.Context,
+	model string,
+	payload CacheContentPayload,
+	systemInstruction string,
+	ttl time.Duration,
+) (string, error) {
+	if len(g.apiKeys) == 0 {
+		return "", errors.New("no API keys available")
+	}
+
+	key := g.apiKeys[0]
+	url := fmt.Sprintf(
+		"https://generativelanguage.googleapis.com/v1beta/cachedContents?key=%s",
+		key,
+	)
+
+	if payload.Text != "" && payload.FileData != nil {
+		return "", errors.New("only one of text or fileData can be provided")
+	}
+
+	reqBody := cacheContentRequest{
+		Model: "models/" + model,
+		Contents: []content{{
+			Role: "user",
+		}},
+		SystemInstruction: systemContent{
+			Role: "system",
+			Parts: []part{{
+				Text: systemInstruction,
+			}},
+		},
+		TTL: fmt.Sprintf("%ds", int(ttl.Seconds())),
+	}
+
+	if payload.Text != "" {
+		reqBody.Contents[0].Parts = append(
+			reqBody.Contents[0].Parts,
+			part{
+				Text: payload.Text,
+			},
+		)
+	}
+	if payload.FileData != nil {
+		var mimeType string
+		var fileURI string
+		for k, v := range payload.FileData {
+			mimeType = k
+			fileURI = v
+		}
+		reqBody.Contents[0].Parts = append(
+			reqBody.Contents[0].Parts,
+			part{
+				FileData: fileData{
+					MimeType: mimeType,
+					FileURI:  fileURI,
+				},
+			},
+		)
+	}
+
+	jsonBody, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		url,
+		bytes.NewBuffer(jsonBody),
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf(
+			"unexpected status code %d: %s",
+			resp.StatusCode,
+			string(body),
+		)
+	}
+
+	var cacheResp cacheContentResponse
+	if err := json.NewDecoder(resp.Body).Decode(&cacheResp); err != nil {
+		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return cacheResp.Name, nil
+}
+
+func (g Google) UpdateCachedContentTTL(
+	ctx context.Context,
+	cacheName string,
+	ttl time.Duration,
+) error {
+	if len(g.apiKeys) == 0 {
+		return errors.New("no API keys available")
+	}
+
+	key := g.apiKeys[0]
+	url := fmt.Sprintf(
+		"https://generativelanguage.googleapis.com/v1beta/%s?key=%s",
+		cacheName,
+		key,
+	)
+
+	reqBody := struct {
+		TTL string `json:"ttl"`
+	}{
+		TTL: fmt.Sprintf("%ds", int(ttl.Seconds())),
+	}
+
+	jsonBody, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPatch,
+		url,
+		bytes.NewBuffer(jsonBody),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf(
+			"unexpected status code %d: %s",
+			resp.StatusCode,
+			string(body),
+		)
+	}
+
+	var cacheResp cacheContentResponse
+	if err := json.NewDecoder(resp.Body).Decode(&cacheResp); err != nil {
+		return fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return nil
+}
+
+// CachedContentsList represents the response from listing cached contents
+type CachedContentsList struct {
+	CachedContents []CachedContent `json:"cachedContents"`
+	NextPageToken  string          `json:"nextPageToken,omitempty"`
+}
+
+// CachedContent represents a single cached content item
+type CachedContent struct {
+	Name       string    `json:"name"`
+	Model      string    `json:"model"`
+	CreateTime time.Time `json:"createTime"`
+	UpdateTime time.Time `json:"updateTime"`
+	ExpireTime time.Time `json:"expireTime"`
+}
+
+// ListCachedContents retrieves a list of all cached contents
+func (g Google) ListCachedContents(
+	ctx context.Context,
+) (*CachedContentsList, error) {
+	if len(g.apiKeys) == 0 {
+		return nil, errors.New("no API keys available")
+	}
+
+	key := g.apiKeys[0]
+	baseURL := "https://generativelanguage.googleapis.com/v1beta/cachedContents?key=" + key
+
+	// url := fmt.Sprintf("%s?%s", baseURL, query.Encode())
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		baseURL,
+		nil,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf(
+			"unexpected status code %d: %s",
+			resp.StatusCode,
+			string(body),
+		)
+	}
+
+	var result CachedContentsList
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &result, nil
+}
+
+// DeleteCachedContent retrieves a list of all cached contents
+func (g Google) DeleteCachedContent(
+	ctx context.Context,
+	cacheName string,
+) error {
+	if len(g.apiKeys) == 0 {
+		return errors.New("no API keys available")
+	}
+
+	key := g.apiKeys[0]
+	baseURL := fmt.Sprintf(
+		"https://generativelanguage.googleapis.com/v1beta/%s?key=%s",
+		cacheName,
+		key,
+	)
+
+	// url := fmt.Sprintf("%s?%s", baseURL, query.Encode())
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodDelete,
+		baseURL,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf(
+			"unexpected status code %d: %s",
+			resp.StatusCode,
+			string(body),
+		)
+	}
+
+	return nil
 }
 
 func (g Google) StreamResponse(
