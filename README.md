@@ -102,6 +102,67 @@ anthropicProvider := providers.NewAnthropic([]string{"your-api-key"})
 googleProvider := providers.NewGoogle([]string{"your-api-key"})
 ```
 
+Heimdall also supports caching tokens for Google provider to reduce latency and improve performance for repeated requests. You can enable this by providing a cache implementation to the `NewGoogleWithCache` constructor.
+
+```go
+// Implement the simple cache interface
+// For a production setup, you might want to use a more robust cache like Redis.
+
+import (
+	"sync"
+	"time"
+)
+
+type SimpleTTLCache struct {
+	cache map[string]cacheEntry
+	mu    sync.RWMutex
+}
+
+type cacheEntry struct {
+	value      []byte
+	expiration int64
+}
+
+func NewSimpleTTLCache() *SimpleTTLCache {
+	return &SimpleTTLCache{
+		cache: make(map[string]cacheEntry),
+	}
+}
+
+func (c *SimpleTTLCache) Get(key string) ([]byte, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	entry, found := c.cache[key]
+	if !found || time.Now().UnixNano() > entry.expiration {
+		return nil, false
+	}
+	return entry.value, true
+}
+
+func (c *SimpleTTLCache) Set(key string, value []byte, ttl time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.cache[key] = cacheEntry{
+		value:      value,
+		expiration: time.Now().Add(ttl).UnixNano(),
+	}
+}
+
+// Example of setting up Google provider with token caching
+googleAPIKey := os.Getenv("GOOGLE_API_KEY")
+
+// Initialize your cache (e.g. simple in-memory cache)
+var cache providers.Cache = NewSimpleTTLCache() // Use your cache implementation
+
+// Create Google provider with caching enabled
+googleProviderWithCache := providers.NewGoogleWithCache([]string{googleAPIKey}, cache)
+
+// Now use googleProviderWithCache in your Heimdall router
+router := heimdall.New(timeout, []heimdall.LLMProvider{googleProviderWithCache})
+
+// ... rest of your code
+```
+
 ### Perplexity
 
 ```go

@@ -303,6 +303,10 @@ func (g Google) CacheContent(
 		return "", errors.New("only one of text or fileData can be provided")
 	}
 
+	if len(payload.FileData) > 1 {
+		return "", errors.New("you can only provide one file")
+	}
+
 	reqBody := cacheContentRequest{
 		Model: "models/" + model,
 		Contents: []content{{
@@ -328,10 +332,12 @@ func (g Google) CacheContent(
 	if payload.FileData != nil {
 		var mimeType string
 		var fileURI string
+
 		for k, v := range payload.FileData {
 			mimeType = k
 			fileURI = v
 		}
+
 		reqBody.Contents[0].Parts = append(
 			reqBody.Contents[0].Parts,
 			part{
