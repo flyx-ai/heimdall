@@ -205,8 +205,6 @@ type Gemini25ProPreview struct {
 	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
 	Thinking  ThinkBudget
-	// TTL must be specified as '100s' for 100 seconds
-	TTL string
 }
 
 func (g Gemini25ProPreview) GetName() string {
