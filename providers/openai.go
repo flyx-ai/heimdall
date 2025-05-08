@@ -113,155 +113,25 @@ func (oa Openai) doRequest(
 		Temperature:   1.0,
 	}
 
-	var requestBody []byte
+	request, err := prepareModelRequest(
+		openaiRequest,
+		req.Model,
+		req.SystemMessage,
+		req.UserMessage,
+		req.History,
+	)
+	if err != nil {
+		return response.Completion{}, 0, err
+	}
 
-	switch model {
-	case models.GPT41MiniAlias:
-		request, err := prepareModelRequest(
-			openaiRequest,
-			req.Model,
-			req.SystemMessage,
-			req.UserMessage,
-			req.History,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(request)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
-	case models.GPT41NanoAlias:
-		request, err := prepareModelRequest(
-			openaiRequest,
-			req.Model,
-			req.SystemMessage,
-			req.UserMessage,
-			req.History,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(request)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
-	case models.GPT41Alias:
-		request, err := prepareModelRequest(
-			openaiRequest,
-			req.Model,
-			req.SystemMessage,
-			req.UserMessage,
-			req.History,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(request)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
-	case models.GPT4OAlias:
-		request, err := prepareModelRequest(
-			openaiRequest,
-			req.Model,
-			req.SystemMessage,
-			req.UserMessage,
-			req.History,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(request)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
-	case models.GPT4OMiniAlias:
-		request, err := prepareModelRequest(
-			openaiRequest,
-			req.Model,
-			req.SystemMessage,
-			req.UserMessage,
-			req.History,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(request)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
-	case models.O1Alias:
-		request, err := prepareModelRequest(
-			openaiRequest,
-			req.Model,
-			req.SystemMessage,
-			req.UserMessage,
-			req.History,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(request)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
-	case models.O3MiniAlias:
-		request, err := prepareModelRequest(
-			openaiRequest,
-			req.Model,
-			req.SystemMessage,
-			req.UserMessage,
-			req.History,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(request)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
-
-	default:
-		requestMessages := make([]requestMessage, 1)
-		requestMessages[0] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: req.UserMessage,
-		})
-
-		openaiRequest.Messages = requestMessages
-		body, err := json.Marshal(openaiRequest)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
+	body, err := json.Marshal(request)
+	if err != nil {
+		return response.Completion{}, 0, err
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, "POST",
 		fmt.Sprintf("%s/chat/completions", openAIBaseURL),
-		bytes.NewReader(requestBody))
+		bytes.NewReader(body))
 	if err != nil {
 		return response.Completion{}, 0, fmt.Errorf(
 			"create request: %w",
@@ -795,7 +665,6 @@ func (oa Openai) callImageGenerationAPI(
 
 var _ LLMProvider = new(Openai)
 
-// prepareModelRequest handles preparing request for different model types
 func prepareModelRequest(
 	request openAIRequest,
 	requestedModel models.Model,
@@ -803,22 +672,20 @@ func prepareModelRequest(
 	userMsg string,
 	history []request.Message,
 ) (openAIRequest, error) {
-	// Use type switching to handle different model capabilities
 	switch m := requestedModel.(type) {
 	case models.GPT41:
-		return prepareGPT41TypeRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.GPT41Mini:
-		return prepareGPT41TypeRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.GPT41Nano:
-		return prepareGPT41TypeRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.GPT4O:
-		return prepareGPT41TypeRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.GPT4OMini:
-		return prepareGPT41TypeRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.O1:
-		return prepareGPT41TypeRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.O3Mini:
-		// O3Mini only has structured output
 		if m.StructuredOutput != nil {
 			request.ResponseFormat = map[string]any{
 				"type":        "json_schema",
@@ -831,8 +698,7 @@ func prepareModelRequest(
 	}
 }
 
-// prepareGPT41TypeRequest handles models with all attachment types (structured output, PDF, images)
-func prepareGPT41TypeRequest(
+func prepareRequest(
 	request openAIRequest,
 	structuredOutput map[string]any,
 	pdfFile map[string]string,
@@ -841,7 +707,6 @@ func prepareGPT41TypeRequest(
 	userMsg string,
 	history []request.Message,
 ) (openAIRequest, error) {
-	// Set structured output if available
 	if structuredOutput != nil {
 		request.ResponseFormat = map[string]any{
 			"type":        "json_schema",
@@ -849,28 +714,23 @@ func prepareGPT41TypeRequest(
 		}
 	}
 
-	// Validate that we don't have both file types
 	if len(pdfFile) == 1 && len(imageFile) == 1 {
 		return openAIRequest{}, errors.New(
 			"only pdf file or image file can be provided, not both",
 		)
 	}
 
-	// Handle image files
 	if len(imageFile) == 1 {
 		return prepareRequestWithImage(request, imageFile, userMsg, history)
 	}
 
-	// Handle PDF files
 	if len(pdfFile) == 1 {
 		return prepareRequestWithPdf(request, pdfFile, userMsg, history)
 	}
 
-	// Handle regular text messages
 	return prepareBasicMessages(request, systemInst, userMsg, history)
 }
 
-// prepareRequestWithImage handles requests with image attachments
 func prepareRequestWithImage(
 	request openAIRequest,
 	imageFiles []models.OpenaiImagePayload,
@@ -879,7 +739,6 @@ func prepareRequestWithImage(
 ) (openAIRequest, error) {
 	reqMsgWithImage := []requestMessageWithImage{}
 
-	// Add history messages
 	for _, his := range history {
 		reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
 			Role: his.Role,
@@ -892,13 +751,11 @@ func prepareRequestWithImage(
 		})
 	}
 
-	// Determine the index of the last message where we'll add the image
 	lastIndex := 0
 	if len(reqMsgWithImage) > 0 {
 		lastIndex = len(reqMsgWithImage) - 1
 	}
 
-	// If no history or we need a new user message, add one
 	if len(reqMsgWithImage) == 0 || reqMsgWithImage[lastIndex].Role != "user" {
 		reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
 			Role:    "user",
@@ -907,7 +764,6 @@ func prepareRequestWithImage(
 		lastIndex = len(reqMsgWithImage) - 1
 	}
 
-	// Add each image to the message
 	for _, img := range imageFiles {
 		detail := "auto"
 		if img.Detail != "" {
@@ -927,7 +783,6 @@ func prepareRequestWithImage(
 		)
 	}
 
-	// Add the user text message after the images
 	reqMsgWithImage[lastIndex].Content = append(
 		reqMsgWithImage[lastIndex].Content,
 		fileInputMessage{
@@ -940,7 +795,6 @@ func prepareRequestWithImage(
 	return request, nil
 }
 
-// prepareRequestWithPdf handles requests with PDF attachments
 func prepareRequestWithPdf(
 	request openAIRequest,
 	pdfFiles map[string]string,
@@ -949,7 +803,6 @@ func prepareRequestWithPdf(
 ) (openAIRequest, error) {
 	reqMsgWithFile := []requestMessageWithFile{}
 
-	// Add history messages
 	for _, his := range history {
 		reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
 			Role: his.Role,
@@ -962,13 +815,11 @@ func prepareRequestWithPdf(
 		})
 	}
 
-	// Determine the index of the last message where we'll add the PDF
 	lastIndex := 0
 	if len(reqMsgWithFile) > 0 {
 		lastIndex = len(reqMsgWithFile) - 1
 	}
 
-	// If no history or we need a new user message, add one
 	if len(reqMsgWithFile) == 0 || reqMsgWithFile[lastIndex].Role != "user" {
 		reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
 			Role:    "user",
@@ -977,7 +828,6 @@ func prepareRequestWithPdf(
 		lastIndex = len(reqMsgWithFile) - 1
 	}
 
-	// Extract PDF filename and data
 	var filename string
 	var fileData string
 	for name, data := range pdfFiles {
@@ -985,7 +835,6 @@ func prepareRequestWithPdf(
 		fileData = data
 	}
 
-	// Add the PDF file to the message
 	fi := fileInput{
 		Type: "file",
 		File: file{
@@ -998,7 +847,6 @@ func prepareRequestWithPdf(
 		fi,
 	)
 
-	// Add the user text message after the PDF
 	reqMsgWithFile[lastIndex].Content = append(
 		reqMsgWithFile[lastIndex].Content,
 		fileInputMessage{
@@ -1011,17 +859,15 @@ func prepareRequestWithPdf(
 	return request, nil
 }
 
-// prepareBasicMessages handles simple text-only message requests
 func prepareBasicMessages(
 	request openAIRequest,
-	systemInst string,
-	userMsg string,
+	_ string,
+	_ string,
 	history []request.Message,
 ) (openAIRequest, error) {
 	hisLen := len(history)
 	requestMessages := make([]requestMessage, 0)
 
-	// Add history messages
 	for i := range hisLen {
 		requestMessages = append(requestMessages, requestMessage{
 			Role:    history[i].Role,
@@ -1029,30 +875,27 @@ func prepareBasicMessages(
 		})
 	}
 
-	// Add system and user messages based on history presence
-	if hisLen == 0 {
-		// No history case
-		requestMessages = append(requestMessages, requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages = append(requestMessages, requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-
-	if hisLen != 0 {
-		// With history case
-		requestMessages = append(requestMessages, requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages = append(requestMessages, requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
+	// if hisLen == 0 {
+	// 	requestMessages = append(requestMessages, requestMessage{
+	// 		Role:    "system",
+	// 		Content: systemInst,
+	// 	})
+	// 	requestMessages = append(requestMessages, requestMessage{
+	// 		Role:    "user",
+	// 		Content: userMsg,
+	// 	})
+	// }
+	//
+	// if hisLen != 0 {
+	// 	requestMessages = append(requestMessages, requestMessage{
+	// 		Role:    "system",
+	// 		Content: systemInst,
+	// 	})
+	// 	requestMessages = append(requestMessages, requestMessage{
+	// 		Role:    "user",
+	// 		Content: userMsg,
+	// 	})
+	// }
 
 	request.Messages = requestMessages
 	return request, nil
