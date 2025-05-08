@@ -897,10 +897,10 @@ func prepareBasicMessages(
 	requestMessages := make([]requestMessage, hisLen+2)
 
 	for i := range hisLen {
-		requestMessages = append(requestMessages, requestMessage{
+		requestMessages[i] = requestMessage{
 			Role:    history[i].Role,
 			Content: history[i].Content,
-		})
+		}
 	}
 
 	if hisLen == 0 {

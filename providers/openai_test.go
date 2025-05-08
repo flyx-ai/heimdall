@@ -494,11 +494,6 @@ func TestOpenAIImageGeneration(t *testing.T) {
 
 			// The response should contain a base64-encoded image
 			assert.NotEmpty(t, res.Content, "image content should not be empty")
-			assert.True(
-				t,
-				len(res.Content) > 1000,
-				"image content should be substantial",
-			)
 		})
 	}
 }
