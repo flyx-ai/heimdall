@@ -117,7 +117,7 @@ func (oa Openai) doRequest(
 
 	switch model {
 	case models.GPT41MiniAlias:
-		request, err := prepareGPT4MiniRequest(
+		request, err := prepareGPT41MiniRequest(
 			openaiRequest,
 			req.Model,
 			req.SystemMessage,
