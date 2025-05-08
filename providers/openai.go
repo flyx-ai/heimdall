@@ -1304,7 +1304,7 @@ func prepareO1Request(
 	return request, nil
 }
 
-func prepareGPT4MiniRequest(
+func prepareGPT41MiniRequest(
 	request openAIRequest,
 	requestedModel models.Model,
 	systemInst string,
