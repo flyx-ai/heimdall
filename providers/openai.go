@@ -1022,7 +1022,7 @@ func prepareBasicMessages(
 	requestMessages := make([]requestMessage, 0)
 
 	// Add history messages
-	for i := 0; i < hisLen; i++ {
+	for i := range hisLen {
 		requestMessages = append(requestMessages, requestMessage{
 			Role:    history[i].Role,
 			Content: history[i].Content,
