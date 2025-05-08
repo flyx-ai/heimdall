@@ -125,6 +125,30 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "should complete request with gpt 4.1 mini",
+			req: request.Completion{
+				Model:         models.GPT41Mini{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with gpt 4.1 nano",
+			req: request.Completion{
+				Model:         models.GPT41Nano{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -252,6 +276,30 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 			name: "should complete request with gpt 4.1",
 			req: request.Completion{
 				Model:         models.GPT41{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with gpt 4.1 mini",
+			req: request.Completion{
+				Model:         models.GPT41Mini{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with gpt 4.1 nano",
+			req: request.Completion{
+				Model:         models.GPT41Nano{},
 				SystemMessage: systemInst,
 				UserMessage:   userMsg,
 				Temperature:   1,
