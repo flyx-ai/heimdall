@@ -896,32 +896,21 @@ func prepareBasicMessages(
 	hisLen := len(history)
 	requestMessages := make([]requestMessage, hisLen+2)
 
-	for i := range hisLen {
+	for i := range history {
 		requestMessages[i] = requestMessage{
 			Role:    history[i].Role,
 			Content: history[i].Content,
 		}
 	}
 
-	if hisLen == 0 {
-		requestMessages[0] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[1] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
+	requestMessages[hisLen] = requestMessage{
+		Role:    "system",
+		Content: systemInst,
 	}
-	if hisLen != 0 {
-		requestMessages[hisLen+1] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[hisLen+2] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
+
+	requestMessages[hisLen+1] = requestMessage{
+		Role:    "user",
+		Content: userMsg,
 	}
 
 	request.Messages = requestMessages
