@@ -117,7 +117,7 @@ func (oa Openai) doRequest(
 
 	switch model {
 	case models.GPT41MiniAlias:
-		request, err := prepareGPT41MiniRequest(
+		request, err := prepareModelRequest(
 			openaiRequest,
 			req.Model,
 			req.SystemMessage,
@@ -135,7 +135,7 @@ func (oa Openai) doRequest(
 
 		requestBody = body
 	case models.GPT41NanoAlias:
-		request, err := prepareGPT41NanoRequest(
+		request, err := prepareModelRequest(
 			openaiRequest,
 			req.Model,
 			req.SystemMessage,
@@ -153,7 +153,7 @@ func (oa Openai) doRequest(
 
 		requestBody = body
 	case models.GPT41Alias:
-		request, err := prepareGPT41Request(
+		request, err := prepareModelRequest(
 			openaiRequest,
 			req.Model,
 			req.SystemMessage,
@@ -171,7 +171,7 @@ func (oa Openai) doRequest(
 
 		requestBody = body
 	case models.GPT4OAlias:
-		request, err := prepareGPT4ORequest(
+		request, err := prepareModelRequest(
 			openaiRequest,
 			req.Model,
 			req.SystemMessage,
@@ -189,7 +189,7 @@ func (oa Openai) doRequest(
 
 		requestBody = body
 	case models.GPT4OMiniAlias:
-		request, err := prepareGPT4OMiniRequest(
+		request, err := prepareModelRequest(
 			openaiRequest,
 			req.Model,
 			req.SystemMessage,
@@ -207,7 +207,7 @@ func (oa Openai) doRequest(
 
 		requestBody = body
 	case models.O1Alias:
-		request, err := prepareO1Request(
+		request, err := prepareModelRequest(
 			openaiRequest,
 			req.Model,
 			req.SystemMessage,
@@ -225,7 +225,7 @@ func (oa Openai) doRequest(
 
 		requestBody = body
 	case models.O3MiniAlias:
-		request, err := prepareO3MiniRequest(
+		request, err := prepareModelRequest(
 			openaiRequest,
 			req.Model,
 			req.SystemMessage,
@@ -795,1074 +795,265 @@ func (oa Openai) callImageGenerationAPI(
 
 var _ LLMProvider = new(Openai)
 
-func prepareGPT4ORequest(
+// prepareModelRequest handles preparing request for different model types
+func prepareModelRequest(
 	request openAIRequest,
 	requestedModel models.Model,
 	systemInst string,
 	userMsg string,
 	history []request.Message,
 ) (openAIRequest, error) {
-	gpt4O, ok := requestedModel.(models.GPT4O)
-	if !ok {
-		return request, errors.New(
-			"internal error; model was o3-mini but type assertion to models.O3Mini failed",
-		)
+	// Use type switching to handle different model capabilities
+	switch m := requestedModel.(type) {
+	case models.GPT41:
+		return prepareGPT41TypeRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.GPT41Mini:
+		return prepareGPT41TypeRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.GPT41Nano:
+		return prepareGPT41TypeRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.GPT4O:
+		return prepareGPT41TypeRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.GPT4OMini:
+		return prepareGPT41TypeRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.O1:
+		return prepareGPT41TypeRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.O3Mini:
+		// O3Mini only has structured output
+		if m.StructuredOutput != nil {
+			request.ResponseFormat = map[string]any{
+				"type":        "json_schema",
+				"json_schema": m.StructuredOutput,
+			}
+		}
+		return prepareBasicMessages(request, systemInst, userMsg, history)
+	default:
+		return prepareBasicMessages(request, systemInst, userMsg, history)
 	}
+}
 
-	if gpt4O.StructuredOutput != nil {
+// prepareGPT41TypeRequest handles models with all attachment types (structured output, PDF, images)
+func prepareGPT41TypeRequest(
+	request openAIRequest,
+	structuredOutput map[string]any,
+	pdfFile map[string]string,
+	imageFile []models.OpenaiImagePayload,
+	systemInst string,
+	userMsg string,
+	history []request.Message,
+) (openAIRequest, error) {
+	// Set structured output if available
+	if structuredOutput != nil {
 		request.ResponseFormat = map[string]any{
 			"type":        "json_schema",
-			"json_schema": gpt4O.StructuredOutput,
+			"json_schema": structuredOutput,
 		}
 	}
-
-	if len(gpt4O.PdfFile) == 1 && len(gpt4O.ImageFile) == 1 {
+	
+	// Validate that we don't have both file types
+	if len(pdfFile) == 1 && len(imageFile) == 1 {
 		return openAIRequest{}, errors.New(
 			"only pdf file or image file can be provided, not both",
 		)
 	}
 
-	if len(gpt4O.ImageFile) == 1 {
-		reqMsgWithImage := []requestMessageWithImage{}
+	// Handle image files
+	if len(imageFile) == 1 {
+		return prepareRequestWithImage(request, imageFile, userMsg, history)
+	}
 
-		for _, his := range history {
-			reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
-				Role: his.Role,
-				Content: []any{
-					fileInputMessage{
-						Type: "text",
-						Text: his.Content,
-					},
+	// Handle PDF files
+	if len(pdfFile) == 1 {
+		return prepareRequestWithPdf(request, pdfFile, userMsg, history)
+	}
+
+	// Handle regular text messages
+	return prepareBasicMessages(request, systemInst, userMsg, history)
+}
+
+// prepareRequestWithImage handles requests with image attachments
+func prepareRequestWithImage(
+	request openAIRequest,
+	imageFiles []models.OpenaiImagePayload,
+	userMsg string,
+	history []request.Message,
+) (openAIRequest, error) {
+	reqMsgWithImage := []requestMessageWithImage{}
+
+	// Add history messages
+	for _, his := range history {
+		reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
+			Role: his.Role,
+			Content: []any{
+				fileInputMessage{
+					Type: "text",
+					Text: his.Content,
 				},
-			})
+			},
+		})
+	}
+
+	// Determine the index of the last message where we'll add the image
+	lastIndex := 0
+	if len(reqMsgWithImage) > 0 {
+		lastIndex = len(reqMsgWithImage) - 1
+	}
+	
+	// If no history or we need a new user message, add one
+	if len(reqMsgWithImage) == 0 || reqMsgWithImage[lastIndex].Role != "user" {
+		reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
+			Role:    "user",
+			Content: []any{},
+		})
+		lastIndex = len(reqMsgWithImage) - 1
+	}
+
+	// Add each image to the message
+	for _, img := range imageFiles {
+		detail := "auto"
+		if img.Detail != "" {
+			detail = img.Detail
 		}
 
-		lastIndex := len(reqMsgWithImage)
-		if lastIndex == 1 {
-			lastIndex = 0
+		ii := imageInput{
+			Type: "image_url",
+			ImageUrl: imageUrl{
+				Url:    img.Url,
+				Detail: detail,
+			},
 		}
-
-		reqMsgWithImage[lastIndex].Role = "user"
-
-		for _, img := range gpt4O.ImageFile {
-			detail := "auto"
-			if img.Detail != "" {
-				detail = img.Detail
-			}
-
-			ii := imageInput{
-				Type: "image_url",
-				ImageUrl: imageUrl{
-					Url:    img.Url,
-					Detail: detail,
-				},
-			}
-			reqMsgWithImage[lastIndex].Content = append(
-				reqMsgWithImage[lastIndex].Content,
-				ii,
-			)
-		}
-
 		reqMsgWithImage[lastIndex].Content = append(
 			reqMsgWithImage[lastIndex].Content,
-			fileInputMessage{
-				Type: "text",
-				Text: userMsg,
-			},
+			ii,
 		)
-
-		request.Messages = reqMsgWithImage
-
-		return request, nil
 	}
 
-	if len(gpt4O.PdfFile) == 1 {
-		reqMsgWithFile := []requestMessageWithFile{}
+	// Add the user text message after the images
+	reqMsgWithImage[lastIndex].Content = append(
+		reqMsgWithImage[lastIndex].Content,
+		fileInputMessage{
+			Type: "text",
+			Text: userMsg,
+		},
+	)
 
-		for _, his := range history {
-			reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
-				Role: his.Role,
-				Content: []any{
-					fileInputMessage{
-						Type: "text",
-						Text: his.Content,
-					},
-				},
-			})
-		}
-
-		lastIndex := len(reqMsgWithFile)
-		if lastIndex == 1 {
-			lastIndex = 0
-		}
-
-		reqMsgWithFile[lastIndex].Role = "user"
-		var filename string
-		var fileData string
-
-		for name, data := range gpt4O.PdfFile {
-			filename = name
-			fileData = data
-		}
-
-		fi := fileInput{
-			Type: "file",
-			File: file{
-				Filename: filename,
-				FileData: string(fileData),
-			},
-		}
-
-		reqMsgWithFile[lastIndex].Content = append(
-			reqMsgWithFile[lastIndex].Content,
-			fi,
-		)
-		reqMsgWithFile[lastIndex].Content = append(
-			reqMsgWithFile[lastIndex].Content,
-			fileInputMessage{
-				Type: "text",
-				Text: userMsg,
-			},
-		)
-
-		request.Messages = reqMsgWithFile
-
-		return request, nil
-	}
-
-	hisLen := len(history)
-	requestMessages := make([]requestMessage, hisLen+2)
-	for i, his := range history {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    his.Role,
-			Content: his.Content,
-		})
-	}
-
-	if hisLen == 0 {
-		requestMessages[0] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[1] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-	if hisLen != 0 {
-		requestMessages[hisLen+1] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[hisLen+2] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-
-	request.Messages = requestMessages
-
+	request.Messages = reqMsgWithImage
 	return request, nil
 }
 
-func prepareGPT4OMiniRequest(
+// prepareRequestWithPdf handles requests with PDF attachments
+func prepareRequestWithPdf(
 	request openAIRequest,
-	requestedModel models.Model,
+	pdfFiles map[string]string,
+	userMsg string,
+	history []request.Message,
+) (openAIRequest, error) {
+	reqMsgWithFile := []requestMessageWithFile{}
+
+	// Add history messages
+	for _, his := range history {
+		reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
+			Role: his.Role,
+			Content: []any{
+				fileInputMessage{
+					Type: "text",
+					Text: his.Content,
+				},
+			},
+		})
+	}
+
+	// Determine the index of the last message where we'll add the PDF
+	lastIndex := 0
+	if len(reqMsgWithFile) > 0 {
+		lastIndex = len(reqMsgWithFile) - 1
+	}
+	
+	// If no history or we need a new user message, add one
+	if len(reqMsgWithFile) == 0 || reqMsgWithFile[lastIndex].Role != "user" {
+		reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
+			Role:    "user",
+			Content: []any{},
+		})
+		lastIndex = len(reqMsgWithFile) - 1
+	}
+
+	// Extract PDF filename and data
+	var filename string
+	var fileData string
+	for name, data := range pdfFiles {
+		filename = name
+		fileData = data
+	}
+
+	// Add the PDF file to the message
+	fi := fileInput{
+		Type: "file",
+		File: file{
+			Filename: filename,
+			FileData: fileData,
+		},
+	}
+	reqMsgWithFile[lastIndex].Content = append(
+		reqMsgWithFile[lastIndex].Content,
+		fi,
+	)
+	
+	// Add the user text message after the PDF
+	reqMsgWithFile[lastIndex].Content = append(
+		reqMsgWithFile[lastIndex].Content,
+		fileInputMessage{
+			Type: "text",
+			Text: userMsg,
+		},
+	)
+
+	request.Messages = reqMsgWithFile
+	return request, nil
+}
+
+// prepareBasicMessages handles simple text-only message requests
+func prepareBasicMessages(
+	request openAIRequest,
 	systemInst string,
 	userMsg string,
 	history []request.Message,
 ) (openAIRequest, error) {
-	gpt4OMini, ok := requestedModel.(models.GPT4OMini)
-	if !ok {
-		return request, errors.New(
-			"internal error; model was o3-mini but type assertion to models.O3Mini failed",
-		)
-	}
-
-	if gpt4OMini.StructuredOutput != nil {
-		request.ResponseFormat = map[string]any{
-			"type":        "json_schema",
-			"json_schema": gpt4OMini.StructuredOutput,
-		}
-	}
-
-	if len(gpt4OMini.PdfFile) == 1 && len(gpt4OMini.ImageFile) == 1 {
-		return openAIRequest{}, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
-	}
-
-	if len(gpt4OMini.ImageFile) == 1 {
-		reqMsgWithImage := []requestMessageWithImage{}
-
-		for _, his := range history {
-			reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
-				Role: his.Role,
-				Content: []any{
-					fileInputMessage{
-						Type: "text",
-						Text: his.Content,
-					},
-				},
-			})
-		}
-
-		lastIndex := len(reqMsgWithImage)
-		if lastIndex == 1 {
-			lastIndex = 0
-		}
-
-		reqMsgWithImage[lastIndex].Role = "user"
-
-		for _, img := range gpt4OMini.ImageFile {
-			detail := "auto"
-			if img.Detail != "" {
-				detail = img.Detail
-			}
-
-			ii := imageInput{
-				Type: "image_url",
-				ImageUrl: imageUrl{
-					Url:    img.Url,
-					Detail: detail,
-				},
-			}
-			reqMsgWithImage[lastIndex].Content = append(
-				reqMsgWithImage[lastIndex].Content,
-				ii,
-			)
-		}
-
-		reqMsgWithImage[lastIndex].Content = append(
-			reqMsgWithImage[lastIndex].Content,
-			fileInputMessage{
-				Type: "text",
-				Text: userMsg,
-			},
-		)
-
-		request.Messages = reqMsgWithImage
-
-		return request, nil
-	}
-
-	if len(gpt4OMini.PdfFile) == 1 {
-		reqMsgWithFile := []requestMessageWithFile{}
-
-		for _, his := range history {
-			reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
-				Role: his.Role,
-				Content: []any{
-					fileInputMessage{
-						Type: "text",
-						Text: his.Content,
-					},
-				},
-			})
-		}
-
-		lastIndex := len(reqMsgWithFile)
-		if lastIndex == 1 {
-			lastIndex = 0
-		}
-
-		reqMsgWithFile[lastIndex].Role = "user"
-		var filename string
-		var fileData string
-
-		for name, data := range gpt4OMini.PdfFile {
-			filename = name
-			fileData = data
-		}
-
-		fi := fileInput{
-			Type: "file",
-			File: file{
-				Filename: filename,
-				FileData: string(fileData),
-			},
-		}
-
-		reqMsgWithFile[lastIndex].Content = append(
-			reqMsgWithFile[lastIndex].Content,
-			fi,
-		)
-		reqMsgWithFile[lastIndex].Content = append(
-			reqMsgWithFile[lastIndex].Content,
-			fileInputMessage{
-				Type: "text",
-				Text: userMsg,
-			},
-		)
-
-		request.Messages = reqMsgWithFile
-
-		return request, nil
-	}
-
 	hisLen := len(history)
-	requestMessages := make([]requestMessage, hisLen+2)
-	for i, his := range history {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    his.Role,
-			Content: his.Content,
+	requestMessages := make([]requestMessage, 0)
+	
+	// Add history messages
+	for i := 0; i < hisLen; i++ {
+		requestMessages = append(requestMessages, requestMessage{
+			Role:    history[i].Role,
+			Content: history[i].Content,
 		})
 	}
 
+	// Add system and user messages based on history presence
 	if hisLen == 0 {
-		requestMessages[0] = requestMessage(requestMessage{
+		// No history case
+		requestMessages = append(requestMessages, requestMessage{
 			Role:    "system",
 			Content: systemInst,
 		})
-		requestMessages[1] = requestMessage(requestMessage{
+		requestMessages = append(requestMessages, requestMessage{
 			Role:    "user",
 			Content: userMsg,
 		})
 	}
+	
 	if hisLen != 0 {
-		requestMessages[hisLen+1] = requestMessage(requestMessage{
+		// With history case
+		requestMessages = append(requestMessages, requestMessage{
 			Role:    "system",
 			Content: systemInst,
 		})
-		requestMessages[hisLen+2] = requestMessage(requestMessage{
+		requestMessages = append(requestMessages, requestMessage{
 			Role:    "user",
 			Content: userMsg,
 		})
 	}
 
 	request.Messages = requestMessages
-
-	return request, nil
-}
-
-func prepareO1Request(
-	request openAIRequest,
-	requestedModel models.Model,
-	systemInst string,
-	userMsg string,
-	history []request.Message,
-) (openAIRequest, error) {
-	o1, ok := requestedModel.(models.O1)
-	if !ok {
-		return request, errors.New(
-			"internal error; model was o3-mini but type assertion to models.O3Mini failed",
-		)
-	}
-
-	if o1.StructuredOutput != nil {
-		request.ResponseFormat = map[string]any{
-			"type":        "json_schema",
-			"json_schema": o1.StructuredOutput,
-		}
-	}
-	if len(o1.PdfFile) == 1 && len(o1.ImageFile) == 1 {
-		return openAIRequest{}, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
-	}
-
-	if len(o1.ImageFile) == 1 {
-		reqMsgWithImage := []requestMessageWithImage{}
-
-		for _, his := range history {
-			reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
-				Role: his.Role,
-				Content: []any{
-					fileInputMessage{
-						Type: "text",
-						Text: his.Content,
-					},
-				},
-			})
-		}
-
-		lastIndex := len(reqMsgWithImage)
-		if lastIndex == 1 {
-			lastIndex = 0
-		}
-
-		reqMsgWithImage[lastIndex].Role = "user"
-
-		for _, img := range o1.ImageFile {
-			detail := "auto"
-			if img.Detail != "" {
-				detail = img.Detail
-			}
-
-			ii := imageInput{
-				Type: "image_url",
-				ImageUrl: imageUrl{
-					Url:    img.Url,
-					Detail: detail,
-				},
-			}
-			reqMsgWithImage[lastIndex].Content = append(
-				reqMsgWithImage[lastIndex].Content,
-				ii,
-			)
-		}
-
-		reqMsgWithImage[lastIndex].Content = append(
-			reqMsgWithImage[lastIndex].Content,
-			fileInputMessage{
-				Type: "text",
-				Text: userMsg,
-			},
-		)
-
-		request.Messages = reqMsgWithImage
-
-		return request, nil
-	}
-
-	if len(o1.PdfFile) == 1 {
-		reqMsgWithFile := []requestMessageWithFile{}
-
-		for _, his := range history {
-			reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
-				Role: his.Role,
-				Content: []any{
-					fileInputMessage{
-						Type: "text",
-						Text: his.Content,
-					},
-				},
-			})
-		}
-
-		lastIndex := len(reqMsgWithFile)
-		if lastIndex == 1 {
-			lastIndex = 0
-		}
-
-		reqMsgWithFile[lastIndex].Role = "user"
-		var filename string
-		var fileData string
-
-		for name, data := range o1.PdfFile {
-			filename = name
-			fileData = data
-		}
-
-		fi := fileInput{
-			Type: "file",
-			File: file{
-				Filename: filename,
-				FileData: string(fileData),
-			},
-		}
-
-		reqMsgWithFile[lastIndex].Content = append(
-			reqMsgWithFile[lastIndex].Content,
-			fi,
-		)
-		reqMsgWithFile[lastIndex].Content = append(
-			reqMsgWithFile[lastIndex].Content,
-			fileInputMessage{
-				Type: "text",
-				Text: userMsg,
-			},
-		)
-
-		request.Messages = reqMsgWithFile
-
-		return request, nil
-	}
-
-	hisLen := len(history)
-	requestMessages := make([]requestMessage, hisLen+2)
-	for i, his := range history {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    his.Role,
-			Content: his.Content,
-		})
-	}
-
-	if hisLen == 0 {
-		requestMessages[0] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[1] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-	if hisLen != 0 {
-		requestMessages[hisLen+1] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[hisLen+2] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-
-	request.Messages = requestMessages
-
-	return request, nil
-}
-
-func prepareGPT41MiniRequest(
-	request openAIRequest,
-	requestedModel models.Model,
-	systemInst string,
-	userMsg string,
-	history []request.Message,
-) (openAIRequest, error) {
-	gpt41Mini, ok := requestedModel.(models.GPT41Mini)
-	if !ok {
-		return request, errors.New(
-			"internal error; model was gpt 4.1 mini but type assertion to models.GPT41Mini failed",
-		)
-	}
-
-	if gpt41Mini.StructuredOutput != nil {
-		request.ResponseFormat = map[string]any{
-			"type":        "json_schema",
-			"json_schema": gpt41Mini.StructuredOutput,
-		}
-	}
-	if len(gpt41Mini.PdfFile) == 1 && len(gpt41Mini.ImageFile) == 1 {
-		return openAIRequest{}, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
-	}
-
-	if len(gpt41Mini.ImageFile) == 1 {
-		reqMsgWithImage := []requestMessageWithImage{}
-
-		for _, his := range history {
-			reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
-				Role: his.Role,
-				Content: []any{
-					fileInputMessage{
-						Type: "text",
-						Text: his.Content,
-					},
-				},
-			})
-		}
-
-		lastIndex := len(reqMsgWithImage)
-		if lastIndex == 1 {
-			lastIndex = 0
-		}
-
-		reqMsgWithImage[lastIndex].Role = "user"
-
-		for _, img := range gpt41Mini.ImageFile {
-			detail := "auto"
-			if img.Detail != "" {
-				detail = img.Detail
-			}
-
-			ii := imageInput{
-				Type: "image_url",
-				ImageUrl: imageUrl{
-					Url:    img.Url,
-					Detail: detail,
-				},
-			}
-			reqMsgWithImage[lastIndex].Content = append(
-				reqMsgWithImage[lastIndex].Content,
-				ii,
-			)
-		}
-
-		reqMsgWithImage[lastIndex].Content = append(
-			reqMsgWithImage[lastIndex].Content,
-			fileInputMessage{
-				Type: "text",
-				Text: userMsg,
-			},
-		)
-
-		request.Messages = reqMsgWithImage
-
-		return request, nil
-	}
-
-	if len(gpt41Mini.PdfFile) == 1 {
-		reqMsgWithFile := []requestMessageWithFile{}
-
-		for _, his := range history {
-			reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
-				Role: his.Role,
-				Content: []any{
-					fileInputMessage{
-						Type: "text",
-						Text: his.Content,
-					},
-				},
-			})
-		}
-
-		lastIndex := len(reqMsgWithFile)
-		if lastIndex == 1 {
-			lastIndex = 0
-		}
-
-		reqMsgWithFile[lastIndex].Role = "user"
-		var filename string
-		var fileData string
-
-		for name, data := range gpt41Mini.PdfFile {
-			filename = name
-			fileData = data
-		}
-
-		fi := fileInput{
-			Type: "file",
-			File: file{
-				Filename: filename,
-				FileData: string(fileData),
-			},
-		}
-
-		reqMsgWithFile[lastIndex].Content = append(
-			reqMsgWithFile[lastIndex].Content,
-			fi,
-		)
-		reqMsgWithFile[lastIndex].Content = append(
-			reqMsgWithFile[lastIndex].Content,
-			fileInputMessage{
-				Type: "text",
-				Text: userMsg,
-			},
-		)
-
-		request.Messages = reqMsgWithFile
-
-		return request, nil
-	}
-
-	hisLen := len(history)
-	requestMessages := make([]requestMessage, hisLen+2)
-	for i, his := range history {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    his.Role,
-			Content: his.Content,
-		})
-	}
-
-	if hisLen == 0 {
-		requestMessages[0] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[1] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-	if hisLen != 0 {
-		requestMessages[hisLen+1] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[hisLen+2] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-
-	request.Messages = requestMessages
-
-	return request, nil
-}
-
-func prepareGPT41NanoRequest(
-	request openAIRequest,
-	requestedModel models.Model,
-	systemInst string,
-	userMsg string,
-	history []request.Message,
-) (openAIRequest, error) {
-	gpt41Nano, ok := requestedModel.(models.GPT41Nano)
-	if !ok {
-		return request, errors.New(
-			"internal error; model was gpt 4.1 nano but type assertion to models.GPT41Nano failed",
-		)
-	}
-
-	if gpt41Nano.StructuredOutput != nil {
-		request.ResponseFormat = map[string]any{
-			"type":        "json_schema",
-			"json_schema": gpt41Nano.StructuredOutput,
-		}
-	}
-	if len(gpt41Nano.PdfFile) == 1 && len(gpt41Nano.ImageFile) == 1 {
-		return openAIRequest{}, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
-	}
-
-	if len(gpt41Nano.ImageFile) == 1 {
-		reqMsgWithImage := []requestMessageWithImage{}
-
-		for _, his := range history {
-			reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
-				Role: his.Role,
-				Content: []any{
-					fileInputMessage{
-						Type: "text",
-						Text: his.Content,
-					},
-				},
-			})
-		}
-
-		lastIndex := len(reqMsgWithImage)
-		if lastIndex == 1 {
-			lastIndex = 0
-		}
-
-		reqMsgWithImage[lastIndex].Role = "user"
-
-		for _, img := range gpt41Nano.ImageFile {
-			detail := "auto"
-			if img.Detail != "" {
-				detail = img.Detail
-			}
-
-			ii := imageInput{
-				Type: "image_url",
-				ImageUrl: imageUrl{
-					Url:    img.Url,
-					Detail: detail,
-				},
-			}
-			reqMsgWithImage[lastIndex].Content = append(
-				reqMsgWithImage[lastIndex].Content,
-				ii,
-			)
-		}
-
-		reqMsgWithImage[lastIndex].Content = append(
-			reqMsgWithImage[lastIndex].Content,
-			fileInputMessage{
-				Type: "text",
-				Text: userMsg,
-			},
-		)
-
-		request.Messages = reqMsgWithImage
-
-		return request, nil
-	}
-
-	if len(gpt41Nano.PdfFile) == 1 {
-		reqMsgWithFile := []requestMessageWithFile{}
-
-		for _, his := range history {
-			reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
-				Role: his.Role,
-				Content: []any{
-					fileInputMessage{
-						Type: "text",
-						Text: his.Content,
-					},
-				},
-			})
-		}
-
-		lastIndex := len(reqMsgWithFile)
-		if lastIndex == 1 {
-			lastIndex = 0
-		}
-
-		reqMsgWithFile[lastIndex].Role = "user"
-		var filename string
-		var fileData string
-
-		for name, data := range gpt41Nano.PdfFile {
-			filename = name
-			fileData = data
-		}
-
-		fi := fileInput{
-			Type: "file",
-			File: file{
-				Filename: filename,
-				FileData: string(fileData),
-			},
-		}
-
-		reqMsgWithFile[lastIndex].Content = append(
-			reqMsgWithFile[lastIndex].Content,
-			fi,
-		)
-		reqMsgWithFile[lastIndex].Content = append(
-			reqMsgWithFile[lastIndex].Content,
-			fileInputMessage{
-				Type: "text",
-				Text: userMsg,
-			},
-		)
-
-		request.Messages = reqMsgWithFile
-
-		return request, nil
-	}
-
-	hisLen := len(history)
-	requestMessages := make([]requestMessage, hisLen+2)
-	for i, his := range history {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    his.Role,
-			Content: his.Content,
-		})
-	}
-
-	if hisLen == 0 {
-		requestMessages[0] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[1] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-	if hisLen != 0 {
-		requestMessages[hisLen+1] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[hisLen+2] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-
-	request.Messages = requestMessages
-
-	return request, nil
-}
-
-func prepareGPT41Request(
-	request openAIRequest,
-	requestedModel models.Model,
-	systemInst string,
-	userMsg string,
-	history []request.Message,
-) (openAIRequest, error) {
-	gpt41, ok := requestedModel.(models.GPT41)
-	if !ok {
-		return request, errors.New(
-			"internal error; model was gpt 4.1 but type assertion to models.GPT41 failed",
-		)
-	}
-
-	if gpt41.StructuredOutput != nil {
-		request.ResponseFormat = map[string]any{
-			"type":        "json_schema",
-			"json_schema": gpt41.StructuredOutput,
-		}
-	}
-	if len(gpt41.PdfFile) == 1 && len(gpt41.ImageFile) == 1 {
-		return openAIRequest{}, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
-	}
-
-	if len(gpt41.ImageFile) == 1 {
-		reqMsgWithImage := []requestMessageWithImage{}
-
-		for _, his := range history {
-			reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
-				Role: his.Role,
-				Content: []any{
-					fileInputMessage{
-						Type: "text",
-						Text: his.Content,
-					},
-				},
-			})
-		}
-
-		lastIndex := len(reqMsgWithImage)
-		if lastIndex == 1 {
-			lastIndex = 0
-		}
-
-		reqMsgWithImage[lastIndex].Role = "user"
-
-		for _, img := range gpt41.ImageFile {
-			detail := "auto"
-			if img.Detail != "" {
-				detail = img.Detail
-			}
-
-			ii := imageInput{
-				Type: "image_url",
-				ImageUrl: imageUrl{
-					Url:    img.Url,
-					Detail: detail,
-				},
-			}
-			reqMsgWithImage[lastIndex].Content = append(
-				reqMsgWithImage[lastIndex].Content,
-				ii,
-			)
-		}
-
-		reqMsgWithImage[lastIndex].Content = append(
-			reqMsgWithImage[lastIndex].Content,
-			fileInputMessage{
-				Type: "text",
-				Text: userMsg,
-			},
-		)
-
-		request.Messages = reqMsgWithImage
-
-		return request, nil
-	}
-
-	if len(gpt41.PdfFile) == 1 {
-		reqMsgWithFile := []requestMessageWithFile{}
-
-		for _, his := range history {
-			reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
-				Role: his.Role,
-				Content: []any{
-					fileInputMessage{
-						Type: "text",
-						Text: his.Content,
-					},
-				},
-			})
-		}
-
-		lastIndex := len(reqMsgWithFile)
-		if lastIndex == 1 {
-			lastIndex = 0
-		}
-
-		reqMsgWithFile[lastIndex].Role = "user"
-		var filename string
-		var fileData string
-
-		for name, data := range gpt41.PdfFile {
-			filename = name
-			fileData = data
-		}
-
-		fi := fileInput{
-			Type: "file",
-			File: file{
-				Filename: filename,
-				FileData: string(fileData),
-			},
-		}
-
-		reqMsgWithFile[lastIndex].Content = append(
-			reqMsgWithFile[lastIndex].Content,
-			fi,
-		)
-		reqMsgWithFile[lastIndex].Content = append(
-			reqMsgWithFile[lastIndex].Content,
-			fileInputMessage{
-				Type: "text",
-				Text: userMsg,
-			},
-		)
-
-		request.Messages = reqMsgWithFile
-
-		return request, nil
-	}
-
-	hisLen := len(history)
-	requestMessages := make([]requestMessage, hisLen+2)
-	for i, his := range history {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    his.Role,
-			Content: his.Content,
-		})
-	}
-
-	if hisLen == 0 {
-		requestMessages[0] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[1] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-	if hisLen != 0 {
-		requestMessages[hisLen+1] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[hisLen+2] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-
-	request.Messages = requestMessages
-
-	return request, nil
-}
-
-func prepareO3MiniRequest(
-	request openAIRequest,
-	requestedModel models.Model,
-	systemInst string,
-	userMsg string,
-	history []request.Message,
-) (openAIRequest, error) {
-	o3Mini, ok := requestedModel.(models.O3Mini)
-	if !ok {
-		return request, errors.New(
-			"internal error; model was o3-mini but type assertion to models.O3Mini failed",
-		)
-	}
-
-	if o3Mini.StructuredOutput != nil {
-		request.ResponseFormat = map[string]any{
-			"type":        "json_schema",
-			"json_schema": o3Mini.StructuredOutput,
-		}
-	}
-
-	hisLen := len(history)
-	requestMessages := make([]requestMessage, hisLen+2)
-	for i, his := range history {
-		requestMessages[i] = requestMessage(requestMessage{
-			Role:    his.Role,
-			Content: his.Content,
-		})
-	}
-
-	if hisLen == 0 {
-		requestMessages[0] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[1] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-	if hisLen != 0 {
-		requestMessages[hisLen+1] = requestMessage(requestMessage{
-			Role:    "system",
-			Content: systemInst,
-		})
-		requestMessages[hisLen+2] = requestMessage(requestMessage{
-			Role:    "user",
-			Content: userMsg,
-		})
-	}
-
-	request.Messages = requestMessages
-
 	return request, nil
 }
