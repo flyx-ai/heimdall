@@ -12,6 +12,8 @@ const (
 	GPT4Alias      = "gpt-4-0613"
 	GPT4TurboAlias = "gpt-4-turbo"
 	GPT41Alias     = "gpt-4.1-2025-04-14"
+	GPT41MiniAlias = "gpt-4.1-mini-2025-04-14"
+	GPT41NanoAlias = "gpt-4.1-nano-2025-04-14"
 )
 
 type OpenaiImagePayload struct {
@@ -56,7 +58,79 @@ func (GPT41) GetProvider() string {
 	return OpenaiProvider
 }
 
-var _ Model = new(O3Mini)
+var _ Model = new(GPT41)
+
+type GPT41Mini struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
+	StructuredOutput map[string]any
+	// PdfFile let's you include a PDF file in your request to the LLM.
+	// The expected format:
+	//
+	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	// Only provide a pdf file or an image file, not both.
+	PdfFile map[string]string
+	// ImageFile enables vision for the request
+	ImageFile []OpenaiImagePayload
+}
+
+func (GPT41Mini) GetName() string {
+	return GPT41MiniAlias
+}
+
+func (GPT41Mini) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPT41Mini)
+
+type GPT41Nano struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
+	StructuredOutput map[string]any
+	// PdfFile let's you include a PDF file in your request to the LLM.
+	// The expected format:
+	//
+	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	// Only provide a pdf file or an image file, not both.
+	PdfFile map[string]string
+	// ImageFile enables vision for the request
+	ImageFile []OpenaiImagePayload
+}
+
+func (GPT41Nano) GetName() string {
+	return GPT41NanoAlias
+}
+
+func (GPT41Nano) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPT41Nano)
 
 type O3Mini struct {
 	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
