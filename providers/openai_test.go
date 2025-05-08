@@ -285,7 +285,7 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 			},
 		},
 		{
-			name: "should complete request with gpt 4.1 mini",
+			name: "should stream request with gpt 4.1 mini",
 			req: request.Completion{
 				Model:         models.GPT41Mini{},
 				SystemMessage: systemInst,
