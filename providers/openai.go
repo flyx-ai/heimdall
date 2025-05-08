@@ -19,7 +19,17 @@ import (
 	"github.com/flyx-ai/heimdall/response"
 )
 
-const openAIBaseURL = "https://api.openai.com/v1"
+var openAIBaseURL = "https://api.openai.com/v1"
+
+// GetOpenAIBaseURL returns the current base URL for OpenAI API calls
+func GetOpenAIBaseURL() string {
+	return openAIBaseURL
+}
+
+// SetOpenAIBaseURL allows setting a custom base URL for OpenAI API calls (useful for testing)
+func SetOpenAIBaseURL(url string) {
+	openAIBaseURL = url
+}
 
 type requestMessage struct {
 	Role    string `json:"role"`
@@ -219,6 +229,20 @@ func (oa Openai) doRequest(
 func (oa Openai) Name() string {
 	return models.OpenaiProvider
 }
+
+// Check if an error is retryable based on the status code
+// func isRetryableError(statusCode int) bool {
+// 	switch statusCode {
+// 	case http.StatusTooManyRequests, // Rate limit error
+// 		http.StatusInternalServerError,
+// 		http.StatusBadGateway,
+// 		http.StatusServiceUnavailable,
+// 		http.StatusGatewayTimeout:
+// 		return true
+// 	default:
+// 		return false
+// 	}
+// }
 
 // tryWithBackup implements LLMProvider.
 func (oa Openai) tryWithBackup(
@@ -685,6 +709,10 @@ func prepareModelRequest(
 		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.O1:
 		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.O1Mini:
+		return prepareBasicMessages(request, systemInst, userMsg, history)
+	case models.O1Preview:
+		return prepareBasicMessages(request, systemInst, userMsg, history)
 	case models.O3Mini:
 		if m.StructuredOutput != nil {
 			request.ResponseFormat = map[string]any{
