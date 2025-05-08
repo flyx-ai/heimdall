@@ -848,7 +848,7 @@ func prepareGPT41TypeRequest(
 			"json_schema": structuredOutput,
 		}
 	}
-	
+
 	// Validate that we don't have both file types
 	if len(pdfFile) == 1 && len(imageFile) == 1 {
 		return openAIRequest{}, errors.New(
@@ -897,7 +897,7 @@ func prepareRequestWithImage(
 	if len(reqMsgWithImage) > 0 {
 		lastIndex = len(reqMsgWithImage) - 1
 	}
-	
+
 	// If no history or we need a new user message, add one
 	if len(reqMsgWithImage) == 0 || reqMsgWithImage[lastIndex].Role != "user" {
 		reqMsgWithImage = append(reqMsgWithImage, requestMessageWithImage{
@@ -967,7 +967,7 @@ func prepareRequestWithPdf(
 	if len(reqMsgWithFile) > 0 {
 		lastIndex = len(reqMsgWithFile) - 1
 	}
-	
+
 	// If no history or we need a new user message, add one
 	if len(reqMsgWithFile) == 0 || reqMsgWithFile[lastIndex].Role != "user" {
 		reqMsgWithFile = append(reqMsgWithFile, requestMessageWithFile{
@@ -997,7 +997,7 @@ func prepareRequestWithPdf(
 		reqMsgWithFile[lastIndex].Content,
 		fi,
 	)
-	
+
 	// Add the user text message after the PDF
 	reqMsgWithFile[lastIndex].Content = append(
 		reqMsgWithFile[lastIndex].Content,
@@ -1020,7 +1020,7 @@ func prepareBasicMessages(
 ) (openAIRequest, error) {
 	hisLen := len(history)
 	requestMessages := make([]requestMessage, 0)
-	
+
 	// Add history messages
 	for i := 0; i < hisLen; i++ {
 		requestMessages = append(requestMessages, requestMessage{
@@ -1041,7 +1041,7 @@ func prepareBasicMessages(
 			Content: userMsg,
 		})
 	}
-	
+
 	if hisLen != 0 {
 		// With history case
 		requestMessages = append(requestMessages, requestMessage{
