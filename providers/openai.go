@@ -861,12 +861,12 @@ func prepareRequestWithPdf(
 
 func prepareBasicMessages(
 	request openAIRequest,
-	_ string,
-	_ string,
+	systemInst string,
+	userMsg string,
 	history []request.Message,
 ) (openAIRequest, error) {
 	hisLen := len(history)
-	requestMessages := make([]requestMessage, 0)
+	requestMessages := make([]requestMessage, hisLen+2)
 
 	for i := range hisLen {
 		requestMessages = append(requestMessages, requestMessage{
@@ -875,27 +875,26 @@ func prepareBasicMessages(
 		})
 	}
 
-	// if hisLen == 0 {
-	// 	requestMessages = append(requestMessages, requestMessage{
-	// 		Role:    "system",
-	// 		Content: systemInst,
-	// 	})
-	// 	requestMessages = append(requestMessages, requestMessage{
-	// 		Role:    "user",
-	// 		Content: userMsg,
-	// 	})
-	// }
-	//
-	// if hisLen != 0 {
-	// 	requestMessages = append(requestMessages, requestMessage{
-	// 		Role:    "system",
-	// 		Content: systemInst,
-	// 	})
-	// 	requestMessages = append(requestMessages, requestMessage{
-	// 		Role:    "user",
-	// 		Content: userMsg,
-	// 	})
-	// }
+	if hisLen == 0 {
+		requestMessages[0] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: systemInst,
+		})
+		requestMessages[1] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: userMsg,
+		})
+	}
+	if hisLen != 0 {
+		requestMessages[hisLen+1] = requestMessage(requestMessage{
+			Role:    "system",
+			Content: systemInst,
+		})
+		requestMessages[hisLen+2] = requestMessage(requestMessage{
+			Role:    "user",
+			Content: userMsg,
+		})
+	}
 
 	request.Messages = requestMessages
 	return request, nil
