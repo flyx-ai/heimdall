@@ -8,7 +8,6 @@ const (
 	GPT4OMiniAlias = "gpt-4o-mini-2024-07-18"
 	O1Alias        = "o1-2024-12-17"
 	O1MiniAlias    = "o1-mini-2024-09-12"
-	O1PreviewAlias = "o1-preview-2024-09-12"
 	GPT4Alias      = "gpt-4-0613"
 	GPT4TurboAlias = "gpt-4-turbo"
 	GPT41Alias     = "gpt-4.1-2025-04-14"
@@ -51,7 +50,7 @@ type GPT41 struct {
 }
 
 func (g GPT41) EstimateCost(text string) float64 {
-	panic("unimplemented")
+	return (float64(len(text)) / 4) * 0.00000200
 }
 
 func (GPT41) GetName() string {
@@ -219,7 +218,7 @@ var _ Model = new(O1)
 
 type O1Mini struct{}
 
-func (o *O1Mini) EstimateCost(text string) float64 {
+func (o O1Mini) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.00000110
 }
 
@@ -232,18 +231,6 @@ func (o O1Mini) GetProvider() string {
 }
 
 var _ Model = new(O1Mini)
-
-type O1Preview struct{}
-
-func (o O1Preview) GetName() string {
-	return O1PreviewAlias
-}
-
-func (o O1Preview) GetProvider() string {
-	return OpenaiProvider
-}
-
-var _ Model = new(O1Preview)
 
 type GPT4 struct{}
 
@@ -405,6 +392,11 @@ type GPTImage struct {
 	// User is an optional unique identifier representing your end-user,
 	// which can help OpenAI monitor and detect abuse.
 	User string
+}
+
+// TODO
+func (d GPTImage) EstimateCost(text string) float64 {
+	return 0.0
 }
 
 func (d *GPTImage) GetName() string {
