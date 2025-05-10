@@ -3,6 +3,7 @@ package models
 type Model interface {
 	GetProvider() string
 	GetName() string
+	EstimateCost(text string) float64
 }
 
 type StructuredOutput interface {
