@@ -3,6 +3,7 @@ package models
 type Model interface {
 	GetProvider() string
 	GetName() string
+	EstimateCost(text string) float64
 }
 
 type StructuredOutput interface {
@@ -33,7 +34,6 @@ func GetAll() []string {
 		GPT4OMiniAlias,
 		O1Alias,
 		O1MiniAlias,
-		O1PreviewAlias,
 		GPT4Alias,
 		GPT4TurboAlias,
 		GPT41Alias,

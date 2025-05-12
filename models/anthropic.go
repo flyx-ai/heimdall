@@ -23,6 +23,10 @@ type Claude3Opus struct {
 	PdfFiles  []AnthropicPdf
 }
 
+func (c Claude3Opus) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.000015
+}
+
 func (c Claude3Opus) GetName() string {
 	return AnthropicClaude3OpusAlias
 }
@@ -36,6 +40,10 @@ var _ Model = new(Claude3Opus)
 type Claude35Sonnet struct {
 	ImageFile map[AnthropicImageType]string
 	PdfFiles  []AnthropicPdf
+}
+
+func (c Claude35Sonnet) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.000003
 }
 
 func (c Claude35Sonnet) GetName() string {
@@ -53,6 +61,10 @@ type Claude35Haiku struct {
 	PdfFiles  []AnthropicPdf
 }
 
+func (c Claude35Haiku) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.0000008
+}
+
 func (c Claude35Haiku) GetName() string {
 	return AnthropicClaude35HaikuAlias
 }
@@ -66,6 +78,10 @@ var _ Model = new(Claude35Haiku)
 type Claude37Sonnet struct {
 	ImageFile map[AnthropicImageType]string
 	PdfFiles  []AnthropicPdf
+}
+
+func (c Claude37Sonnet) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.000003
 }
 
 func (c Claude37Sonnet) GetName() string {

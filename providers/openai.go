@@ -711,8 +711,6 @@ func prepareModelRequest(
 		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.O1Mini:
 		return prepareBasicMessages(request, systemInst, userMsg, history)
-	case models.O1Preview:
-		return prepareBasicMessages(request, systemInst, userMsg, history)
 	case models.O3Mini:
 		if m.StructuredOutput != nil {
 			request.ResponseFormat = map[string]any{

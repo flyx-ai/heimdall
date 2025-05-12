@@ -73,6 +73,20 @@ type Gemini15Pro struct {
 	Thinking  ThinkBudget
 }
 
+func (g Gemini15Pro) EstimateCost(text string) float64 {
+	textLen := float64(len(text)) / 4
+	estimatedPrice := 0.0
+	if textLen <= 128000 {
+		estimatedPrice = textLen * 0.00000125
+	}
+
+	if textLen > 128000 {
+		estimatedPrice = (128000 * 0.00000125) + ((textLen - 128000) * 0.0000025)
+	}
+
+	return estimatedPrice
+}
+
 func (g Gemini15Pro) GetName() string {
 	return Gemini15ProModel
 }
@@ -85,6 +99,20 @@ var _ Model = new(Gemini15Pro)
 
 type Gemini15Flash struct {
 	Thinking ThinkBudget
+}
+
+func (g Gemini15Flash) EstimateCost(text string) float64 {
+	textLen := float64(len(text)) / 4
+	estimatedPrice := 0.0
+	if textLen <= 128000 {
+		estimatedPrice = textLen * 0.000000075
+	}
+
+	if textLen > 128000 {
+		estimatedPrice = (128000 * 0.000000075) + ((textLen - 128000) * 0.00000015)
+	}
+
+	return estimatedPrice
 }
 
 func (g Gemini15Flash) GetName() string {
@@ -117,6 +145,10 @@ type Gemini20Flash struct {
 	Thinking  ThinkBudget
 }
 
+func (g Gemini20Flash) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.0000001
+}
+
 func (g Gemini20Flash) GetName() string {
 	return Gemini20FlashModel
 }
@@ -145,6 +177,10 @@ type Gemini20FlashLite struct {
 	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
 	Thinking  ThinkBudget
+}
+
+func (g Gemini20FlashLite) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.000000075
 }
 
 func (g Gemini20FlashLite) GetName() string {
@@ -177,6 +213,10 @@ type Gemini25FlashPreview struct {
 	Thinking  ThinkBudget
 }
 
+func (g Gemini25FlashPreview) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.0000001
+}
+
 func (g Gemini25FlashPreview) GetName() string {
 	return Gemini25FlashPreviewModel
 }
@@ -185,7 +225,7 @@ func (g Gemini25FlashPreview) GetProvider() string {
 	return GoogleProvider
 }
 
-var _ Model = new(Gemini25ProPreview)
+var _ Model = new(Gemini25FlashPreview)
 
 type Gemini25ProPreview struct {
 	Tools GoogleTool
@@ -205,6 +245,10 @@ type Gemini25ProPreview struct {
 	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
 	Thinking  ThinkBudget
+}
+
+func (g Gemini25ProPreview) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.00000125
 }
 
 func (g Gemini25ProPreview) GetName() string {
