@@ -399,11 +399,11 @@ func (d GPTImage) EstimateCost(text string) float64 {
 	return 0.0
 }
 
-func (d *GPTImage) GetName() string {
+func (d GPTImage) GetName() string {
 	return ImageModelAlias
 }
 
-func (d *GPTImage) GetProvider() string {
+func (d GPTImage) GetProvider() string {
 	return OpenaiProvider
 }
 
