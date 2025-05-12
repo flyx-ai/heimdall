@@ -102,18 +102,6 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 			},
 		},
 		{
-			name: "should complete request with O1Preview",
-			req: request.Completion{
-				Model:         models.O1Preview{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
-		{
 			name: "should complete request with gpt 4.1",
 			req: request.Completion{
 				Model:         models.GPT41{},
@@ -252,18 +240,6 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 			name: "should stream request with O1Mini",
 			req: request.Completion{
 				Model:         models.O1Mini{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
-		{
-			name: "should stream request with O1Preview",
-			req: request.Completion{
-				Model:         models.O1Preview{},
 				SystemMessage: systemInst,
 				UserMessage:   userMsg,
 				Temperature:   1,
