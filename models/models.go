@@ -33,7 +33,6 @@ func GetAll() []string {
 		GPT4OAlias,
 		GPT4OMiniAlias,
 		O1Alias,
-		O1MiniAlias,
 		GPT4Alias,
 		GPT4TurboAlias,
 		GPT41Alias,
