@@ -78,9 +78,8 @@ func (g Gemini15Pro) EstimateCost(text string) float64 {
 	estimatedPrice := 0.0
 	if textLen <= 128000 {
 		estimatedPrice = textLen * 0.00000125
-	}
-	if textLen > 128000 {
-		estimatedPrice = textLen * 0.0000025
+	} else {
+		estimatedPrice = (128000 * 0.00000125) + ((textLen - 128000) * 0.0000025)
 	}
 
 	return estimatedPrice
@@ -105,9 +104,8 @@ func (g Gemini15Flash) EstimateCost(text string) float64 {
 	estimatedPrice := 0.0
 	if textLen <= 128000 {
 		estimatedPrice = textLen * 0.000000075
-	}
-	if textLen > 128000 {
-		estimatedPrice = textLen * 0.00000015
+	} else {
+		estimatedPrice = (128000 * 0.000000075) + ((textLen - 128000) * 0.00000015)
 	}
 
 	return estimatedPrice

@@ -12,6 +12,8 @@ func (v VertexGemini15FlashThinking) EstimateCost(text string) float64 {
 	}
 	if textLen > 128000 {
 		estimatedPrice = textLen * 0.0000025
+	} else if textLen <= 128000 {
+		estimatedPrice = textLen * 0.00000125
 	}
 
 	return estimatedPrice
@@ -37,6 +39,8 @@ func (v VertexGemini15Pro) EstimateCost(text string) float64 {
 	}
 	if textLen > 128000 {
 		estimatedPrice = textLen * 0.0000025
+	} else if textLen <= 128000 {
+		estimatedPrice = textLen * 0.00000125
 	}
 
 	return estimatedPrice
