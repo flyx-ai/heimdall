@@ -7,7 +7,6 @@ const (
 	GPT4OAlias     = "gpt-4o-2024-11-20"
 	GPT4OMiniAlias = "gpt-4o-mini-2024-07-18"
 	O1Alias        = "o1-2024-12-17"
-	O1MiniAlias    = "o1-mini-2024-09-12"
 	GPT4Alias      = "gpt-4-0613"
 	GPT4TurboAlias = "gpt-4-turbo"
 	GPT41Alias     = "gpt-4.1-2025-04-14"
@@ -215,22 +214,6 @@ func (o O1) GetProvider() string {
 }
 
 var _ Model = new(O1)
-
-type O1Mini struct{}
-
-func (o O1Mini) EstimateCost(text string) float64 {
-	return (float64(len(text)) / 4) * 0.00000110
-}
-
-func (o O1Mini) GetName() string {
-	return O1MiniAlias
-}
-
-func (o O1Mini) GetProvider() string {
-	return OpenaiProvider
-}
-
-var _ Model = new(O1Mini)
 
 type GPT4 struct{}
 
