@@ -862,17 +862,21 @@ func prepareGemini15FlashRequest(
 	}
 
 	lastIndex := 0
-	if len(request.Contents) > 1 {
-		lastIndex = len(request.Contents) - 1
+	if lastIndex == 0 {
+		request.Contents = append(request.Contents, content{
+			Role: "user",
+			Parts: []any{
+				part{Text: userMsg},
+			},
+		})
 	}
 
-	request.Contents[lastIndex].Parts = append(
-		request.Contents[lastIndex].Parts,
-		part{
-			Text: userMsg,
-		},
-	)
-
+	if lastIndex > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+	}
 	if model.Thinking != "" {
 		request = handleThinkingBudget(request, model.Thinking)
 	}
@@ -898,16 +902,21 @@ func prepareGemini15ProRequest(
 	}
 
 	lastIndex := 0
-	if len(request.Contents) > 1 {
-		lastIndex = len(request.Contents) - 1
+	if lastIndex == 0 {
+		request.Contents = append(request.Contents, content{
+			Role: "user",
+			Parts: []any{
+				part{Text: userMsg},
+			},
+		})
 	}
 
-	request.Contents[lastIndex].Parts = append(
-		request.Contents[lastIndex].Parts,
-		part{
-			Text: userMsg,
-		},
-	)
+	if lastIndex > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
 		return geminiRequest{}, errors.New(
@@ -955,15 +964,21 @@ func prepareGemini20FlashRequest(
 	}
 
 	lastIndex := 0
-	if len(request.Contents) > 1 {
-		lastIndex = len(request.Contents) - 1
+	if lastIndex == 0 {
+		request.Contents = append(request.Contents, content{
+			Role: "user",
+			Parts: []any{
+				part{Text: userMsg},
+			},
+		})
 	}
 
-	request.Contents[lastIndex].Role = "user"
-	request.Contents[lastIndex].Parts = append(
-		request.Contents[lastIndex].Parts,
-		part{Text: userMsg},
-	)
+	if lastIndex > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
 		return request, errors.New(
@@ -1015,14 +1030,21 @@ func prepareGemini20FlashLiteRequest(
 	}
 
 	lastIndex := 0
-	if len(request.Contents) > 1 {
-		lastIndex = len(request.Contents) - 1
+	if lastIndex == 0 {
+		request.Contents = append(request.Contents, content{
+			Role: "user",
+			Parts: []any{
+				part{Text: userMsg},
+			},
+		})
 	}
 
-	request.Contents[lastIndex].Parts = append(
-		request.Contents[lastIndex].Parts,
-		part{Text: userMsg},
-	)
+	if lastIndex > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
 		return request, errors.New(
@@ -1074,14 +1096,21 @@ func prepareGemini25FlashPreviewRequest(
 	}
 
 	lastIndex := 0
-	if len(request.Contents) > 1 {
-		lastIndex = len(request.Contents) - 1
+	if lastIndex == 0 {
+		request.Contents = append(request.Contents, content{
+			Role: "user",
+			Parts: []any{
+				part{Text: userMsg},
+			},
+		})
 	}
 
-	request.Contents[lastIndex].Parts = append(
-		request.Contents[lastIndex].Parts,
-		part{Text: userMsg},
-	)
+	if lastIndex > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
 		return request, errors.New(
@@ -1137,10 +1166,21 @@ func prepareGemini25ProPreviewRequest(
 		lastIndex = len(request.Contents) - 1
 	}
 
-	request.Contents[lastIndex].Parts = append(
-		request.Contents[lastIndex].Parts,
-		part{Text: userMsg},
-	)
+	if lastIndex == 0 {
+		request.Contents = append(request.Contents, content{
+			Role: "user",
+			Parts: []any{
+				part{Text: userMsg},
+			},
+		})
+	}
+
+	if lastIndex > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
 		return request, errors.New(
