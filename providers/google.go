@@ -53,10 +53,10 @@ func NewGoogle(apiKeys []string) Google {
 }
 
 type geminiRequest struct {
-	SystemInstruction systemInstruction `json:"system_instruction"`
-	Contents          []content         `json:"contents"`
-	Tools             models.GoogleTool `json:"tools"`
-	Config            map[string]any    `json:"generationConfig"`
+	// SystemInstruction systemInstruction `json:"system_instruction"`
+	Contents []content         `json:"contents"`
+	Tools    models.GoogleTool `json:"tools"`
+	Config   map[string]any    `json:"generationConfig"`
 }
 
 type content struct {
@@ -632,11 +632,11 @@ func (g Google) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
-	if req.SystemMessage == "" || req.UserMessage == "" {
-		return response.Completion{}, 0, errors.New(
-			"gemini models require both system message and user message",
-		)
-	}
+	// if req.SystemMessage == "" || req.UserMessage == "" {
+	// 	return response.Completion{}, 0, errors.New(
+	// 		"gemini models require both system message and user message",
+	// 	)
+	// }
 
 	model := req.Model
 	geminiReq := geminiRequest{
@@ -659,40 +659,40 @@ func (g Google) doRequest(
 	var requestBody []byte
 
 	switch model.GetName() {
-	case models.Gemini15FlashModel:
-		preparedReq, err := prepareGemini15FlashRequest(
-			geminiReq,
-			model,
-			req.SystemMessage,
-			req.UserMessage,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(preparedReq)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
-	case models.Gemini15ProModel:
-		preparedReq, err := prepareGemini15ProRequest(
-			geminiReq,
-			model,
-			req.SystemMessage,
-			req.UserMessage,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(preparedReq)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
+	// case models.Gemini15FlashModel:
+	// 	preparedReq, err := prepareGemini15FlashRequest(
+	// 		geminiReq,
+	// 		model,
+	// 		req.SystemMessage,
+	// 		req.UserMessage,
+	// 	)
+	// 	if err != nil {
+	// 		return response.Completion{}, 0, err
+	// 	}
+	//
+	// 	body, err := json.Marshal(preparedReq)
+	// 	if err != nil {
+	// 		return response.Completion{}, 0, err
+	// 	}
+	//
+	// 	requestBody = body
+	// case models.Gemini15ProModel:
+	// 	preparedReq, err := prepareGemini15ProRequest(
+	// 		geminiReq,
+	// 		model,
+	// 		req.SystemMessage,
+	// 		req.UserMessage,
+	// 	)
+	// 	if err != nil {
+	// 		return response.Completion{}, 0, err
+	// 	}
+	//
+	// 	body, err := json.Marshal(preparedReq)
+	// 	if err != nil {
+	// 		return response.Completion{}, 0, err
+	// 	}
+	//
+	// 	requestBody = body
 	case models.Gemini20FlashModel:
 		preparedReq, err := prepareGemini20FlashRequest(
 			geminiReq,
@@ -710,57 +710,57 @@ func (g Google) doRequest(
 		}
 
 		requestBody = body
-	case models.Gemini20FlashLiteModel:
-		preparedReq, err := prepareGemini20FlashLiteRequest(
-			geminiReq,
-			model,
-			req.SystemMessage,
-			req.UserMessage,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(preparedReq)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
-	case models.Gemini25ProPreviewModel:
-		preparedReq, err := prepareGemini25ProPreviewRequest(
-			geminiReq,
-			model,
-			req.SystemMessage,
-			req.UserMessage,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(preparedReq)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
-	case models.Gemini25FlashPreviewModel:
-		preparedReq, err := prepareGemini25FlashPreviewRequest(
-			geminiReq,
-			model,
-			req.SystemMessage,
-			req.UserMessage,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(preparedReq)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
+		// case models.Gemini20FlashLiteModel:
+		// 	preparedReq, err := prepareGemini20FlashLiteRequest(
+		// 		geminiReq,
+		// 		model,
+		// 		req.SystemMessage,
+		// 		req.UserMessage,
+		// 	)
+		// 	if err != nil {
+		// 		return response.Completion{}, 0, err
+		// 	}
+		//
+		// 	body, err := json.Marshal(preparedReq)
+		// 	if err != nil {
+		// 		return response.Completion{}, 0, err
+		// 	}
+		//
+		// 	requestBody = body
+		// case models.Gemini25ProPreviewModel:
+		// 	preparedReq, err := prepareGemini25ProPreviewRequest(
+		// 		geminiReq,
+		// 		model,
+		// 		req.SystemMessage,
+		// 		req.UserMessage,
+		// 	)
+		// 	if err != nil {
+		// 		return response.Completion{}, 0, err
+		// 	}
+		//
+		// 	body, err := json.Marshal(preparedReq)
+		// 	if err != nil {
+		// 		return response.Completion{}, 0, err
+		// 	}
+		//
+		// 	requestBody = body
+		// case models.Gemini25FlashPreviewModel:
+		// 	preparedReq, err := prepareGemini25FlashPreviewRequest(
+		// 		geminiReq,
+		// 		model,
+		// 		req.SystemMessage,
+		// 		req.UserMessage,
+		// 	)
+		// 	if err != nil {
+		// 		return response.Completion{}, 0, err
+		// 	}
+		//
+		// 	body, err := json.Marshal(preparedReq)
+		// 	if err != nil {
+		// 		return response.Completion{}, 0, err
+		// 	}
+		//
+		// 	requestBody = body
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
@@ -857,9 +857,9 @@ func prepareGemini15FlashRequest(
 		)
 	}
 
-	request.SystemInstruction.Parts = part{
-		Text: systemInst,
-	}
+	// request.SystemInstruction.Parts = part{
+	// 	Text: systemInst,
+	// }
 
 	lastIndex := 0
 	if len(request.Contents) > 1 {
@@ -893,9 +893,9 @@ func prepareGemini15ProRequest(
 		)
 	}
 
-	request.SystemInstruction.Parts = part{
-		Text: systemInst,
-	}
+	// request.SystemInstruction.Parts = part{
+	// 	Text: systemInst,
+	// }
 
 	lastIndex := 0
 	if len(request.Contents) > 1 {
@@ -950,9 +950,10 @@ func prepareGemini20FlashRequest(
 		)
 	}
 
-	request.SystemInstruction.Parts = part{
-		Text: systemInst,
-	}
+	// request.SystemInstruction.Parts = part{
+	// 	Text: systemInst,
+	// }
+	request.Config = make(map[string]any)
 
 	lastIndex := 0
 	if len(request.Contents) > 1 {
@@ -964,6 +965,11 @@ func prepareGemini20FlashRequest(
 		request.Contents[lastIndex].Parts,
 		part{Text: userMsg},
 	)
+
+	// Check if image generation is requested via the model config
+	if model.GenerateImage { // Check the new field
+		request.Config["responseModalities"] = []string{"TEXT", "IMAGE"}
+	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
 		return request, errors.New(
@@ -980,10 +986,8 @@ func prepareGemini20FlashRequest(
 	}
 
 	if len(model.StructuredOutput) == 1 {
-		request.Config = map[string]any{
-			"response_mime_type": "application/json",
-			"response_schema":    model.StructuredOutput,
-		}
+		request.Config["response_mime_type"] = "application/json"
+		request.Config["response_schema"] = model.StructuredOutput
 	}
 
 	if len(model.Tools) > 1 {
@@ -1010,9 +1014,9 @@ func prepareGemini20FlashLiteRequest(
 		)
 	}
 
-	request.SystemInstruction.Parts = part{
-		Text: systemInst,
-	}
+	// request.SystemInstruction.Parts = part{
+	// 	Text: systemInst,
+	// }
 
 	lastIndex := 0
 	if len(request.Contents) > 1 {
@@ -1069,9 +1073,9 @@ func prepareGemini25FlashPreviewRequest(
 		)
 	}
 
-	request.SystemInstruction.Parts = part{
-		Text: systemInst,
-	}
+	// request.SystemInstruction.Parts = part{
+	// 	Text: systemInst,
+	// }
 
 	lastIndex := 0
 	if len(request.Contents) > 1 {
@@ -1128,9 +1132,9 @@ func prepareGemini25ProPreviewRequest(
 		)
 	}
 
-	request.SystemInstruction.Parts = part{
-		Text: systemInst,
-	}
+	// request.SystemInstruction.Parts = part{
+	// 	Text: systemInst,
+	// }
 
 	lastIndex := 0
 	if len(request.Contents) > 1 {

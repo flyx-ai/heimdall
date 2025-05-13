@@ -3,9 +3,10 @@ package models
 const GoogleProvider = "google"
 
 const (
-	Gemini15FlashModel        = "gemini-1.5-flash-002"
-	Gemini15ProModel          = "gemini-1.5-pro-002"
-	Gemini20FlashModel        = "gemini-2.0-flash-001"
+	Gemini15FlashModel = "gemini-1.5-flash-002"
+	Gemini15ProModel   = "gemini-1.5-pro-002"
+	// Gemini20FlashModel        = "gemini-2.0-flash-001" // Added GenerateImage field
+	Gemini20FlashModel        = "gemini-2.0-flash-exp-image-generation" // Added GenerateImage field
 	Gemini20FlashLiteModel    = "gemini-2.0-flash-lite-001"
 	Gemini25FlashPreviewModel = "gemini-2.5-flash-preview-04-17"
 	Gemini25ProPreviewModel   = "gemini-2.5-pro-preview-03-25"
@@ -140,9 +141,10 @@ type Gemini20Flash struct {
 	// 	}
 	StructuredOutput map[string]any
 	// PdfFiles accepts one or more PDFs, either URIs or base64 data
-	PdfFiles  []GooglePdf
-	ImageFile []GoogleImagePayload
-	Thinking  ThinkBudget
+	PdfFiles      []GooglePdf
+	ImageFile     []GoogleImagePayload
+	Thinking      ThinkBudget
+	GenerateImage bool `json:"generate_image,omitempty"` // Flag to request image generation
 }
 
 func (g Gemini20Flash) EstimateCost(text string) float64 {
