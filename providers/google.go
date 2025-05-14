@@ -129,6 +129,9 @@ func (g Google) CompleteResponse(
 	client http.Client,
 	requestLog *response.Logging,
 ) (response.Completion, error) {
+	if len(g.apiKeys) == 0 {
+		return response.Completion{}, errors.New("no API keys available")
+	}
 	reqLog := &response.Logging{}
 	if requestLog == nil {
 		req.Tags["request_type"] = "streaming"
@@ -182,6 +185,9 @@ func (g Google) tryWithBackup(
 	chunkHandler func(chunk string) error,
 	requestLog *response.Logging,
 ) (response.Completion, error) {
+	if len(g.apiKeys) == 0 {
+		return response.Completion{}, errors.New("no API keys available")
+	}
 	key := g.apiKeys[0]
 
 	maxRetries := 5
@@ -577,6 +583,9 @@ func (g Google) StreamResponse(
 	chunkHandler func(chunk string) error,
 	requestLog *response.Logging,
 ) (response.Completion, error) {
+	if len(g.apiKeys) == 0 {
+		return response.Completion{}, errors.New("no API keys available")
+	}
 	reqLog := &response.Logging{}
 	if requestLog == nil {
 		req.Tags["request_type"] = "streaming"
@@ -812,13 +821,15 @@ func (g Google) doRequest(
 		}
 
 		if len(responseChunk.Candidates) > 0 {
-			fullContent.WriteString(
-				responseChunk.Candidates[0].Content.Parts[0].Text,
-			)
+			if len(responseChunk.Candidates[0].Content.Parts) > 0 {
+				fullContent.WriteString(
+					responseChunk.Candidates[0].Content.Parts[0].Text,
+				)
 
-			if chunkHandler != nil {
-				if err := chunkHandler(responseChunk.Candidates[0].Content.Parts[0].Text); err != nil {
-					return response.Completion{}, 0, err
+				if chunkHandler != nil {
+					if err := chunkHandler(responseChunk.Candidates[0].Content.Parts[0].Text); err != nil {
+						return response.Completion{}, 0, err
+					}
 				}
 			}
 		}
@@ -863,15 +874,17 @@ func prepareGemini15FlashRequest(
 	}
 
 	lastIndex := 0
-	if len(request.Contents) > 1 {
+	if len(request.Contents) >= 1 {
 		lastIndex = len(request.Contents) - 1
 	}
 
-	request.Contents[lastIndex].Parts = append(
-		request.Contents[lastIndex].Parts,
-		part{Text: userMsg},
-	)
-	request.Contents[lastIndex].Role = "user"
+	if len(request.Contents) > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+		request.Contents[lastIndex].Role = "user"
+	}
 
 	if model.Thinking != "" {
 		request = handleThinkingBudget(request, model.Thinking)
@@ -898,15 +911,17 @@ func prepareGemini15ProRequest(
 	}
 
 	lastIndex := 0
-	if len(request.Contents) > 1 {
+	if len(request.Contents) >= 1 {
 		lastIndex = len(request.Contents) - 1
 	}
 
-	request.Contents[lastIndex].Parts = append(
-		request.Contents[lastIndex].Parts,
-		part{Text: userMsg},
-	)
-	request.Contents[lastIndex].Role = "user"
+	if len(request.Contents) > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+		request.Contents[lastIndex].Role = "user"
+	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
 		return geminiRequest{}, errors.New(
@@ -954,15 +969,17 @@ func prepareGemini20FlashRequest(
 	}
 
 	lastIndex := 0
-	if len(request.Contents) > 1 {
+	if len(request.Contents) >= 1 {
 		lastIndex = len(request.Contents) - 1
 	}
 
-	request.Contents[lastIndex].Parts = append(
-		request.Contents[lastIndex].Parts,
-		part{Text: userMsg},
-	)
-	request.Contents[lastIndex].Role = "user"
+	if len(request.Contents) > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+		request.Contents[lastIndex].Role = "user"
+	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
 		return request, errors.New(
@@ -1024,11 +1041,13 @@ func prepareGemini20FlashLiteRequest(
 		lastIndex = len(request.Contents) - 1
 	}
 
-	request.Contents[lastIndex].Parts = append(
-		request.Contents[lastIndex].Parts,
-		part{Text: userMsg},
-	)
-	request.Contents[lastIndex].Role = "user"
+	if len(request.Contents) > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+		request.Contents[lastIndex].Role = "user"
+	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
 		return request, errors.New(
@@ -1084,11 +1103,13 @@ func prepareGemini25FlashPreviewRequest(
 		lastIndex = len(request.Contents) - 1
 	}
 
-	request.Contents[lastIndex].Parts = append(
-		request.Contents[lastIndex].Parts,
-		part{Text: userMsg},
-	)
-	request.Contents[lastIndex].Role = "user"
+	if len(request.Contents) > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+		request.Contents[lastIndex].Role = "user"
+	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
 		return request, errors.New(
@@ -1144,11 +1165,13 @@ func prepareGemini25ProPreviewRequest(
 		lastIndex = len(request.Contents) - 1
 	}
 
-	request.Contents[lastIndex].Parts = append(
-		request.Contents[lastIndex].Parts,
-		part{Text: userMsg},
-	)
-	request.Contents[lastIndex].Role = "user"
+	if len(request.Contents) > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+		request.Contents[lastIndex].Role = "user"
+	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
 		return request, errors.New(
