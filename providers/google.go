@@ -937,7 +937,7 @@ func prepareGemini15ProRequest(
 		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
-	if len(model.StructuredOutput) == 1 {
+	if len(model.StructuredOutput) > 1 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
 			"response_schema":    model.StructuredOutput,
@@ -1001,7 +1001,7 @@ func prepareGemini20FlashRequest(
 		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
-	if len(model.StructuredOutput) == 1 {
+	if len(model.StructuredOutput) > 1 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
 			"response_schema":    model.StructuredOutput,
@@ -1063,7 +1063,7 @@ func prepareGemini20FlashLiteRequest(
 		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
-	if len(model.StructuredOutput) == 1 {
+	if len(model.StructuredOutput) > 1 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
 			"response_schema":    model.StructuredOutput,
@@ -1125,7 +1125,7 @@ func prepareGemini25FlashPreviewRequest(
 		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
-	if len(model.StructuredOutput) == 1 {
+	if len(model.StructuredOutput) > 1 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
 			"response_schema":    model.StructuredOutput,
@@ -1187,7 +1187,7 @@ func prepareGemini25ProPreviewRequest(
 		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
-	if len(model.StructuredOutput) == 1 {
+	if len(model.StructuredOutput) > 1 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
 			"response_schema":    model.StructuredOutput,
