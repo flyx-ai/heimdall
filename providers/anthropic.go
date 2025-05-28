@@ -175,6 +175,24 @@ func (a Anthropic) doRequest(
 			return response.Completion{}, 0, err
 		}
 		messages = append(messages, msgs...)
+	case models.AnthropicClaude4SonnetAlias:
+		msgs, err := prepareClaude4Sonnet(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = append(messages, msgs...)
+	case models.AnthropicClaude4OpusAlias:
+		msgs, err := prepareClaude4Opus(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = append(messages, msgs...)
 	}
 
 	apiReq := anthropicRequest{
@@ -545,6 +563,72 @@ func prepareClaude37Sonnet(
 	if !ok {
 		return nil, errors.New(
 			"internal error; model type assertion to models.Claude37Sonnet failed",
+		)
+	}
+
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func prepareClaude4Sonnet(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude4Sonnet)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude4Sonnet failed",
+		)
+	}
+
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func prepareClaude4Opus(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude4Opus)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude4Opus failed",
 		)
 	}
 
