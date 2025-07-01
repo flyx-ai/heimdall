@@ -1138,7 +1138,6 @@ func prepareGemini25FlashPreviewRequest(
 	}
 
 	if len(model.Files) > 0 {
-		fmt.Println("model.Files", model.Files)
 		request = handleGenericFiles(request, model.Files, lastIndex)
 	}
 
@@ -1325,7 +1324,9 @@ func handleGenericFiles(
 					},
 				},
 			)
-		} else {
+		}
+
+		if !strings.HasPrefix(file.Data, "https://") {
 			data := file.Data
 			prefix := fmt.Sprintf("data:%s;base64,", file.MimeType)
 			if parts := strings.SplitN(file.Data, prefix, 2); len(parts) == 2 {
