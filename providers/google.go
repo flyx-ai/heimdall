@@ -937,6 +937,10 @@ func prepareGemini15ProRequest(
 		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
+	if len(model.Files) > 0 {
+		request = handleGenericFiles(request, model.Files, lastIndex)
+	}
+
 	if len(model.StructuredOutput) > 1 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
@@ -1001,6 +1005,10 @@ func prepareGemini20FlashRequest(
 		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
+	if len(model.Files) > 0 {
+		request = handleGenericFiles(request, model.Files, lastIndex)
+	}
+
 	if len(model.StructuredOutput) > 1 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
@@ -1061,6 +1069,10 @@ func prepareGemini20FlashLiteRequest(
 
 	if len(model.PdfFiles) > 0 {
 		request = handlePdfData(request, model.PdfFiles, lastIndex)
+	}
+
+	if len(model.Files) > 0 {
+		request = handleGenericFiles(request, model.Files, lastIndex)
 	}
 
 	if len(model.StructuredOutput) > 1 {
@@ -1125,6 +1137,11 @@ func prepareGemini25FlashPreviewRequest(
 		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
+	if len(model.Files) > 0 {
+		fmt.Println("model.Files", model.Files)
+		request = handleGenericFiles(request, model.Files, lastIndex)
+	}
+
 	if len(model.StructuredOutput) > 1 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
@@ -1185,6 +1202,10 @@ func prepareGemini25ProPreviewRequest(
 
 	if len(model.PdfFiles) > 0 {
 		request = handlePdfData(request, model.PdfFiles, lastIndex)
+	}
+
+	if len(model.Files) > 0 {
+		request = handleGenericFiles(request, model.Files, lastIndex)
 	}
 
 	if len(model.StructuredOutput) > 1 {
@@ -1281,6 +1302,42 @@ func handlePdfData(
 				request.Contents[contentIdx].Parts,
 				filePart{
 					InlineData: imageData{MimeType: pdfMimeType, Data: data},
+				},
+			)
+		}
+	}
+	return request
+}
+
+func handleGenericFiles(
+	request geminiRequest,
+	files []models.GoogleFilePayload,
+	contentIdx int,
+) geminiRequest {
+	for _, file := range files {
+		if strings.HasPrefix(file.Data, "https://") {
+			request.Contents[contentIdx].Parts = append(
+				request.Contents[contentIdx].Parts,
+				fileURI{
+					FileData: fileData{
+						MimeType: file.MimeType,
+						FileURI:  file.Data,
+					},
+				},
+			)
+		} else {
+			data := file.Data
+			prefix := fmt.Sprintf("data:%s;base64,", file.MimeType)
+			if parts := strings.SplitN(file.Data, prefix, 2); len(parts) == 2 {
+				data = parts[1]
+			}
+			request.Contents[contentIdx].Parts = append(
+				request.Contents[contentIdx].Parts,
+				filePart{
+					InlineData: imageData{
+						MimeType: file.MimeType,
+						Data:     data,
+					},
 				},
 			)
 		}
