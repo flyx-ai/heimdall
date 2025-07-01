@@ -29,6 +29,7 @@ type Usage struct {
 }
 type Completion struct {
 	Content    string
+	Thoughts   string
 	Model      string
 	Usage      Usage
 	RequestLog Logging
