@@ -1138,7 +1138,6 @@ func prepareGemini25FlashPreviewRequest(
 	}
 
 	if len(model.Files) > 0 {
-		fmt.Println("model.Files", model.Files)
 		request = handleGenericFiles(request, model.Files, lastIndex)
 	}
 
