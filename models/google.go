@@ -46,6 +46,13 @@ type GoogleImagePayload struct {
 	Data string
 }
 
+type GoogleFilePayload struct {
+	MimeType string
+	// Data can be either a base64 encoded payload or a file_uri.
+	// If you pass a base64 encoded file you must omit the `data:<mimetype>;base64,` part
+	Data string
+}
+
 type (
 	// GooglePdf represents a PDF input, either as a URI or base64 data
 	// The string can be either:
@@ -70,7 +77,9 @@ type Gemini15Pro struct {
 	// PdfFiles accepts one or more PDFs, either URIs or base64 data
 	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
-	Thinking  ThinkBudget
+	// Files accepts any file type with URI and mime type
+	Files    []GoogleFilePayload
+	Thinking ThinkBudget
 }
 
 func (g Gemini15Pro) EstimateCost(text string) float64 {
@@ -142,7 +151,9 @@ type Gemini20Flash struct {
 	// PdfFiles accepts one or more PDFs, either URIs or base64 data
 	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
-	Thinking  ThinkBudget
+	// Files accepts any file type with URI and mime type
+	Files    []GoogleFilePayload
+	Thinking ThinkBudget
 }
 
 func (g Gemini20Flash) EstimateCost(text string) float64 {
@@ -176,7 +187,9 @@ type Gemini20FlashLite struct {
 	// PdfFiles accepts one or more PDFs, either URIs or base64 data
 	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
-	Thinking  ThinkBudget
+	// Files accepts any file type with URI and mime type
+	Files    []GoogleFilePayload
+	Thinking ThinkBudget
 }
 
 func (g Gemini20FlashLite) EstimateCost(text string) float64 {
@@ -210,7 +223,9 @@ type Gemini25FlashPreview struct {
 	// PdfFiles accepts one or more PDFs, either URIs or base64 data
 	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
-	Thinking  ThinkBudget
+	// Files accepts any file type with URI and mime type
+	Files    []GoogleFilePayload
+	Thinking ThinkBudget
 }
 
 func (g Gemini25FlashPreview) EstimateCost(text string) float64 {
@@ -244,7 +259,9 @@ type Gemini25ProPreview struct {
 	// PdfFiles accepts one or more PDFs, either URIs or base64 data
 	PdfFiles  []GooglePdf
 	ImageFile []GoogleImagePayload
-	Thinking  ThinkBudget
+	// Files accepts any file type with URI and mime type
+	Files    []GoogleFilePayload
+	Thinking ThinkBudget
 }
 
 func (g Gemini25ProPreview) EstimateCost(text string) float64 {
