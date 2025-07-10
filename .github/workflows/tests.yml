@@ -19,7 +19,7 @@ jobs:
         with:
           go-version: 1.24
       - name: run
-        run: test-anthropic
+        run: just test-anthropic
         env:
           ANTHROPIC_API_KEY: ${{secrets.ANTHROPIC_API_KEY}}
   perplexity:
@@ -32,7 +32,7 @@ jobs:
         with:
           go-version: 1.24
       - name: run
-        run: test-perplexity
+        run: just test-perplexity
         env:
           PERPLEXITY_API_KEY: ${{secrets.PERPLEXITY_API_KEY}}
   google:
@@ -45,7 +45,7 @@ jobs:
         with:
           go-version: 1.24
       - name: run
-        run: test-google
+        run: just test-google
         env:
           GOOGLE_API_KEY: ${{secrets.GOOGLE_API_KEY}}
   openai:
@@ -58,7 +58,7 @@ jobs:
         with:
           go-version: 1.24
       - name: run
-        run: test-openai
+        run: just test-openai
         env:
           OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
   vertex:
@@ -71,7 +71,7 @@ jobs:
         with:
           go-version: 1.24
       - name: run
-        run: test-vertexai
+        run: just test-vertexai
         env:
           VERTEX_AI_KEY: ${{secrets.VERTEX_AI_KEY}}
   grok:
@@ -84,6 +84,6 @@ jobs:
         with:
           go-version: 1.24
       - name: run
-        run: test-grok
+        run: just test-grok
         env:
           GROK_API_KEY: ${{secrets.GROK_API_KEY}}
