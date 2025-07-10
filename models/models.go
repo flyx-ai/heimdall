@@ -46,5 +46,15 @@ func GetAll() []string {
 		"gemini-1.5-pro-002",
 		"gemini-2.0-flash-001",
 		"gemini-2.0-flash-lite-001",
+
+		GrokBetaAlias,
+		Grok2Alias,
+		Grok2MiniAlias,
+		Grok2VisionAlias,
+		Grok3Alias,
+		Grok3MiniAlias,
+		Grok3FastAlias,
+		Grok3MiniFastAlias,
+		Grok4Alias,
 	}
 }
