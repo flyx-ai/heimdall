@@ -208,7 +208,7 @@ func TestGrok2VisionWithImage(t *testing.T) {
 	grok2Vision := &models.Grok2Vision{
 		ImageFile: []models.GrokImagePayload{
 			{
-				Url:    "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/640px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+				URL:    "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/640px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
 				Detail: "high",
 			},
 		},

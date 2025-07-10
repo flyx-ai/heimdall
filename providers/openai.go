@@ -56,13 +56,13 @@ type requestMessageWithFile struct {
 	Content []any  `json:"content"`
 }
 
-type imageUrl struct {
-	Url    string `json:"url"`
+type imageURL struct {
+	URL    string `json:"url"`
 	Detail string `json:"detail"`
 }
 type imageInput struct {
 	Type     string   `json:"type"`
-	ImageUrl imageUrl `json:"image_url"`
+	ImageURL imageURL `json:"image_url"`
 }
 
 type requestMessageWithImage struct {
@@ -796,8 +796,8 @@ func prepareRequestWithImage(
 
 		ii := imageInput{
 			Type: "image_url",
-			ImageUrl: imageUrl{
-				Url:    img.Url,
+			ImageURL: imageURL{
+				URL:    img.Url,
 				Detail: detail,
 			},
 		}

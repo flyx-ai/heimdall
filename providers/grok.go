@@ -414,8 +414,8 @@ func prepareGrokVisionRequest(
 
 		ii := imageInput{
 			Type: "image_url",
-			ImageUrl: imageUrl{
-				Url:    img.Url,
+			ImageURL: imageURL{
+				URL:    img.URL,
 				Detail: detail,
 			},
 		}
