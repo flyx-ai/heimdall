@@ -3,9 +3,6 @@ package models
 const GrokProvider = "grok"
 
 const (
-	GrokBetaAlias      = "grok-beta"
-	Grok2Alias         = "grok-2"
-	Grok2MiniAlias     = "grok-2-mini"
 	Grok2VisionAlias   = "grok-2-vision"
 	Grok3Alias         = "grok-3"
 	Grok3MiniAlias     = "grok-3-mini"
@@ -14,65 +11,8 @@ const (
 	Grok4Alias         = "grok-4"
 )
 
-type GrokBeta struct{}
-
-func (g GrokBeta) EstimateCost(text string) float64 {
-	inputCostPerToken := 0.000005
-	outputCostPerToken := 0.000015
-	averageCost := (inputCostPerToken + outputCostPerToken) / 2
-	return (float64(len(text)) / 4) * averageCost
-}
-
-func (GrokBeta) GetName() string {
-	return GrokBetaAlias
-}
-
-func (GrokBeta) GetProvider() string {
-	return GrokProvider
-}
-
-var _ Model = new(GrokBeta)
-
-type Grok2 struct{}
-
-func (g Grok2) EstimateCost(text string) float64 {
-	inputCostPerToken := 0.000002
-	outputCostPerToken := 0.000002
-	averageCost := (inputCostPerToken + outputCostPerToken) / 2
-	return (float64(len(text)) / 4) * averageCost
-}
-
-func (Grok2) GetName() string {
-	return Grok2Alias
-}
-
-func (Grok2) GetProvider() string {
-	return GrokProvider
-}
-
-var _ Model = new(Grok2)
-
-type Grok2Mini struct{}
-
-func (g Grok2Mini) EstimateCost(text string) float64 {
-	inputCostPerToken := 0.000002
-	outputCostPerToken := 0.000002
-	averageCost := (inputCostPerToken + outputCostPerToken) / 2
-	return (float64(len(text)) / 4) * averageCost
-}
-
-func (Grok2Mini) GetName() string {
-	return Grok2MiniAlias
-}
-
-func (Grok2Mini) GetProvider() string {
-	return GrokProvider
-}
-
-var _ Model = new(Grok2Mini)
-
 type GrokImagePayload struct {
-	Url    string
+	URL    string
 	Detail string
 }
 
