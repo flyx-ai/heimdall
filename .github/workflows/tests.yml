@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 jobs:
-  direct:
-    name: direct completion and streaming tests
+  anthropic:
+    name: completion and streaming
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,10 +19,71 @@ jobs:
         with:
           go-version: 1.24
       - name: run
-        run: just t
+        run: test-anthropic
         env:
           ANTHROPIC_API_KEY: ${{secrets.ANTHROPIC_API_KEY}}
+  perplexity:
+    name: completion and streaming
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+      - name: run
+        run: test-perplexity
+        env:
           PERPLEXITY_API_KEY: ${{secrets.PERPLEXITY_API_KEY}}
+  google:
+    name: completion and streaming
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+      - name: run
+        run: test-google
+        env:
           GOOGLE_API_KEY: ${{secrets.GOOGLE_API_KEY}}
+  openai:
+    name: completion and streaming
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+      - name: run
+        run: test-openai
+        env:
           OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
+  vertex:
+    name: completion and streaming
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+      - name: run
+        run: test-vertexai
+        env:
           VERTEX_AI_KEY: ${{secrets.VERTEX_AI_KEY}}
+  grok:
+    name: completion and streaming
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+      - name: run
+        run: test-grok
+        env:
+          GROK_API_KEY: ${{secrets.GROK_API_KEY}}
