@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   anthropic:
-    name: completion and streaming
+    name: anthropic/completion and streaming
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +23,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{secrets.ANTHROPIC_API_KEY}}
   perplexity:
-    name: completion and streaming
+    name: perplexity/completion and streaming
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
         env:
           PERPLEXITY_API_KEY: ${{secrets.PERPLEXITY_API_KEY}}
   google:
-    name: completion and streaming
+    name: google/completion and streaming
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,7 +49,7 @@ jobs:
         env:
           GOOGLE_API_KEY: ${{secrets.GOOGLE_API_KEY}}
   openai:
-    name: completion and streaming
+    name: openai/completion and streaming
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +62,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
   vertex:
-    name: completion and streaming
+    name: vertex/completion and streaming
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +75,7 @@ jobs:
         env:
           VERTEX_AI_KEY: ${{secrets.VERTEX_AI_KEY}}
   grok:
-    name: completion and streaming
+    name: grok/completion and streaming
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
