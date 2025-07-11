@@ -26,10 +26,10 @@ func TestGemini25WithThinking(t *testing.T) {
 	google := providers.NewGoogle([]string{apiKey})
 
 	tests := []struct {
-		name            string
-		model           models.Model
-		expectThoughts  bool
-		userMsg         string
+		name           string
+		model          models.Model
+		expectThoughts bool
+		userMsg        string
 	}{
 		{
 			name: "Gemini 2.5 Flash with high thinking budget",
@@ -131,7 +131,7 @@ func TestGemini25StreamingWithThinking(t *testing.T) {
 	assert.NotEmpty(t, res.Content, "Content should not be empty")
 	assert.NotEmpty(t, res.Thoughts, "Thoughts should not be empty with thinking budget")
 	assert.Equal(t, streamedContent, res.Content, "Streamed content should match final content")
-	
+
 	t.Logf("Thoughts: %s", res.Thoughts)
 	t.Logf("Content: %s", res.Content)
 }

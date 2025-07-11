@@ -826,7 +826,7 @@ func (g Google) doRequest(
 		if len(responseChunk.Candidates) > 0 {
 			if len(responseChunk.Candidates[0].Content.Parts) > 0 {
 				part := responseChunk.Candidates[0].Content.Parts[0]
-				
+
 				// Separate thoughts from regular content
 				if part.Thought {
 					thoughts.WriteString(part.Text)
@@ -1366,21 +1366,21 @@ func handleThinkingBudget(
 	case models.HighThinkBudget:
 		request.Config = map[string]any{
 			"thinkingConfig": map[string]any{
-				"thinkingBudget": int64(24576),
+				"thinkingBudget":  int64(24576),
 				"includeThoughts": true,
 			},
 		}
 	case models.MediumThinkBudget:
 		request.Config = map[string]any{
 			"thinkingConfig": map[string]any{
-				"thinkingBudget": int64(12288),
+				"thinkingBudget":  int64(12288),
 				"includeThoughts": true,
 			},
 		}
 	case models.LowThinkBudget:
 		request.Config = map[string]any{
 			"thinkingConfig": map[string]any{
-				"thinkingBudget": int64(0),
+				"thinkingBudget":  int64(0),
 				"includeThoughts": false,
 			},
 		}
