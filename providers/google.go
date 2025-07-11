@@ -19,7 +19,7 @@ import (
 	"github.com/flyx-ai/heimdall/response"
 )
 
-const googleBaseUrl = "https://generativelanguage.googleapis.com/v1beta/models/%s:streamGenerateContent?alt=sse&key=%s"
+const googleBaseURL = "https://generativelanguage.googleapis.com/v1beta/models/%s:streamGenerateContent?alt=sse&key=%s"
 
 type Google struct {
 	apiKeys []string
@@ -107,13 +107,15 @@ type geminiContent struct {
 }
 
 type geminiResponsePart struct {
-	Text string `json:"text"`
+	Text    string `json:"text"`
+	Thought bool   `json:"thought,omitempty"`
 }
 
 type usageMetadata struct {
 	PromptTokenCount        int             `json:"promptTokenCount"`
 	CandidatesTokenCount    int             `json:"candidatesTokenCount"`
 	TotalTokenCount         int             `json:"totalTokenCount"`
+	ThoughtsTokenCount      int             `json:"thoughtsTokenCount,omitempty"`
 	PromptTokensDetails     []tokensDetails `json:"promptTokensDetails"`
 	CandidatesTokensDetails []tokensDetails `json:"candidatesTokensDetails"`
 }
@@ -773,7 +775,7 @@ func (g Google) doRequest(
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		fmt.Sprintf(googleBaseUrl, req.Model.GetName(), key),
+		fmt.Sprintf(googleBaseURL, req.Model.GetName(), key),
 		bytes.NewReader(requestBody))
 	if err != nil {
 		return response.Completion{}, 0, err
@@ -793,6 +795,7 @@ func (g Google) doRequest(
 
 	reader := bufio.NewReader(resp.Body)
 	var fullContent strings.Builder
+	var thoughts strings.Builder
 	var usage response.Usage
 	chunks := 0
 	now := time.Now()
@@ -822,13 +825,18 @@ func (g Google) doRequest(
 
 		if len(responseChunk.Candidates) > 0 {
 			if len(responseChunk.Candidates[0].Content.Parts) > 0 {
-				fullContent.WriteString(
-					responseChunk.Candidates[0].Content.Parts[0].Text,
-				)
+				part := responseChunk.Candidates[0].Content.Parts[0]
+				if part.Thought {
+					thoughts.WriteString(part.Text)
+				} else {
+					fullContent.WriteString(part.Text)
+				}
 
 				if chunkHandler != nil {
-					if err := chunkHandler(responseChunk.Candidates[0].Content.Parts[0].Text); err != nil {
-						return response.Completion{}, 0, err
+					if !part.Thought {
+						if err := chunkHandler(part.Text); err != nil {
+							return response.Completion{}, 0, err
+						}
 					}
 				}
 			}
@@ -847,9 +855,10 @@ func (g Google) doRequest(
 	}
 
 	return response.Completion{
-		Content: fullContent.String(),
-		Model:   req.Model.GetName(),
-		Usage:   usage,
+		Content:  fullContent.String(),
+		Thoughts: thoughts.String(),
+		Model:    req.Model.GetName(),
+		Usage:    usage,
 	}, 0, nil
 }
 
@@ -1353,20 +1362,23 @@ func handleThinkingBudget(
 	switch budget {
 	case models.HighThinkBudget:
 		request.Config = map[string]any{
-			"thinkingConfig": map[string]int64{
-				"thinkingBudget": 24576,
+			"thinkingConfig": map[string]any{
+				"thinkingBudget":  int64(24576),
+				"includeThoughts": true,
 			},
 		}
 	case models.MediumThinkBudget:
 		request.Config = map[string]any{
-			"thinkingConfig": map[string]int64{
-				"thinkingBudget": 12288,
+			"thinkingConfig": map[string]any{
+				"thinkingBudget":  int64(12288),
+				"includeThoughts": true,
 			},
 		}
 	case models.LowThinkBudget:
 		request.Config = map[string]any{
-			"thinkingConfig": map[string]int64{
-				"thinkingBudget": 0,
+			"thinkingConfig": map[string]any{
+				"thinkingBudget":  int64(0),
+				"includeThoughts": false,
 			},
 		}
 	}
