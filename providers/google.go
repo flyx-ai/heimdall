@@ -19,7 +19,7 @@ import (
 	"github.com/flyx-ai/heimdall/response"
 )
 
-const googleBaseUrl = "https://generativelanguage.googleapis.com/v1beta/models/%s:streamGenerateContent?alt=sse&key=%s"
+const googleBaseURL = "https://generativelanguage.googleapis.com/v1beta/models/%s:streamGenerateContent?alt=sse&key=%s"
 
 type Google struct {
 	apiKeys []string
@@ -775,7 +775,7 @@ func (g Google) doRequest(
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		fmt.Sprintf(googleBaseUrl, req.Model.GetName(), key),
+		fmt.Sprintf(googleBaseURL, req.Model.GetName(), key),
 		bytes.NewReader(requestBody))
 	if err != nil {
 		return response.Completion{}, 0, err
@@ -826,8 +826,6 @@ func (g Google) doRequest(
 		if len(responseChunk.Candidates) > 0 {
 			if len(responseChunk.Candidates[0].Content.Parts) > 0 {
 				part := responseChunk.Candidates[0].Content.Parts[0]
-
-				// Separate thoughts from regular content
 				if part.Thought {
 					thoughts.WriteString(part.Text)
 				} else {
@@ -835,7 +833,6 @@ func (g Google) doRequest(
 				}
 
 				if chunkHandler != nil {
-					// Only send non-thought content to chunk handler
 					if !part.Thought {
 						if err := chunkHandler(part.Text); err != nil {
 							return response.Completion{}, 0, err
