@@ -73,7 +73,7 @@ jobs:
       - name: run
         run: just test-vertexai
         env:
-          VERTEX_AI_KEY: ${{secrets.VERTEX_AI_KEY}}
+          GOOGLE_API_KEY: ${{secrets.GOOGLE_API_KEY}}
   grok:
     name: grok/completion and streaming
     runs-on: ubuntu-latest
