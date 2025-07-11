@@ -30,5 +30,8 @@ test-perplexity:
 test-vertexai:
 	go test -v providers/vertexai_test.go
 
+test-grok:
+	go test -v providers/grok_test.go
+
 golangci-lint:
 	golangci-lint run
