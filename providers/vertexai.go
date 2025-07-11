@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/auth"
 	"google.golang.org/genai"
 
 	"github.com/flyx-ai/heimdall/models"
@@ -316,18 +315,14 @@ func (v *VertexAI) tryWithBackup(
 
 func NewVertexAI(
 	ctx context.Context,
-	projectID,
-	location,
-	credentialsJSON string,
+	projectID string,
+	apiKey string,
 ) (VertexAI, error) {
 	client, err := genai.NewClient(
 		ctx,
 		&genai.ClientConfig{
-			Project:  projectID,
-			Location: location,
-			Credentials: auth.NewCredentials(&auth.CredentialsOptions{
-				JSON: []byte(credentialsJSON),
-			}),
+			Project:     projectID,
+			APIKey:      apiKey,
 			HTTPClient:  &http.Client{},
 			HTTPOptions: genai.HTTPOptions{APIVersion: "v1"},
 		},
