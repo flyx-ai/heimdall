@@ -7,8 +7,8 @@ const (
 	Gemini15ProModel          = "gemini-1.5-pro-002"
 	Gemini20FlashModel        = "gemini-2.0-flash-001"
 	Gemini20FlashLiteModel    = "gemini-2.0-flash-lite-001"
-	Gemini25FlashPreviewModel = "gemini-2.5-flash-preview-05-20"
-	Gemini25ProPreviewModel   = "gemini-2.5-pro-preview-05-06"
+	Gemini25FlashPreviewModel = "gemini-2.5-flash"
+	Gemini25ProPreviewModel   = "gemini-2.5-pro"
 )
 
 type ThinkBudget string
