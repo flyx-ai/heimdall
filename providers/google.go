@@ -738,7 +738,7 @@ func (g Google) doRequest(
 		}
 
 		requestBody = body
-	case models.Gemini25ProPreviewModel:
+	case models.Gemini25ProModel:
 		preparedReq, err := prepareGemini25ProPreviewRequest(
 			geminiReq,
 			model,
@@ -755,7 +755,7 @@ func (g Google) doRequest(
 		}
 
 		requestBody = body
-	case models.Gemini25FlashPreviewModel:
+	case models.Gemini25FlashModel:
 		preparedReq, err := prepareGemini25FlashPreviewRequest(
 			geminiReq,
 			model,

@@ -3,12 +3,12 @@ package models
 const GoogleProvider = "google"
 
 const (
-	Gemini15FlashModel        = "gemini-1.5-flash-002"
-	Gemini15ProModel          = "gemini-1.5-pro-002"
-	Gemini20FlashModel        = "gemini-2.0-flash-001"
-	Gemini20FlashLiteModel    = "gemini-2.0-flash-lite-001"
-	Gemini25FlashPreviewModel = "gemini-2.5-flash"
-	Gemini25ProPreviewModel   = "gemini-2.5-pro"
+	Gemini15FlashModel     = "gemini-1.5-flash-002"
+	Gemini15ProModel       = "gemini-1.5-pro-002"
+	Gemini20FlashModel     = "gemini-2.0-flash-001"
+	Gemini20FlashLiteModel = "gemini-2.0-flash-lite-001"
+	Gemini25FlashModel     = "gemini-2.5-flash"
+	Gemini25ProModel       = "gemini-2.5-pro"
 )
 
 type ThinkBudget string
@@ -233,7 +233,7 @@ func (g Gemini25FlashPreview) EstimateCost(text string) float64 {
 }
 
 func (g Gemini25FlashPreview) GetName() string {
-	return Gemini25FlashPreviewModel
+	return Gemini25FlashModel
 }
 
 func (g Gemini25FlashPreview) GetProvider() string {
@@ -269,7 +269,7 @@ func (g Gemini25ProPreview) EstimateCost(text string) float64 {
 }
 
 func (g Gemini25ProPreview) GetName() string {
-	return Gemini25ProPreviewModel
+	return Gemini25ProModel
 }
 
 func (g Gemini25ProPreview) GetProvider() string {
