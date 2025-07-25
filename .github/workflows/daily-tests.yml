@@ -1,0 +1,199 @@
+name: Daily Test Suite
+
+on:
+  schedule:
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+
+jobs:
+  anthropic:
+    name: anthropic/completion and streaming
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.test.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+      - name: run
+        id: test
+        run: |
+          if just test-anthropic; then
+            echo "result=✅ Anthropic" >> $GITHUB_OUTPUT
+          else
+            echo "result=❌ Anthropic" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        env:
+          ANTHROPIC_API_KEY: ${{secrets.ANTHROPIC_API_KEY}}
+
+  perplexity:
+    name: perplexity/completion and streaming
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.test.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+      - name: run
+        id: test
+        run: |
+          if just test-perplexity; then
+            echo "result=✅ Perplexity" >> $GITHUB_OUTPUT
+          else
+            echo "result=❌ Perplexity" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        env:
+          PERPLEXITY_API_KEY: ${{secrets.PERPLEXITY_API_KEY}}
+
+  google:
+    name: google/completion and streaming
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.test.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+      - name: run
+        id: test
+        run: |
+          if just test-google; then
+            echo "result=✅ Google" >> $GITHUB_OUTPUT
+          else
+            echo "result=❌ Google" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        env:
+          GOOGLE_API_KEY: ${{secrets.GOOGLE_API_KEY}}
+
+  openai:
+    name: openai/completion and streaming
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.test.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+      - name: run
+        id: test
+        run: |
+          if just test-openai; then
+            echo "result=✅ OpenAI" >> $GITHUB_OUTPUT
+          else
+            echo "result=❌ OpenAI" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        env:
+          OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
+
+  vertex:
+    name: vertex/completion and streaming
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.test.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+      - name: run
+        id: test
+        run: |
+          if just test-vertexai; then
+            echo "result=✅ Vertex" >> $GITHUB_OUTPUT
+          else
+            echo "result=❌ Vertex" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        env:
+          GOOGLE_API_KEY: ${{secrets.GOOGLE_API_KEY}}
+
+  grok:
+    name: grok/completion and streaming
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.test.outputs.result }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+      - name: run
+        id: test
+        run: |
+          if just test-grok; then
+            echo "result=✅ Grok" >> $GITHUB_OUTPUT
+          else
+            echo "result=❌ Grok" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        env:
+          GROK_API_KEY: ${{secrets.GROK_API_KEY}}
+
+  notify-slack:
+    name: Send Slack notification
+    runs-on: ubuntu-latest
+    needs: [anthropic, perplexity, google, openai, vertex, grok]
+    if: always()
+    steps:
+      - name: Determine overall status
+        id: status
+        run: |
+          if [ "${{ contains(needs.*.conclusion, 'failure') }}" = "true" ]; then
+            echo "overall_status=failed" >> $GITHUB_OUTPUT
+            echo "status_emoji=❌" >> $GITHUB_OUTPUT
+            echo "status_text=Daily test suite failed" >> $GITHUB_OUTPUT
+          else
+            echo "overall_status=passed" >> $GITHUB_OUTPUT
+            echo "status_emoji=✅" >> $GITHUB_OUTPUT
+            echo "status_text=Daily test suite passed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": "${{ steps.status.outputs.status_emoji }} ${{ steps.status.outputs.status_text }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Daily Test Suite Results*\n${{ steps.status.outputs.status_emoji }} ${{ steps.status.outputs.status_text }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Provider Results:*\n${{ needs.anthropic.outputs.result }}\n${{ needs.perplexity.outputs.result }}\n${{ needs.google.outputs.result }}\n${{ needs.openai.outputs.result }}\n${{ needs.vertex.outputs.result }}\n${{ needs.grok.outputs.result }}"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "Repository: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nCommit: ${{ github.sha }}\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
