@@ -153,7 +153,7 @@ jobs:
       - name: Determine overall status
         id: status
         run: |
-          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ]; then
+          if [ "${{ contains(needs.*.conclusion, 'failure') }}" = "true" ]; then
             echo "overall_status=failed" >> $GITHUB_OUTPUT
             echo "status_emoji=❌" >> $GITHUB_OUTPUT
             echo "status_text=Daily test suite failed" >> $GITHUB_OUTPUT
