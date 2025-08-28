@@ -707,6 +707,14 @@ func prepareModelRequest(
 		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.GPT4OMini:
 		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.GPT5:
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.GPT5Mini:
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.GPT5Nano:
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.GPT5Chat:
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.O1:
 		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.O3Mini:

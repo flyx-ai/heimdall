@@ -335,7 +335,32 @@ func (g GPT4OMini) GetProvider() string {
 
 var _ Model = new(GPT4OMini)
 
-type GPT5 struct{}
+type GPT5 struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
+	StructuredOutput map[string]any
+
+	// PdfFile let's you include a PDF file in your request to the LLM.
+	// The expected format:
+	//
+	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	// Only provide a pdf file or an image file, not both.
+	PdfFile map[string]string
+	// ImageFile enables vision for the request
+	ImageFile []OpenaiImagePayload
+}
 
 func (g GPT5) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.00000125
@@ -351,7 +376,32 @@ func (g GPT5) GetProvider() string {
 
 var _ Model = new(GPT5)
 
-type GPT5Mini struct{}
+type GPT5Mini struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
+	StructuredOutput map[string]any
+
+	// PdfFile let's you include a PDF file in your request to the LLM.
+	// The expected format:
+	//
+	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	// Only provide a pdf file or an image file, not both.
+	PdfFile map[string]string
+	// ImageFile enables vision for the request
+	ImageFile []OpenaiImagePayload
+}
 
 func (g GPT5Mini) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.00000025
@@ -367,7 +417,32 @@ func (g GPT5Mini) GetProvider() string {
 
 var _ Model = new(GPT5Mini)
 
-type GPT5Nano struct{}
+type GPT5Nano struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
+	StructuredOutput map[string]any
+
+	// PdfFile let's you include a PDF file in your request to the LLM.
+	// The expected format:
+	//
+	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	// Only provide a pdf file or an image file, not both.
+	PdfFile map[string]string
+	// ImageFile enables vision for the request
+	ImageFile []OpenaiImagePayload
+}
 
 func (g GPT5Nano) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 5e-8
@@ -383,7 +458,32 @@ func (g GPT5Nano) GetProvider() string {
 
 var _ Model = new(GPT5Nano)
 
-type GPT5Chat struct{}
+type GPT5Chat struct {
+	// StructuredOutput represents a subset of the JSON Schema Language. Refer to openai documentation for complete and up-to-date information. An example structure could be:
+	//
+	//  var schema = map[string]any{
+	//  	"name": "navidia_valuation",
+	//  	"schema": map[string]any{
+	//  		"type": "object",
+	//  		"properties": map[string]any{
+	//  			"final_answer": map[string]any{"type": "string"},
+	//  			"valuation": map[string]any{
+	//  				"type": "number",
+	//  			},
+	//  		},
+	//  	},
+	//  }
+	StructuredOutput map[string]any
+
+	// PdfFile let's you include a PDF file in your request to the LLM.
+	// The expected format:
+	//
+	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	// Only provide a pdf file or an image file, not both.
+	PdfFile map[string]string
+	// ImageFile enables vision for the request
+	ImageFile []OpenaiImagePayload
+}
 
 func (g GPT5Chat) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.00000125
