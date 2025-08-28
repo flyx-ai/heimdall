@@ -12,6 +12,9 @@ const (
 	GPT41Alias     = "gpt-4.1-2025-04-14"
 	GPT41MiniAlias = "gpt-4.1-mini-2025-04-14"
 	GPT41NanoAlias = "gpt-4.1-nano-2025-04-14"
+	GPT5Alias      = "gpt-5-2025-08-07"
+	GPT5MiniAlias  = "gpt-5-mini-2025-08-07"
+	GPT5NanoAlias  = "gpt-5-nano-2025-08-07"
 )
 
 type OpenaiImagePayload struct {
@@ -330,6 +333,54 @@ func (g GPT4OMini) GetProvider() string {
 }
 
 var _ Model = new(GPT4OMini)
+
+type GPT5 struct{}
+
+func (g GPT5) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.00000125
+}
+
+func (g GPT5) GetName() string {
+	return GPT5Alias
+}
+
+func (g GPT5) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPT5)
+
+type GPT5Mini struct{}
+
+func (g GPT5Mini) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.00000025
+}
+
+func (g GPT5Mini) GetName() string {
+	return GPT5MiniAlias
+}
+
+func (g GPT5Mini) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPT5Mini)
+
+type GPT5Nano struct{}
+
+func (g GPT5Nano) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 5e-8
+}
+
+func (g GPT5Nano) GetName() string {
+	return GPT5NanoAlias
+}
+
+func (g GPT5Nano) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPT5Nano)
 
 const ImageModelAlias = "gpt-image-1"
 

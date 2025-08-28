@@ -36,6 +36,9 @@ func GetAll() []string {
 		GPT4Alias,
 		GPT4TurboAlias,
 		GPT41Alias,
+		GPT5Alias,
+		GPT5MiniAlias,
+		GPT5NanoAlias,
 
 		"sonar-reasoning-pro",
 		"sonar-reasoning",
