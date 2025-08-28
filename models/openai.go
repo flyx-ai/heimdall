@@ -15,6 +15,7 @@ const (
 	GPT5Alias      = "gpt-5-2025-08-07"
 	GPT5MiniAlias  = "gpt-5-mini-2025-08-07"
 	GPT5NanoAlias  = "gpt-5-nano-2025-08-07"
+	GPT5ChatAlias  = "gpt-5-chat-latest"
 )
 
 type OpenaiImagePayload struct {
@@ -381,6 +382,22 @@ func (g GPT5Nano) GetProvider() string {
 }
 
 var _ Model = new(GPT5Nano)
+
+type GPT5Chat struct{}
+
+func (g GPT5Chat) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.00000125
+}
+
+func (g GPT5Chat) GetName() string {
+	return GPT5ChatAlias
+}
+
+func (g GPT5Chat) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPT5Chat)
 
 const ImageModelAlias = "gpt-image-1"
 
