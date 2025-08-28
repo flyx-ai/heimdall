@@ -125,6 +125,54 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "should complete request with gpt 5",
+			req: request.Completion{
+				Model:         models.GPT5{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with gpt 5 mini",
+			req: request.Completion{
+				Model:         models.GPT5Mini{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with gpt 5 nano",
+			req: request.Completion{
+				Model:         models.GPT5Nano{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should complete request with gpt 5 chat",
+			req: request.Completion{
+				Model:         models.GPT5Chat{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -252,6 +300,54 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 			name: "should stream request with gpt 4.1 nano",
 			req: request.Completion{
 				Model:         models.GPT41Nano{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should stream request with gpt 5",
+			req: request.Completion{
+				Model:         models.GPT5{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should stream request with gpt 5 mini",
+			req: request.Completion{
+				Model:         models.GPT5Mini{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should stream request with gpt 5 nano",
+			req: request.Completion{
+				Model:         models.GPT5Nano{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
+		{
+			name: "should stream request with gpt 5 chat",
+			req: request.Completion{
+				Model:         models.GPT5Chat{},
 				SystemMessage: systemInst,
 				UserMessage:   userMsg,
 				Temperature:   1,
@@ -477,6 +573,22 @@ func TestOpenAIPDFHandling(t *testing.T) {
 		{
 			name:  "GPT-4.1 with PDF",
 			model: &models.GPT41{PdfFile: pdfData},
+		},
+		{
+			name:  "GPT-5 with PDF",
+			model: &models.GPT5{PdfFile: pdfData},
+		},
+		{
+			name:  "GPT-5 Mini with PDF",
+			model: &models.GPT5Mini{PdfFile: pdfData},
+		},
+		{
+			name:  "GPT-5 Nano with PDF",
+			model: &models.GPT5Nano{PdfFile: pdfData},
+		},
+		{
+			name:  "GPT-5 Chat with PDF",
+			model: &models.GPT5Chat{PdfFile: pdfData},
 		},
 	}
 
