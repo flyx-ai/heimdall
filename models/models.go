@@ -57,5 +57,6 @@ func GetAll() []string {
 		Grok3FastAlias,
 		Grok3MiniFastAlias,
 		Grok4Alias,
+		Grok4FastAlias,
 	}
 }

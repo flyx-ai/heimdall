@@ -89,6 +89,18 @@ func TestGrokModelsWithCompletion(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "should complete request with grok-4-fast",
+			req: request.Completion{
+				Model:         models.Grok4Fast{},
+				SystemMessage: systemInst,
+				UserMessage:   userMsg,
+				Temperature:   1,
+				Tags: map[string]string{
+					"type": "testing",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
