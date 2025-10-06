@@ -6,6 +6,11 @@ type Model interface {
 	EstimateCost(text string) float64
 }
 
+type CostBreakdown interface {
+	GetInputCostPer1M() float64
+	GetOutputCostPer1M() float64
+}
+
 type StructuredOutput interface {
 	GetStructuredOutput() map[string]any
 }
@@ -58,5 +63,7 @@ func GetAll() []string {
 		Grok3MiniFastAlias,
 		Grok4Alias,
 		Grok4FastAlias,
+
+		Gemini25FlashImageModel,
 	}
 }
