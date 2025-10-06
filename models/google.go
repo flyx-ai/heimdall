@@ -294,7 +294,7 @@ const (
 type PersonGeneration string
 
 const (
-	PersonGenerationDontAllow PersonGeneration = "dont_allow"
+	PersonGenerationDontAllow  PersonGeneration = "dont_allow"
 	PersonGenerationAllowAdult PersonGeneration = "allow_adult"
 	PersonGenerationAllowAll   PersonGeneration = "allow_all"
 )

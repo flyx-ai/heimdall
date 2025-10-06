@@ -1434,8 +1434,17 @@ func (g Google) doGemini25FlashImageRequest(
 		"contents": []map[string]any{
 			{
 				"parts": parts,
+				"role":  "user",
 			},
 		},
+	}
+
+	if req.SystemMessage != "" {
+		requestPayload["systemInstruction"] = map[string]any{
+			"parts": []any{
+				part{Text: req.SystemMessage},
+			},
+		}
 	}
 
 	// Add generation config
