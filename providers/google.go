@@ -643,6 +643,11 @@ func (g Google) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
+	// Handle image generation models separately
+	if _, ok := req.Model.(*models.Gemini25FlashImage); ok {
+		return g.doGemini25FlashImageRequest(ctx, req, client, key)
+	}
+
 	if req.SystemMessage == "" || req.UserMessage == "" {
 		return response.Completion{}, 0, errors.New(
 			"gemini models require both system message and user message",
@@ -1384,4 +1389,132 @@ func handleThinkingBudget(
 	}
 
 	return request
+}
+
+// Image generation response structures
+type gemini25FlashImageResponse struct {
+	Candidates []struct {
+		Content struct {
+			Parts []struct {
+				Text       string `json:"text,omitempty"`
+				InlineData *struct {
+					MimeType string `json:"mimeType"`
+					Data     string `json:"data"`
+				} `json:"inlineData,omitempty"`
+			} `json:"parts"`
+		} `json:"content"`
+	} `json:"candidates"`
+	UsageMetadata struct {
+		PromptTokenCount     int `json:"promptTokenCount"`
+		CandidatesTokenCount int `json:"candidatesTokenCount"`
+		TotalTokenCount      int `json:"totalTokenCount"`
+	} `json:"usageMetadata"`
+}
+
+// doGemini25FlashImageRequest handles image generation via Gemini 2.5 Flash Image model
+func (g Google) doGemini25FlashImageRequest(
+	ctx context.Context,
+	req request.Completion,
+	client http.Client,
+	key string,
+) (response.Completion, int, error) {
+	imageModel, ok := req.Model.(*models.Gemini25FlashImage)
+	if !ok {
+		return response.Completion{}, 0, errors.New(
+			"internal error: model is not Gemini25FlashImage",
+		)
+	}
+
+	// Build the request payload
+	parts := []any{
+		part{Text: req.UserMessage},
+	}
+
+	requestPayload := map[string]any{
+		"contents": []map[string]any{
+			{
+				"parts": parts,
+			},
+		},
+	}
+
+	// Add generation config
+	// https://ai.google.dev/gemini-api/docs/image-generation
+	generationConfig := map[string]any{
+		"responseModalities": []string{"Text", "Image"},
+	}
+
+	if imageModel.AspectRatio != "" {
+		imageConfig := map[string]any{
+			"aspectRatio": string(imageModel.AspectRatio),
+		}
+		generationConfig["imageConfig"] = imageConfig
+	}
+
+	requestPayload["generationConfig"] = generationConfig
+
+	bodyBytes, err := json.Marshal(requestPayload)
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	// Use generateContent endpoint for Gemini 2.5 Flash Image
+	url := fmt.Sprintf(
+		"https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
+		models.Gemini25FlashImageModel,
+		key,
+	)
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return response.Completion{}, resp.StatusCode, fmt.Errorf(
+			"received non-200 status code (%d) from Gemini image generation API: %s",
+			resp.StatusCode, string(bodyBytes),
+		)
+	}
+
+	var imageResp gemini25FlashImageResponse
+	if err := json.NewDecoder(resp.Body).Decode(&imageResp); err != nil {
+		return response.Completion{}, 0, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if len(imageResp.Candidates) == 0 || len(imageResp.Candidates[0].Content.Parts) == 0 {
+		return response.Completion{}, 0, errors.New("no image data in response")
+	}
+
+	// Extract base64 image data from parts
+	var imageData string
+	for _, part := range imageResp.Candidates[0].Content.Parts {
+		if part.InlineData != nil && part.InlineData.Data != "" {
+			imageData = part.InlineData.Data
+			break
+		}
+	}
+
+	if imageData == "" {
+		return response.Completion{}, 0, errors.New("no image data found in response parts")
+	}
+
+	return response.Completion{
+		Content: imageData,
+		Model:   models.Gemini25FlashImageModel,
+		Usage: response.Usage{
+			PromptTokens:     imageResp.UsageMetadata.PromptTokenCount,
+			CompletionTokens: imageResp.UsageMetadata.CandidatesTokenCount,
+			TotalTokens:      imageResp.UsageMetadata.TotalTokenCount,
+		},
+	}, http.StatusOK, nil
 }

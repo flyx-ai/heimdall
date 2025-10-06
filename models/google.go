@@ -3,12 +3,13 @@ package models
 const GoogleProvider = "google"
 
 const (
-	Gemini15FlashModel     = "gemini-1.5-flash-002"
-	Gemini15ProModel       = "gemini-1.5-pro-002"
-	Gemini20FlashModel     = "gemini-2.0-flash-001"
-	Gemini20FlashLiteModel = "gemini-2.0-flash-lite-001"
-	Gemini25FlashModel     = "gemini-2.5-flash"
-	Gemini25ProModel       = "gemini-2.5-pro"
+	Gemini15FlashModel      = "gemini-1.5-flash-002"
+	Gemini15ProModel        = "gemini-1.5-pro-002"
+	Gemini20FlashModel      = "gemini-2.0-flash-001"
+	Gemini20FlashLiteModel  = "gemini-2.0-flash-lite-001"
+	Gemini25FlashModel      = "gemini-2.5-flash"
+	Gemini25ProModel        = "gemini-2.5-pro"
+	Gemini25FlashImageModel = "gemini-2.5-flash-image"
 )
 
 type ThinkBudget string
@@ -277,3 +278,52 @@ func (g Gemini25ProPreview) GetProvider() string {
 }
 
 var _ Model = new(Gemini25ProPreview)
+
+// AspectRatio represents the supported aspect ratios for image generation
+type AspectRatio string
+
+const (
+	AspectRatio1x1  AspectRatio = "1:1"
+	AspectRatio3x4  AspectRatio = "3:4"
+	AspectRatio4x3  AspectRatio = "4:3"
+	AspectRatio9x16 AspectRatio = "9:16"
+	AspectRatio16x9 AspectRatio = "16:9"
+)
+
+// PersonGeneration controls whether images can contain people
+type PersonGeneration string
+
+const (
+	PersonGenerationDontAllow PersonGeneration = "dont_allow"
+	PersonGenerationAllowAdult PersonGeneration = "allow_adult"
+	PersonGenerationAllowAll   PersonGeneration = "allow_all"
+)
+
+// Gemini25FlashImage represents the Gemini 2.5 Flash image generation model
+// This model generates images conversationally within the chat interface
+type Gemini25FlashImage struct {
+	// NumberOfImages specifies how many images to generate (1-4)
+	NumberOfImages int
+	// AspectRatio specifies the image aspect ratio
+	AspectRatio AspectRatio
+}
+
+func (g Gemini25FlashImage) EstimateCost(text string) float64 {
+	// Gemini 2.5 Flash Image: $30.00 per 1M output tokens
+	// Each image = 1290 output tokens = $0.039 per image
+	numImages := g.NumberOfImages
+	if numImages == 0 {
+		numImages = 1
+	}
+	return float64(numImages) * 0.039
+}
+
+func (g Gemini25FlashImage) GetName() string {
+	return Gemini25FlashImageModel
+}
+
+func (g Gemini25FlashImage) GetProvider() string {
+	return GoogleProvider
+}
+
+var _ Model = new(Gemini25FlashImage)
