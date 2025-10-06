@@ -318,6 +318,16 @@ func (g Gemini25FlashImage) EstimateCost(text string) float64 {
 	return float64(numImages) * 0.039
 }
 
+func (g Gemini25FlashImage) GetInputCostPer1M() float64 {
+	// Official pricing: https://ai.google.dev/gemini-api/docs/pricing
+	return 0.30
+}
+
+func (g Gemini25FlashImage) GetOutputCostPer1M() float64 {
+	// Official pricing: $0.039 per image = 1290 tokens = $30.23 per 1M tokens
+	return 30.23
+}
+
 func (g Gemini25FlashImage) GetName() string {
 	return Gemini25FlashImageModel
 }
@@ -327,3 +337,4 @@ func (g Gemini25FlashImage) GetProvider() string {
 }
 
 var _ Model = new(Gemini25FlashImage)
+var _ CostBreakdown = new(Gemini25FlashImage)
