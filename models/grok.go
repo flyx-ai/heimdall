@@ -38,7 +38,9 @@ func (Grok2Vision) GetProvider() string {
 
 var _ Model = new(Grok2Vision)
 
-type Grok3 struct{}
+type Grok3 struct {
+	ImageFile []GrokImagePayload
+}
 
 func (g Grok3) EstimateCost(text string) float64 {
 	inputCostPerToken := 0.000003
@@ -57,7 +59,9 @@ func (Grok3) GetProvider() string {
 
 var _ Model = new(Grok3)
 
-type Grok3Mini struct{}
+type Grok3Mini struct {
+	ImageFile []GrokImagePayload
+}
 
 func (g Grok3Mini) EstimateCost(text string) float64 {
 	inputCostPerToken := 0.0000003
@@ -76,7 +80,9 @@ func (Grok3Mini) GetProvider() string {
 
 var _ Model = new(Grok3Mini)
 
-type Grok3Fast struct{}
+type Grok3Fast struct {
+	ImageFile []GrokImagePayload
+}
 
 func (g Grok3Fast) EstimateCost(text string) float64 {
 	inputCostPerToken := 0.000005
@@ -95,7 +101,9 @@ func (Grok3Fast) GetProvider() string {
 
 var _ Model = new(Grok3Fast)
 
-type Grok3MiniFast struct{}
+type Grok3MiniFast struct {
+	ImageFile []GrokImagePayload
+}
 
 func (g Grok3MiniFast) EstimateCost(text string) float64 {
 	inputCostPerToken := 0.0000006
@@ -114,7 +122,9 @@ func (Grok3MiniFast) GetProvider() string {
 
 var _ Model = new(Grok3MiniFast)
 
-type Grok4 struct{}
+type Grok4 struct {
+	ImageFile []GrokImagePayload
+}
 
 func (g Grok4) EstimateCost(text string) float64 {
 	inputCostPerToken := 0.000002
@@ -133,7 +143,9 @@ func (Grok4) GetProvider() string {
 
 var _ Model = new(Grok4)
 
-type Grok4Fast struct{}
+type Grok4Fast struct {
+	ImageFile []GrokImagePayload
+}
 
 func (g Grok4Fast) EstimateCost(text string) float64 {
 	inputCostPerToken := 0.0000002

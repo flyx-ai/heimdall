@@ -875,7 +875,6 @@ func prepareGemini15FlashRequest(
 	systemInst string,
 	userMsg string,
 ) (geminiRequest, error) {
-	// TODO: implement file, image etc on model
 	model, ok := requestedModel.(models.Gemini15Flash)
 	if !ok {
 		return request, errors.New(
@@ -898,6 +897,20 @@ func prepareGemini15FlashRequest(
 			part{Text: userMsg},
 		)
 		request.Contents[lastIndex].Role = "user"
+	}
+
+	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
+		return geminiRequest{}, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		request = handleVisionData(request, model.ImageFile)
+	}
+
+	if len(model.PdfFiles) > 0 {
+		request = handlePdfData(request, model.PdfFiles, lastIndex)
 	}
 
 	if model.Thinking != "" {
@@ -1426,9 +1439,44 @@ func (g Google) doGemini25FlashImageRequest(
 	}
 
 	// Build the request payload
-	parts := []any{
-		part{Text: req.UserMessage},
+	parts := []any{}
+
+	// Add image attachments if present
+	if len(imageModel.ImageFile) > 0 {
+		for _, img := range imageModel.ImageFile {
+			parts = append(parts, filePart{
+				InlineData: imageData{
+					MimeType: img.MimeType,
+					Data:     img.Data,
+				},
+			})
+		}
 	}
+
+	// Add PDF attachments if present
+	if len(imageModel.PdfFiles) > 0 {
+		for _, pdf := range imageModel.PdfFiles {
+			pdfStr := string(pdf)
+			if strings.HasPrefix(pdfStr, "https://") {
+				parts = append(parts, fileURI{
+					FileData: fileData{
+						MimeType: "application/pdf",
+						FileURI:  pdfStr,
+					},
+				})
+			} else {
+				parts = append(parts, filePart{
+					InlineData: imageData{
+						MimeType: "application/pdf",
+						Data:     pdfStr,
+					},
+				})
+			}
+		}
+	}
+
+	// Add user message
+	parts = append(parts, part{Text: req.UserMessage})
 
 	requestPayload := map[string]any{
 		"contents": []map[string]any{
