@@ -108,7 +108,11 @@ func (g Gemini15Pro) GetProvider() string {
 var _ Model = new(Gemini15Pro)
 
 type Gemini15Flash struct {
-	Thinking ThinkBudget
+	StructuredOutput map[string]any
+	PdfFiles         []GooglePdf
+	ImageFile        []GoogleImagePayload
+	Files            []GoogleFilePayload
+	Thinking         ThinkBudget
 }
 
 func (g Gemini15Flash) EstimateCost(text string) float64 {
@@ -306,6 +310,12 @@ type Gemini25FlashImage struct {
 	NumberOfImages int
 	// AspectRatio specifies the image aspect ratio
 	AspectRatio AspectRatio
+	// ImageFile accepts input images for image-to-image generation or reference
+	ImageFile []GoogleImagePayload
+	// PdfFiles accepts one or more PDFs, either URIs or base64 data
+	PdfFiles []GooglePdf
+	// Files accepts any file type with URI and mime type
+	Files []GoogleFilePayload
 }
 
 func (g Gemini25FlashImage) EstimateCost(text string) float64 {

@@ -235,7 +235,12 @@ func (g GPT4) GetProvider() string {
 
 var _ Model = new(GPT4)
 
-type GPT4Turbo struct{}
+type GPT4Turbo struct {
+	// ImageFile enables vision for the request
+	// Note: GPT-4 Turbo supports vision but NOT direct PDF input
+	// PDF support was only added to newer models (GPT-4o, GPT-4.1, o1) in March 2025
+	ImageFile []OpenaiImagePayload
+}
 
 func (g GPT4Turbo) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.00001000
@@ -543,6 +548,11 @@ type GPTImage struct {
 	// User is an optional unique identifier representing your end-user,
 	// which can help OpenAI monitor and detect abuse.
 	User string
+
+	// ImageFile enables image editing with gpt-image-1 (Image Edit API).
+	// Input image must be less than 50 MB in size and must be a PNG or JPG file.
+	// Note: Only 1 image is supported per request.
+	ImageFile []OpenaiImagePayload
 }
 
 // TODO

@@ -900,6 +900,29 @@ func prepareGemini15FlashRequest(
 		request.Contents[lastIndex].Role = "user"
 	}
 
+	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
+		return request, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		request = handleVisionData(request, model.ImageFile)
+	}
+
+	if len(model.PdfFiles) > 0 {
+		request = handlePdfData(request, model.PdfFiles, lastIndex)
+	}
+
+	if len(model.Files) > 0 {
+		request = handleGenericFiles(request, model.Files, lastIndex)
+	}
+
+	if len(model.StructuredOutput) > 1 {
+		request.GenerationConfig.ResponseMimeType = "application/json"
+		request.GenerationConfig.ResponseSchema = model.StructuredOutput
+	}
+
 	if model.Thinking != "" {
 		request = handleThinkingBudget(request, model.Thinking)
 	}
@@ -997,12 +1020,6 @@ func prepareGemini20FlashRequest(
 			part{Text: userMsg},
 		)
 		request.Contents[lastIndex].Role = "user"
-	}
-
-	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
-		return request, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
 	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
@@ -1426,9 +1443,62 @@ func (g Google) doGemini25FlashImageRequest(
 	}
 
 	// Build the request payload
-	parts := []any{
-		part{Text: req.UserMessage},
+	parts := []any{}
+
+	// Add image attachments if present
+	if len(imageModel.ImageFile) > 0 {
+		for _, img := range imageModel.ImageFile {
+			base64 := img.Data
+
+			fullBase64 := fmt.Sprintf("data:%s;base64,", img.MimeType)
+			if strings.Contains(img.Data, fullBase64) {
+				base64Part := strings.Split(
+					img.Data,
+					fullBase64,
+				)
+				if len(base64Part) > 0 {
+					base64 = base64Part[1]
+				}
+			}
+
+			parts = append(parts, filePart{
+				InlineData: imageData{
+					MimeType: img.MimeType,
+					Data:     base64,
+				},
+			})
+		}
 	}
+
+	// Add PDF attachments if present
+	if len(imageModel.PdfFiles) > 0 {
+		for _, pdf := range imageModel.PdfFiles {
+			pdfStr := string(pdf)
+			if strings.HasPrefix(pdfStr, "https://") {
+				parts = append(parts, fileURI{
+					FileData: fileData{
+						MimeType: "application/pdf",
+						FileURI:  pdfStr,
+					},
+				})
+			} else {
+				data := pdfStr
+				prefix := fmt.Sprintf("data:%s;base64,", "application/pdf")
+				if pdfParts := strings.SplitN(pdfStr, prefix, 2); len(pdfParts) == 2 {
+					data = pdfParts[1]
+				}
+				parts = append(parts, filePart{
+					InlineData: imageData{
+						MimeType: "application/pdf",
+						Data:     data,
+					},
+				})
+			}
+		}
+	}
+
+	// Add user message
+	parts = append(parts, part{Text: req.UserMessage})
 
 	requestPayload := map[string]any{
 		"contents": []map[string]any{
