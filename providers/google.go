@@ -875,7 +875,6 @@ func prepareGemini15FlashRequest(
 	systemInst string,
 	userMsg string,
 ) (geminiRequest, error) {
-	// TODO: implement file, image etc on model
 	model, ok := requestedModel.(models.Gemini15Flash)
 	if !ok {
 		return request, errors.New(

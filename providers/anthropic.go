@@ -670,10 +670,6 @@ func handleMedia(
 				mimeType = mimeType[:idx]
 			}
 
-			// Debug log each image being added
-			fmt.Printf("DEBUG: Adding image %d with MIME type '%s', data length: %d bytes\n",
-				imageCount+1, mimeType, len(val))
-
 			content = append(content, anthropicMediaPayload{
 				Type: "image",
 				Source: mediaSource{

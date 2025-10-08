@@ -162,6 +162,7 @@ type O3Mini struct {
 	//  	},
 	//  }
 	StructuredOutput map[string]any
+	// Note: O3Mini does not support vision/images in the API as of 2025
 }
 
 func (o O3Mini) EstimateCost(text string) float64 {
@@ -219,7 +220,10 @@ func (o O1) GetProvider() string {
 
 var _ Model = new(O1)
 
-type GPT4 struct{}
+type GPT4 struct {
+	// Note: GPT-4 (gpt-4-0613) does not support vision/images or PDFs
+	// This is a text-only model released before vision capabilities were added
+}
 
 func (g GPT4) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.00006000
