@@ -221,14 +221,8 @@ func (o O1) GetProvider() string {
 var _ Model = new(O1)
 
 type GPT4 struct {
-	// PdfFile let's you include a PDF file in your request to the LLM.
-	// The expected format:
-	//
-	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
-	// Only provide a pdf file or an image file, not both.
-	PdfFile map[string]string
-	// ImageFile enables vision for the request
-	ImageFile []OpenaiImagePayload
+	// Note: GPT-4 (gpt-4-0613) does not support vision/images or PDFs
+	// This is a text-only model released before vision capabilities were added
 }
 
 func (g GPT4) EstimateCost(text string) float64 {
@@ -246,13 +240,9 @@ func (g GPT4) GetProvider() string {
 var _ Model = new(GPT4)
 
 type GPT4Turbo struct {
-	// PdfFile let's you include a PDF file in your request to the LLM.
-	// The expected format:
-	//
-	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
-	// Only provide a pdf file or an image file, not both.
-	PdfFile map[string]string
 	// ImageFile enables vision for the request
+	// Note: GPT-4 Turbo supports vision but NOT direct PDF input
+	// PDF support was only added to newer models (GPT-4o, GPT-4.1, o1) in March 2025
 	ImageFile []OpenaiImagePayload
 }
 

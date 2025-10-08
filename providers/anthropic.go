@@ -662,6 +662,7 @@ func handleMedia(
 	content := []any{}
 
 	if len(imageFile) > 0 {
+		imageCount := 0
 		for t, val := range imageFile {
 			// Extract base MIME type (remove any suffix after #)
 			mimeType := string(t)
@@ -677,7 +678,9 @@ func handleMedia(
 					Data:      val,
 				},
 			})
+			imageCount++
 		}
+		fmt.Printf("DEBUG: Total %d images added to Anthropic content array (content length: %d)\n", imageCount, len(content))
 	}
 
 	if len(pdfFiles) > 0 {

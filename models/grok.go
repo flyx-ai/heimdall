@@ -60,7 +60,7 @@ func (Grok3) GetProvider() string {
 var _ Model = new(Grok3)
 
 type Grok3Mini struct {
-	ImageFile []GrokImagePayload
+	// Note: Grok 3 Mini is text-only and does not support vision/images
 }
 
 func (g Grok3Mini) EstimateCost(text string) float64 {
@@ -102,7 +102,7 @@ func (Grok3Fast) GetProvider() string {
 var _ Model = new(Grok3Fast)
 
 type Grok3MiniFast struct {
-	ImageFile []GrokImagePayload
+	// Note: Grok 3 Mini Fast is text-only and does not support vision/images
 }
 
 func (g Grok3MiniFast) EstimateCost(text string) float64 {

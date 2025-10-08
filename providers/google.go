@@ -900,7 +900,7 @@ func prepareGemini15FlashRequest(
 	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
-		return geminiRequest{}, errors.New(
+		return request, errors.New(
 			"only pdf file or image file can be provided, not both",
 		)
 	}
@@ -911,6 +911,15 @@ func prepareGemini15FlashRequest(
 
 	if len(model.PdfFiles) > 0 {
 		request = handlePdfData(request, model.PdfFiles, lastIndex)
+	}
+
+	if len(model.Files) > 0 {
+		request = handleGenericFiles(request, model.Files, lastIndex)
+	}
+
+	if len(model.StructuredOutput) > 1 {
+		request.Config["responseMimeType"] = "application/json"
+		request.Config["responseSchema"] = model.StructuredOutput
 	}
 
 	if model.Thinking != "" {
@@ -1010,12 +1019,6 @@ func prepareGemini20FlashRequest(
 			part{Text: userMsg},
 		)
 		request.Contents[lastIndex].Role = "user"
-	}
-
-	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
-		return request, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
 	}
 
 	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
@@ -1444,10 +1447,23 @@ func (g Google) doGemini25FlashImageRequest(
 	// Add image attachments if present
 	if len(imageModel.ImageFile) > 0 {
 		for _, img := range imageModel.ImageFile {
+			base64 := img.Data
+
+			fullBase64 := fmt.Sprintf("data:%s;base64,", img.MimeType)
+			if strings.Contains(img.Data, fullBase64) {
+				base64Part := strings.Split(
+					img.Data,
+					fullBase64,
+				)
+				if len(base64Part) > 0 {
+					base64 = base64Part[1]
+				}
+			}
+
 			parts = append(parts, filePart{
 				InlineData: imageData{
 					MimeType: img.MimeType,
-					Data:     img.Data,
+					Data:     base64,
 				},
 			})
 		}
@@ -1465,10 +1481,15 @@ func (g Google) doGemini25FlashImageRequest(
 					},
 				})
 			} else {
+				data := pdfStr
+				prefix := fmt.Sprintf("data:%s;base64,", "application/pdf")
+				if pdfParts := strings.SplitN(pdfStr, prefix, 2); len(pdfParts) == 2 {
+					data = pdfParts[1]
+				}
 				parts = append(parts, filePart{
 					InlineData: imageData{
 						MimeType: "application/pdf",
-						Data:     pdfStr,
+						Data:     data,
 					},
 				})
 			}

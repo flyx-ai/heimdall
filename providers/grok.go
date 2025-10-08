@@ -362,6 +362,14 @@ func prepareGrokRequest(
 	switch m := requestedModel.(type) {
 	case *models.Grok2Vision:
 		return prepareGrokVisionRequest(request, m.ImageFile, systemInst, userMsg, history)
+	case *models.Grok3:
+		return prepareGrokVisionRequest(request, m.ImageFile, systemInst, userMsg, history)
+	case *models.Grok3Fast:
+		return prepareGrokVisionRequest(request, m.ImageFile, systemInst, userMsg, history)
+	case *models.Grok4:
+		return prepareGrokVisionRequest(request, m.ImageFile, systemInst, userMsg, history)
+	case *models.Grok4Fast:
+		return prepareGrokVisionRequest(request, m.ImageFile, systemInst, userMsg, history)
 	default:
 		return prepareBasicMessages(request, systemInst, userMsg, history)
 	}
