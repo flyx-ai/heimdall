@@ -918,8 +918,8 @@ func prepareGemini15FlashRequest(
 	}
 
 	if len(model.StructuredOutput) > 1 {
-		request.GenerationConfig.ResponseMimeType = "application/json"
-		request.GenerationConfig.ResponseSchema = model.StructuredOutput
+		request.Config["responseMimeType"] = "application/json"
+		request.Config["responseSchema"] = model.StructuredOutput
 	}
 
 	if model.Thinking != "" {
