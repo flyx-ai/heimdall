@@ -668,6 +668,7 @@ func handleMedia(
 			if idx := strings.Index(mimeType, "#"); idx > 0 {
 				mimeType = mimeType[:idx]
 			}
+
 			content = append(content, anthropicMediaPayload{
 				Type: "image",
 				Source: mediaSource{

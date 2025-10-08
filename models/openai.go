@@ -162,6 +162,7 @@ type O3Mini struct {
 	//  	},
 	//  }
 	StructuredOutput map[string]any
+	// Note: O3Mini does not support vision/images in the API as of 2025
 }
 
 func (o O3Mini) EstimateCost(text string) float64 {
@@ -219,7 +220,16 @@ func (o O1) GetProvider() string {
 
 var _ Model = new(O1)
 
-type GPT4 struct{}
+type GPT4 struct {
+	// PdfFile let's you include a PDF file in your request to the LLM.
+	// The expected format:
+	//
+	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	// Only provide a pdf file or an image file, not both.
+	PdfFile map[string]string
+	// ImageFile enables vision for the request
+	ImageFile []OpenaiImagePayload
+}
 
 func (g GPT4) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.00006000
@@ -235,7 +245,16 @@ func (g GPT4) GetProvider() string {
 
 var _ Model = new(GPT4)
 
-type GPT4Turbo struct{}
+type GPT4Turbo struct {
+	// PdfFile let's you include a PDF file in your request to the LLM.
+	// The expected format:
+	//
+	// map["file-name.pdf"]"data:application/pdf;base64," + encodedString
+	// Only provide a pdf file or an image file, not both.
+	PdfFile map[string]string
+	// ImageFile enables vision for the request
+	ImageFile []OpenaiImagePayload
+}
 
 func (g GPT4Turbo) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.00001000
@@ -543,6 +562,11 @@ type GPTImage struct {
 	// User is an optional unique identifier representing your end-user,
 	// which can help OpenAI monitor and detect abuse.
 	User string
+
+	// ImageFile enables image editing with gpt-image-1 (Image Edit API).
+	// Input image must be less than 50 MB in size and must be a PNG or JPG file.
+	// Note: Only 1 image is supported per request.
+	ImageFile []OpenaiImagePayload
 }
 
 // TODO
