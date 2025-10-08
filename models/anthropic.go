@@ -18,6 +18,9 @@ type (
 
 const (
 	AnthropicImageJpeg AnthropicImageType = "image/jpeg"
+	AnthropicImagePng  AnthropicImageType = "image/png"
+	AnthropicImageGif  AnthropicImageType = "image/gif"
+	AnthropicImageWebp AnthropicImageType = "image/webp"
 )
 
 type Claude3Opus struct {

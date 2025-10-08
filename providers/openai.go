@@ -746,17 +746,17 @@ func prepareRequest(
 		}
 	}
 
-	if len(pdfFile) == 1 && len(imageFile) == 1 {
+	if len(pdfFile) > 0 && len(imageFile) > 0 {
 		return openAIRequest{}, errors.New(
 			"only pdf file or image file can be provided, not both",
 		)
 	}
 
-	if len(imageFile) == 1 {
+	if len(imageFile) > 0 {
 		return prepareRequestWithImage(request, imageFile, userMsg, history)
 	}
 
-	if len(pdfFile) == 1 {
+	if len(pdfFile) > 0 {
 		return prepareRequestWithPdf(request, pdfFile, userMsg, history)
 	}
 

@@ -662,21 +662,21 @@ func handleMedia(
 	content := []any{}
 
 	if len(imageFile) > 0 {
-		mediaType := ""
-		data := ""
 		for t, val := range imageFile {
-			mediaType = string(t)
-			data = val
+			// Extract base MIME type (remove any suffix after #)
+			mimeType := string(t)
+			if idx := strings.Index(mimeType, "#"); idx > 0 {
+				mimeType = mimeType[:idx]
+			}
+			content = append(content, anthropicMediaPayload{
+				Type: "image",
+				Source: mediaSource{
+					Type:      "base64",
+					MediaType: mimeType,
+					Data:      val,
+				},
+			})
 		}
-
-		content = append(content, anthropicMediaPayload{
-			Type: "image",
-			Source: mediaSource{
-				Type:      "base64",
-				MediaType: mediaType,
-				Data:      data,
-			},
-		})
 	}
 
 	if len(pdfFiles) > 0 {
