@@ -649,10 +649,13 @@ func (g Google) doRequest(
 	}
 
 	if req.SystemMessage == "" || req.UserMessage == "" {
-		return response.Completion{}, 0, errors.New(
+		return response.Completion{}, 400, errors.New(
 			"gemini models require both system message and user message",
 		)
 	}
+
+	systemMessage := req.SystemMessage
+	userMessage := req.UserMessage
 
 	model := req.Model
 	geminiReq := geminiRequest{
@@ -679,8 +682,8 @@ func (g Google) doRequest(
 		preparedReq, err := prepareGemini15FlashRequest(
 			geminiReq,
 			model,
-			req.SystemMessage,
-			req.UserMessage,
+			systemMessage,
+			userMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -696,8 +699,8 @@ func (g Google) doRequest(
 		preparedReq, err := prepareGemini15ProRequest(
 			geminiReq,
 			model,
-			req.SystemMessage,
-			req.UserMessage,
+			systemMessage,
+			userMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -713,8 +716,8 @@ func (g Google) doRequest(
 		preparedReq, err := prepareGemini20FlashRequest(
 			geminiReq,
 			model,
-			req.SystemMessage,
-			req.UserMessage,
+			systemMessage,
+			userMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -730,8 +733,8 @@ func (g Google) doRequest(
 		preparedReq, err := prepareGemini20FlashLiteRequest(
 			geminiReq,
 			model,
-			req.SystemMessage,
-			req.UserMessage,
+			systemMessage,
+			userMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -747,8 +750,8 @@ func (g Google) doRequest(
 		preparedReq, err := prepareGemini25ProPreviewRequest(
 			geminiReq,
 			model,
-			req.SystemMessage,
-			req.UserMessage,
+			systemMessage,
+			userMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -764,8 +767,8 @@ func (g Google) doRequest(
 		preparedReq, err := prepareGemini25FlashPreviewRequest(
 			geminiReq,
 			model,
-			req.SystemMessage,
-			req.UserMessage,
+			systemMessage,
+			userMessage,
 		)
 		if err != nil {
 			return response.Completion{}, 0, err
@@ -777,6 +780,17 @@ func (g Google) doRequest(
 		}
 
 		requestBody = body
+	default:
+		return response.Completion{}, 0, fmt.Errorf(
+			"unsupported Gemini model: %s",
+			model.GetName(),
+		)
+	}
+
+	if requestBody == nil {
+		return response.Completion{}, 0, errors.New(
+			"request body is nil - model may not be supported",
+		)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
@@ -793,7 +807,7 @@ func (g Google) doRequest(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return response.Completion{}, 0, errors.New(
+		return response.Completion{}, resp.StatusCode, errors.New(
 			"received non-200 status code",
 		)
 	}
@@ -807,7 +821,7 @@ func (g Google) doRequest(
 
 	for {
 		if chunks == 0 && time.Since(now).Seconds() > 3.0 {
-			return response.Completion{}, 0, err
+			return response.Completion{}, 0, context.Canceled
 		}
 		line, err := reader.ReadString('\n')
 		if err == io.EOF {
