@@ -193,6 +193,15 @@ func (a Anthropic) doRequest(
 			return response.Completion{}, 0, err
 		}
 		messages = append(messages, msgs...)
+	case models.AnthropicClaude45HaikuAlias:
+		msgs, err := prepareClaude45Haiku(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = append(messages, msgs...)
 	}
 
 	apiReq := anthropicRequest{
@@ -629,6 +638,39 @@ func prepareClaude4Opus(
 	if !ok {
 		return nil, errors.New(
 			"internal error; model type assertion to models.Claude4Opus failed",
+		)
+	}
+
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func prepareClaude45Haiku(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude45Haiku)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude45Haiku failed",
 		)
 	}
 

@@ -26,6 +26,9 @@ func GetAll() []string {
 		AnthropicClaude35SonnetAlias,
 		AnthropicClaude35HaikuAlias,
 		AnthropicClaude37SonnetAlias,
+		AnthropicClaude4SonnetAlias,
+		AnthropicClaude4OpusAlias,
+		AnthropicClaude45HaikuAlias,
 
 		Gemini15FlashModel,
 		Gemini15ProModel,
