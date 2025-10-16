@@ -72,6 +72,18 @@ func (r *Router) Stream(
 		}
 	}
 
+	if err == nil {
+		requestLog.Response = resp.Content
+		requestLog.Completed = true
+	}
+	if err != nil {
+		requestLog.Completed = false
+	}
+
+	requestLog.End = time.Now()
+
+	resp.RequestLog = requestLog
+
 	return resp, err
 }
 
