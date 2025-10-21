@@ -113,7 +113,7 @@ func main() {
     
 	key, err := g.CacheContent(
 		ctx,
-		models.Gemini15Pro{}.GetName(),
+		models.Gemini20Flash{}.GetName(),
 		providers.CacheContentPayload{
 			FileData: map[string]string{
                 // Add your file data here
@@ -203,7 +203,7 @@ func main() {
 	res, err := googleProvider.CompleteResponse(
 		ctx,
 		request.Completion{
-			Model: models.Gemini15Pro{
+			Model: models.Gemini20Flash{
 				PdfFiles: []models.GooglePdf{
 					models.GooglePdf(encodedPdf), // Base64 encoded PDF
 				},
@@ -384,7 +384,7 @@ func main() {
 	res, err := googleProvider.CompleteResponse(
 		ctx,
 		request.Completion{
-			Model: models.Gemini15Pro{
+			Model: models.Gemini20Flash{
 				StructuredOutput: schemaGoogle,
 			},
 			SystemMessage: "You are a financial analyst.",
@@ -438,7 +438,7 @@ func main() {
 		// Fallbacks - will be tried in order if primary fails
 		Fallback: []models.Model{
 			models.Claude37Sonnet{},
-			models.Gemini15Pro{},
+			models.Gemini20Flash{},
 		},
 		
 		SystemMessage: "You are a helpful assistant.",

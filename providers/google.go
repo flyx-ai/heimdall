@@ -678,40 +678,6 @@ func (g Google) doRequest(
 	var requestBody []byte
 
 	switch model.GetName() {
-	case models.Gemini15FlashModel:
-		preparedReq, err := prepareGemini15FlashRequest(
-			geminiReq,
-			model,
-			systemMessage,
-			userMessage,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(preparedReq)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
-	case models.Gemini15ProModel:
-		preparedReq, err := prepareGemini15ProRequest(
-			geminiReq,
-			model,
-			systemMessage,
-			userMessage,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(preparedReq)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
 	case models.Gemini20FlashModel:
 		preparedReq, err := prepareGemini20FlashRequest(
 			geminiReq,
@@ -807,8 +773,16 @@ func (g Google) doRequest(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return response.Completion{}, resp.StatusCode, errors.New(
-			"received non-200 status code",
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return response.Completion{}, resp.StatusCode, fmt.Errorf(
+				"received non-200 status code (%d), failed to read error body: %w",
+				resp.StatusCode, readErr,
+			)
+		}
+		return response.Completion{}, resp.StatusCode, fmt.Errorf(
+			"received non-200 status code (%d): %s",
+			resp.StatusCode, string(bodyBytes),
 		)
 	}
 
@@ -882,128 +856,6 @@ func (g Google) doRequest(
 }
 
 var _ LLMProvider = new(Google)
-
-func prepareGemini15FlashRequest(
-	request geminiRequest,
-	requestedModel models.Model,
-	systemInst string,
-	userMsg string,
-) (geminiRequest, error) {
-	model, ok := requestedModel.(models.Gemini15Flash)
-	if !ok {
-		return request, errors.New(
-			"internal error; model type assertion to models.Gemini15Flash failed",
-		)
-	}
-
-	request.SystemInstruction.Parts = part{
-		Text: systemInst,
-	}
-
-	lastIndex := 0
-	if len(request.Contents) >= 1 {
-		lastIndex = len(request.Contents) - 1
-	}
-
-	if len(request.Contents) > 0 {
-		request.Contents[lastIndex].Parts = append(
-			request.Contents[lastIndex].Parts,
-			part{Text: userMsg},
-		)
-		request.Contents[lastIndex].Role = "user"
-	}
-
-	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
-		return request, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
-	}
-
-	if len(model.ImageFile) > 0 {
-		request = handleVisionData(request, model.ImageFile)
-	}
-
-	if len(model.PdfFiles) > 0 {
-		request = handlePdfData(request, model.PdfFiles, lastIndex)
-	}
-
-	if len(model.Files) > 0 {
-		request = handleGenericFiles(request, model.Files, lastIndex)
-	}
-
-	if len(model.StructuredOutput) > 1 {
-		request.Config["responseMimeType"] = "application/json"
-		request.Config["responseSchema"] = model.StructuredOutput
-	}
-
-	if model.Thinking != "" {
-		request = handleThinkingBudget(request, model.Thinking)
-	}
-
-	return request, nil
-}
-
-func prepareGemini15ProRequest(
-	request geminiRequest,
-	requestedModel models.Model,
-	systemInst string,
-	userMsg string,
-) (geminiRequest, error) {
-	model, ok := requestedModel.(models.Gemini15Pro)
-	if !ok {
-		return request, errors.New(
-			"internal error; model type assertion to models.Gemini15Pro failed",
-		)
-	}
-
-	request.SystemInstruction.Parts = part{
-		Text: systemInst,
-	}
-
-	lastIndex := 0
-	if len(request.Contents) >= 1 {
-		lastIndex = len(request.Contents) - 1
-	}
-
-	if len(request.Contents) > 0 {
-		request.Contents[lastIndex].Parts = append(
-			request.Contents[lastIndex].Parts,
-			part{Text: userMsg},
-		)
-		request.Contents[lastIndex].Role = "user"
-	}
-
-	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
-		return geminiRequest{}, errors.New(
-			"only pdf file or image file can be provided, not both",
-		)
-	}
-
-	if len(model.ImageFile) > 0 {
-		request = handleVisionData(request, model.ImageFile)
-	}
-
-	if len(model.PdfFiles) > 0 {
-		request = handlePdfData(request, model.PdfFiles, lastIndex)
-	}
-
-	if len(model.Files) > 0 {
-		request = handleGenericFiles(request, model.Files, lastIndex)
-	}
-
-	if len(model.StructuredOutput) > 1 {
-		request.Config = map[string]any{
-			"response_mime_type": "application/json",
-			"response_schema":    model.StructuredOutput,
-		}
-	}
-
-	if model.Thinking != "" {
-		request = handleThinkingBudget(request, model.Thinking)
-	}
-
-	return request, nil
-}
 
 func prepareGemini20FlashRequest(
 	request geminiRequest,

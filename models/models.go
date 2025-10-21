@@ -30,8 +30,7 @@ func GetAll() []string {
 		AnthropicClaude4OpusAlias,
 		AnthropicClaude45HaikuAlias,
 
-		Gemini15FlashModel,
-		Gemini15ProModel,
+		// NOTE: Gemini 1.5 models have been retired by Google as of 2025
 		Gemini20FlashModel,
 		Gemini20FlashLiteModel,
 		Gemini25FlashModel,
@@ -54,8 +53,6 @@ func GetAll() []string {
 		"sonar-pro",
 		"sonar",
 
-		"gemini-1.5-flash-002",
-		"gemini-1.5-pro-002",
 		"gemini-2.0-flash-001",
 		"gemini-2.0-flash-lite-001",
 

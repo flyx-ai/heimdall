@@ -55,10 +55,11 @@ func main() {
 	slog.Info("############# ERR ##################", "err", err)
 	slog.Info("############# RES ##################", "res", res.Content)
 
+	// NOTE: Gemini 1.5 models have been retired by Google as of 2025, use Gemini 2.0+ instead
 	// router := heimdall.New(timeout, []providers.LLMProvider{g, oa})
 	//
 	// req := request.Completion{
-	// 	Model: models.Gemini15Flash{},
+	// 	Model: models.Gemini20Flash{},
 	// 	Messages: []request.Message{
 	// 		{
 	// 			Role:    "system",
@@ -70,7 +71,7 @@ func main() {
 	// 		},
 	// 	},
 	// 	Fallback: []models.Model{
-	// 		models.Gemini15Flash{},
+	// 		models.Gemini20Flash{},
 	// 	},
 	// 	Temperature: 1,
 	// 	Tags: map[string]string{
