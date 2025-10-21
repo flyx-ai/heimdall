@@ -153,7 +153,18 @@ func (p Perplexity) doRequest(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return response.Completion{}, resp.StatusCode, err
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		if readErr == nil {
+			return response.Completion{}, resp.StatusCode, fmt.Errorf(
+				"perplexity returned status %d: %s",
+				resp.StatusCode,
+				string(bodyBytes),
+			)
+		}
+		return response.Completion{}, resp.StatusCode, fmt.Errorf(
+			"perplexity returned status %d",
+			resp.StatusCode,
+		)
 	}
 
 	reader := bufio.NewReader(resp.Body)
@@ -192,10 +203,11 @@ func (p Perplexity) doRequest(
 		}
 
 		if len(chunk.Choices) > 0 {
-			fullContent.WriteString(chunk.Choices[0].Delta.Content)
+			contentDelta := chunk.Choices[0].Delta.Content
+			fullContent.WriteString(contentDelta)
 
 			if chunkHandler != nil {
-				if err := chunkHandler(chunk.Choices[0].Delta.Content); err != nil {
+				if err := chunkHandler(contentDelta); err != nil {
 					return response.Completion{}, 0, err
 				}
 			}
@@ -211,8 +223,10 @@ func (p Perplexity) doRequest(
 		}
 	}
 
+	finalContent := fullContent.String()
+
 	return response.Completion{
-		Content: fullContent.String(),
+		Content: finalContent,
 		Model:   req.Model.GetName(),
 		Usage:   usage,
 	}, 0, nil
