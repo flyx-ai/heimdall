@@ -29,30 +29,7 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 		name string
 		req  request.Completion
 	}{
-		{
-			name: "should complete request with gemini 1.5 flash",
-			req: request.Completion{
-				Model:         models.Gemini15Flash{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
-		{
-			name: "should complete request with gemini 1.5 pro",
-			req: request.Completion{
-				Model:         models.Gemini15Pro{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
+		// NOTE: Gemini 1.5 test cases removed as models were retired by Google in 2025
 		{
 			name: "should complete request with gemini 2.0 flash",
 			req: request.Completion{
@@ -140,30 +117,7 @@ func TestGoogleModelsWithStreaming(t *testing.T) {
 		name string
 		req  request.Completion
 	}{
-		{
-			name: "should stream request with gemini 1.5 flash",
-			req: request.Completion{
-				Model:         models.Gemini15Flash{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
-		{
-			name: "should stream  request with gemini 1.5 pro",
-			req: request.Completion{
-				Model:         models.Gemini15Pro{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
+		// NOTE: Gemini 1.5 test cases removed as models were retired by Google in 2025
 		{
 			name: "should stream request with gemini 2.0 flash",
 			req: request.Completion{

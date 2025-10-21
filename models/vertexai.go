@@ -2,57 +2,7 @@ package models
 
 const VertexProvider = "vertexai"
 
-type VertexGemini15FlashThinking struct{}
-
-func (v VertexGemini15FlashThinking) EstimateCost(text string) float64 {
-	textLen := float64(len(text)) / 4
-	estimatedPrice := 0.0
-	if textLen <= 128000 {
-		estimatedPrice = textLen * 0.000000075
-	}
-
-	if textLen > 128000 {
-		estimatedPrice = (128000 * 0.000000075) + ((textLen - 128000) * 0.00000015)
-	}
-
-	return estimatedPrice
-}
-
-func (v VertexGemini15FlashThinking) GetName() string {
-	return "gemini-1.5-flash-002"
-}
-
-func (v VertexGemini15FlashThinking) GetProvider() string {
-	return VertexProvider
-}
-
-var _ Model = new(VertexGemini15FlashThinking)
-
-type VertexGemini15Pro struct{}
-
-func (v VertexGemini15Pro) EstimateCost(text string) float64 {
-	textLen := float64(len(text)) / 4
-	estimatedPrice := 0.0
-	if textLen <= 128000 {
-		estimatedPrice = textLen * 0.00000125
-	}
-
-	if textLen > 128000 {
-		estimatedPrice = (128000 * 0.00000125) + ((textLen - 128000) * 0.0000025)
-	}
-
-	return estimatedPrice
-}
-
-func (v VertexGemini15Pro) GetName() string {
-	return "gemini-1.5-pro-002"
-}
-
-func (v VertexGemini15Pro) GetProvider() string {
-	return VertexProvider
-}
-
-var _ Model = new(VertexGemini15Pro)
+// NOTE: VertexGemini15FlashThinking and VertexGemini15Pro types have been removed as these models were retired by Google in 2025
 
 type VertexGemini20Flash struct{}
 

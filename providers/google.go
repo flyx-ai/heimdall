@@ -807,8 +807,16 @@ func (g Google) doRequest(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return response.Completion{}, resp.StatusCode, errors.New(
-			"received non-200 status code",
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return response.Completion{}, resp.StatusCode, fmt.Errorf(
+				"received non-200 status code (%d), failed to read error body: %w",
+				resp.StatusCode, readErr,
+			)
+		}
+		return response.Completion{}, resp.StatusCode, fmt.Errorf(
+			"received non-200 status code (%d): %s",
+			resp.StatusCode, string(bodyBytes),
 		)
 	}
 

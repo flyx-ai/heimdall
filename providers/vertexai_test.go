@@ -38,30 +38,7 @@ func TestVertexAIModelsWithCompletion(t *testing.T) {
 		name string
 		req  request.Completion
 	}{
-		{
-			name: "should complete request with VertexGemini15Flash",
-			req: request.Completion{
-				Model:         models.VertexGemini15FlashThinking{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
-		{
-			name: "should complete request with VertexGemini15Pro",
-			req: request.Completion{
-				Model:         models.VertexGemini15Pro{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
+		// NOTE: Gemini 1.5 test cases removed as models were retired by Google in 2025
 		{
 			name: "should complete request with VertexGemini20Flash",
 			req: request.Completion{
@@ -132,30 +109,7 @@ func TestVertexAIModelsWithStreaming(t *testing.T) {
 		name string
 		req  request.Completion
 	}{
-		{
-			name: "should stream request with VertexGemini15Flash",
-			req: request.Completion{
-				Model:         models.VertexGemini15FlashThinking{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
-		{
-			name: "should stream request with VertexGemini15Pro",
-			req: request.Completion{
-				Model:         models.VertexGemini15Pro{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
+		// NOTE: Gemini 1.5 test cases removed as models were retired by Google in 2025
 		{
 			name: "should stream request with VertexGemini20Flash",
 			req: request.Completion{
