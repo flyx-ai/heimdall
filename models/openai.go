@@ -552,6 +552,26 @@ func (g GPT51Chat) GetProvider() string {
 
 var _ Model = new(GPT51Chat)
 
+type GPT51Codex struct {
+	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []OpenaiImagePayload
+}
+
+func (g GPT51Codex) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.00000125
+}
+
+func (g GPT51Codex) GetName() string {
+	return GPT51CodexAlias
+}
+
+func (g GPT51Codex) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPT51Codex)
+
 type GPT51CodexMini struct {
 	StructuredOutput map[string]any
 	PdfFile          map[string]string
