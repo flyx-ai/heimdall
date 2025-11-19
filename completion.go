@@ -58,16 +58,11 @@ func (r *Router) Complete(
 		if err == nil {
 			break
 		}
-
-		continue
 	}
 
+	requestLog.Completed = err == nil
 	if err == nil {
 		requestLog.Response = resp.Content
-		requestLog.Completed = true
-	}
-	if err != nil {
-		requestLog.Completed = false
 	}
 
 	requestLog.End = time.Now()
@@ -84,10 +79,5 @@ func (r *Router) tryWithModel(
 	requestLog *response.Logging,
 ) (response.Completion, error) {
 	provider := r.providers[model.GetProvider()]
-	res, err := provider.CompleteResponse(ctx, req, r.client, requestLog)
-	if err != nil {
-		return response.Completion{}, err
-	}
-
-	return res, nil
+	return provider.CompleteResponse(ctx, req, r.client, requestLog)
 }
