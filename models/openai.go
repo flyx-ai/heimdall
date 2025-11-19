@@ -3,19 +3,23 @@ package models
 const OpenaiProvider = "openai"
 
 const (
-	O3MiniAlias    = "o3-mini-2025-01-31"
-	GPT4OAlias     = "gpt-4o-2024-11-20"
-	GPT4OMiniAlias = "gpt-4o-mini-2024-07-18"
-	O1Alias        = "o1-2024-12-17"
-	GPT4Alias      = "gpt-4-0613"
-	GPT4TurboAlias = "gpt-4-turbo"
-	GPT41Alias     = "gpt-4.1-2025-04-14"
-	GPT41MiniAlias = "gpt-4.1-mini-2025-04-14"
-	GPT41NanoAlias = "gpt-4.1-nano-2025-04-14"
-	GPT5Alias      = "gpt-5-2025-08-07"
-	GPT5MiniAlias  = "gpt-5-mini-2025-08-07"
-	GPT5NanoAlias  = "gpt-5-nano-2025-08-07"
-	GPT5ChatAlias  = "gpt-5-chat-latest"
+	O3MiniAlias         = "o3-mini-2025-01-31"
+	GPT4OAlias          = "gpt-4o-2024-11-20"
+	GPT4OMiniAlias      = "gpt-4o-mini-2024-07-18"
+	O1Alias             = "o1-2024-12-17"
+	GPT4Alias           = "gpt-4-0613"
+	GPT4TurboAlias      = "gpt-4-turbo"
+	GPT41Alias          = "gpt-4.1-2025-04-14"
+	GPT41MiniAlias      = "gpt-4.1-mini-2025-04-14"
+	GPT41NanoAlias      = "gpt-4.1-nano-2025-04-14"
+	GPT5Alias           = "gpt-5-2025-08-07"
+	GPT5MiniAlias       = "gpt-5-mini-2025-08-07"
+	GPT5NanoAlias       = "gpt-5-nano-2025-08-07"
+	GPT5ChatAlias       = "gpt-5-chat-latest"
+	GPT51Alias          = "gpt-5.1"
+	GPT51ChatAlias      = "gpt-5.1-chat-latest"
+	GPT51CodexAlias     = "gpt-5.1-codex"
+	GPT51CodexMiniAlias = "gpt-5.1-codex-mini"
 )
 
 type OpenaiImagePayload struct {
@@ -507,6 +511,86 @@ func (g GPT5Chat) GetProvider() string {
 }
 
 var _ Model = new(GPT5Chat)
+
+type GPT51 struct {
+	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []OpenaiImagePayload
+}
+
+func (g GPT51) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.00000125
+}
+
+func (g GPT51) GetName() string {
+	return GPT51Alias
+}
+
+func (g GPT51) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPT51)
+
+type GPT51Chat struct {
+	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []OpenaiImagePayload
+}
+
+func (g GPT51Chat) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.00000125
+}
+
+func (g GPT51Chat) GetName() string {
+	return GPT51ChatAlias
+}
+
+func (g GPT51Chat) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPT51Chat)
+
+type GPT51Codex struct {
+	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []OpenaiImagePayload
+}
+
+func (g GPT51Codex) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.00000125
+}
+
+func (g GPT51Codex) GetName() string {
+	return GPT51CodexAlias
+}
+
+func (g GPT51Codex) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPT51Codex)
+
+type GPT51CodexMini struct {
+	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []OpenaiImagePayload
+}
+
+func (g GPT51CodexMini) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.00000025
+}
+
+func (g GPT51CodexMini) GetName() string {
+	return GPT51CodexMiniAlias
+}
+
+func (g GPT51CodexMini) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPT51CodexMini)
 
 const ImageModelAlias = "gpt-image-1"
 

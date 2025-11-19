@@ -72,12 +72,9 @@ func (r *Router) Stream(
 		}
 	}
 
+	requestLog.Completed = err == nil
 	if err == nil {
 		requestLog.Response = resp.Content
-		requestLog.Completed = true
-	}
-	if err != nil {
-		requestLog.Completed = false
 	}
 
 	requestLog.End = time.Now()
@@ -95,16 +92,11 @@ func (r *Router) tryStreamWithModel(
 	requestLog *response.Logging,
 ) (response.Completion, error) {
 	provider := r.providers[model.GetProvider()]
-	res, err := provider.StreamResponse(
+	return provider.StreamResponse(
 		ctx,
 		r.client,
 		req,
 		chunkHandler,
 		requestLog,
 	)
-	if err != nil {
-		return response.Completion{}, err
-	}
-
-	return res, nil
 }
