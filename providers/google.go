@@ -648,6 +648,9 @@ func (g Google) doRequest(
 	if _, ok := req.Model.(*models.Gemini25FlashImage); ok {
 		return g.doGemini25FlashImageRequest(ctx, req, client, key)
 	}
+	if _, ok := req.Model.(*models.Gemini3ProImagePreview); ok {
+		return g.doGemini3ProImageRequest(ctx, req, client, key)
+	}
 
 	if req.SystemMessage == "" || req.UserMessage == "" {
 		return response.Completion{}, 400, errors.New(
@@ -749,23 +752,6 @@ func (g Google) doRequest(
 		requestBody = body
 	case models.Gemini3ProModel:
 		preparedReq, err := prepareGemini3ProPreviewRequest(
-			geminiReq,
-			model,
-			systemMessage,
-			userMessage,
-		)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		body, err := json.Marshal(preparedReq)
-		if err != nil {
-			return response.Completion{}, 0, err
-		}
-
-		requestBody = body
-	case models.Gemini3ProImageModel:
-		preparedReq, err := prepareGemini3ProImagePreviewRequest(
 			geminiReq,
 			model,
 			systemMessage,
@@ -1432,57 +1418,168 @@ func prepareGemini3ProPreviewRequest(
 	return request, nil
 }
 
-func prepareGemini3ProImagePreviewRequest(
-	request geminiRequest,
-	requestedModel models.Model,
-	systemInst string,
-	userMsg string,
-) (geminiRequest, error) {
-	model, ok := requestedModel.(models.Gemini3ProImagePreview)
+func (g Google) doGemini3ProImageRequest(
+	ctx context.Context,
+	req request.Completion,
+	client http.Client,
+	key string,
+) (response.Completion, int, error) {
+	imageModel, ok := req.Model.(*models.Gemini3ProImagePreview)
 	if !ok {
-		return request, errors.New(
-			"internal error; model type assertion to models.Gemini3ProImagePreview failed",
+		return response.Completion{}, 0, errors.New(
+			"internal error: model is not Gemini3ProImagePreview",
 		)
 	}
 
-	request.SystemInstruction.Parts = part{
-		Text: systemInst,
+	parts := []any{}
+
+	if len(imageModel.ImageFile) > 0 {
+		for _, img := range imageModel.ImageFile {
+			base64 := img.Data
+			fullBase64 := fmt.Sprintf("data:%s;base64,", img.MimeType)
+			if strings.Contains(img.Data, fullBase64) {
+				base64Part := strings.Split(img.Data, fullBase64)
+				if len(base64Part) > 0 {
+					base64 = base64Part[1]
+				}
+			}
+			parts = append(parts, filePart{
+				InlineData: imageData{
+					MimeType: img.MimeType,
+					Data:     base64,
+				},
+			})
+		}
 	}
 
-	lastIndex := 0
-	if len(request.Contents) > 1 {
-		lastIndex = len(request.Contents) - 1
+	if len(imageModel.PdfFiles) > 0 {
+		for _, pdf := range imageModel.PdfFiles {
+			pdfStr := string(pdf)
+			if strings.HasPrefix(pdfStr, "https://") {
+				parts = append(parts, fileURI{
+					FileData: fileData{
+						MimeType: "application/pdf",
+						FileURI:  pdfStr,
+					},
+				})
+			} else {
+				data := pdfStr
+				prefix := "data:application/pdf;base64,"
+				if pdfParts := strings.SplitN(pdfStr, prefix, 2); len(pdfParts) == 2 {
+					data = pdfParts[1]
+				}
+				parts = append(parts, filePart{
+					InlineData: imageData{
+						MimeType: "application/pdf",
+						Data:     data,
+					},
+				})
+			}
+		}
 	}
 
-	if len(request.Contents) > 0 {
-		request.Contents[lastIndex].Parts = append(
-			request.Contents[lastIndex].Parts,
-			part{Text: userMsg},
+	parts = append(parts, part{Text: req.UserMessage})
+
+	requestPayload := map[string]any{
+		"contents": []map[string]any{
+			{
+				"parts": parts,
+				"role":  "user",
+			},
+		},
+	}
+
+	if req.SystemMessage != "" {
+		requestPayload["systemInstruction"] = map[string]any{
+			"parts": []any{
+				part{Text: req.SystemMessage},
+			},
+		}
+	}
+
+	generationConfig := map[string]any{
+		"responseModalities": []string{"Text", "Image"},
+	}
+
+	if imageModel.AspectRatio != "" {
+		generationConfig["imageConfig"] = map[string]any{
+			"aspectRatio": string(imageModel.AspectRatio),
+		}
+	}
+
+	if imageModel.ThinkingLevel != "" {
+		generationConfig["thinkingConfig"] = map[string]any{
+			"thinkingLevel": string(imageModel.ThinkingLevel),
+		}
+	}
+
+	if imageModel.MediaResolution != "" {
+		generationConfig["mediaResolution"] = string(imageModel.MediaResolution)
+	}
+
+	requestPayload["generationConfig"] = generationConfig
+
+	bodyBytes, err := json.Marshal(requestPayload)
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	url := fmt.Sprintf(
+		"https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s",
+		models.Gemini3ProImageModel,
+		key,
+	)
+
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return response.Completion{}, resp.StatusCode, fmt.Errorf(
+			"received non-200 status code (%d): %s",
+			resp.StatusCode, string(bodyBytes),
 		)
-		request.Contents[lastIndex].Role = "user"
 	}
 
-	if len(model.ImageFile) > 0 {
-		request = handleVisionData(request, model.ImageFile)
+	var imageResp gemini25FlashImageResponse
+	if err := json.NewDecoder(resp.Body).Decode(&imageResp); err != nil {
+		return response.Completion{}, 0, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	if len(model.PdfFiles) > 0 {
-		request = handlePdfData(request, model.PdfFiles, lastIndex)
+	if len(imageResp.Candidates) == 0 || len(imageResp.Candidates[0].Content.Parts) == 0 {
+		return response.Completion{}, 0, errors.New("no image data in response")
 	}
 
-	if len(model.Files) > 0 {
-		request = handleGenericFiles(request, model.Files, lastIndex)
+	var imgData string
+	for _, p := range imageResp.Candidates[0].Content.Parts {
+		if p.InlineData != nil && p.InlineData.Data != "" {
+			imgData = p.InlineData.Data
+			break
+		}
 	}
 
-	if model.ThinkingLevel != "" {
-		request = handleThinkingLevel(request, model.ThinkingLevel)
+	if imgData == "" {
+		return response.Completion{}, 0, errors.New("no image data found in response parts")
 	}
 
-	if model.MediaResolution != "" {
-		request = handleMediaResolution(request, model.MediaResolution)
-	}
-
-	return request, nil
+	return response.Completion{
+		Content: imgData,
+		Model:   models.Gemini3ProImageModel,
+		Usage: response.Usage{
+			PromptTokens:     imageResp.UsageMetadata.PromptTokenCount,
+			CompletionTokens: imageResp.UsageMetadata.CandidatesTokenCount,
+			TotalTokens:      imageResp.UsageMetadata.TotalTokenCount,
+		},
+	}, http.StatusOK, nil
 }
 
 // Image generation response structures
