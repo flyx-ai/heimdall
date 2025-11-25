@@ -1409,14 +1409,15 @@ func prepareGemini3ProPreviewRequest(
 		request = handleGenericFiles(request, model.Files, lastIndex)
 	}
 
-	if len(model.StructuredOutput) > 1 {
-		request.Config = map[string]any{
-			"response_mime_type": "application/json",
-			"response_schema":    model.StructuredOutput,
+	if len(model.StructuredOutput) > 0 {
+		if request.Config == nil {
+			request.Config = map[string]any{}
 		}
+		request.Config["response_mime_type"] = "application/json"
+		request.Config["response_schema"] = model.StructuredOutput
 	}
 
-	if len(model.Tools) > 1 {
+	if len(model.Tools) > 0 {
 		request.Tools = model.Tools
 	}
 
