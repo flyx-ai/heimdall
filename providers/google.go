@@ -1176,7 +1176,7 @@ func handleVisionData(
 					imgFile.Data,
 					fullBase64,
 				)
-				if len(base64Part) > 0 {
+				if len(base64Part) > 1 {
 					base64 = base64Part[1]
 				}
 			}
@@ -1439,7 +1439,7 @@ func (g Google) doGemini3ProImageRequest(
 			fullBase64 := fmt.Sprintf("data:%s;base64,", img.MimeType)
 			if strings.Contains(img.Data, fullBase64) {
 				base64Part := strings.Split(img.Data, fullBase64)
-				if len(base64Part) > 0 {
+				if len(base64Part) > 1 {
 					base64 = base64Part[1]
 				}
 			}
@@ -1630,7 +1630,7 @@ func (g Google) doGemini25FlashImageRequest(
 					img.Data,
 					fullBase64,
 				)
-				if len(base64Part) > 0 {
+				if len(base64Part) > 1 {
 					base64 = base64Part[1]
 				}
 			}
