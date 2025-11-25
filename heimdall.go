@@ -39,6 +39,10 @@ type Router struct {
 func New(timeout time.Duration, llmProviders []LLMProvider) *Router {
 	c := http.Client{
 		Timeout: timeout,
+		Transport: &http.Transport{
+			ResponseHeaderTimeout: timeout,
+			IdleConnTimeout:       timeout,
+		},
 	}
 
 	providers := make(map[string]LLMProvider, len(llmProviders))

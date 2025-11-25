@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -746,6 +747,40 @@ func (g Google) doRequest(
 		}
 
 		requestBody = body
+	case models.Gemini3ProModel:
+		preparedReq, err := prepareGemini3ProPreviewRequest(
+			geminiReq,
+			model,
+			systemMessage,
+			userMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(preparedReq)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
+	case models.Gemini3ProImageModel:
+		preparedReq, err := prepareGemini3ProImagePreviewRequest(
+			geminiReq,
+			model,
+			systemMessage,
+			userMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(preparedReq)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
 	default:
 		return response.Completion{}, 0, fmt.Errorf(
 			"unsupported Gemini model: %s",
@@ -759,27 +794,36 @@ func (g Google) doRequest(
 		)
 	}
 
+	apiURL := fmt.Sprintf(googleBaseURL, req.Model.GetName(), key)
+	log.Printf("[Heimdall] Making request to Google API: model=%s url=%s", req.Model.GetName(), strings.Split(apiURL, "?")[0])
+	log.Printf("[Heimdall] Request body size: %d bytes", len(requestBody))
+
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		fmt.Sprintf(googleBaseURL, req.Model.GetName(), key),
+		apiURL,
 		bytes.NewReader(requestBody))
 	if err != nil {
 		return response.Completion{}, 0, err
 	}
 
+	log.Printf("[Heimdall] Sending HTTP request...")
 	resp, err := client.Do(httpReq)
 	if err != nil {
+		log.Printf("[Heimdall] HTTP request failed: %v", err)
 		return response.Completion{}, 0, err
 	}
 	defer resp.Body.Close()
+	log.Printf("[Heimdall] Got response: status=%d", resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, readErr := io.ReadAll(resp.Body)
 		if readErr != nil {
+			log.Printf("[Heimdall] Error response (status %d), failed to read body: %v", resp.StatusCode, readErr)
 			return response.Completion{}, resp.StatusCode, fmt.Errorf(
 				"received non-200 status code (%d), failed to read error body: %w",
 				resp.StatusCode, readErr,
 			)
 		}
+		log.Printf("[Heimdall] Error response (status %d): %s", resp.StatusCode, string(bodyBytes))
 		return response.Completion{}, resp.StatusCode, fmt.Errorf(
 			"received non-200 status code (%d): %s",
 			resp.StatusCode, string(bodyBytes),
@@ -1271,6 +1315,174 @@ func handleThinkingBudget(
 	}
 
 	return request
+}
+
+func handleThinkingLevel(
+	request geminiRequest,
+	level models.ThinkingLevel,
+) geminiRequest {
+	if level == "" {
+		return request
+	}
+
+	if request.Config == nil {
+		request.Config = map[string]any{}
+	}
+
+	thinkingConfig := map[string]any{
+		"thinkingLevel": string(level),
+	}
+
+	if existingConfig, ok := request.Config["thinkingConfig"].(map[string]any); ok {
+		for k, v := range thinkingConfig {
+			existingConfig[k] = v
+		}
+	} else {
+		request.Config["thinkingConfig"] = thinkingConfig
+	}
+
+	return request
+}
+
+func handleMediaResolution(
+	request geminiRequest,
+	resolution models.MediaResolution,
+) geminiRequest {
+	if resolution == "" {
+		return request
+	}
+
+	if request.Config == nil {
+		request.Config = map[string]any{}
+	}
+
+	request.Config["mediaResolution"] = string(resolution)
+
+	return request
+}
+
+func prepareGemini3ProPreviewRequest(
+	request geminiRequest,
+	requestedModel models.Model,
+	systemInst string,
+	userMsg string,
+) (geminiRequest, error) {
+	model, ok := requestedModel.(models.Gemini3ProPreview)
+	if !ok {
+		return request, errors.New(
+			"internal error; model type assertion to models.Gemini3ProPreview failed",
+		)
+	}
+
+	request.SystemInstruction.Parts = part{
+		Text: systemInst,
+	}
+
+	lastIndex := 0
+	if len(request.Contents) > 1 {
+		lastIndex = len(request.Contents) - 1
+	}
+
+	if len(request.Contents) > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+		request.Contents[lastIndex].Role = "user"
+	}
+
+	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
+		return request, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		request = handleVisionData(request, model.ImageFile)
+	}
+
+	if len(model.PdfFiles) > 0 {
+		request = handlePdfData(request, model.PdfFiles, lastIndex)
+	}
+
+	if len(model.Files) > 0 {
+		request = handleGenericFiles(request, model.Files, lastIndex)
+	}
+
+	if len(model.StructuredOutput) > 0 {
+		if request.Config == nil {
+			request.Config = map[string]any{}
+		}
+		request.Config["response_mime_type"] = "application/json"
+		request.Config["response_schema"] = model.StructuredOutput
+	}
+
+	if len(model.Tools) > 0 {
+		request.Tools = model.Tools
+	}
+
+	if model.ThinkingLevel != "" {
+		request = handleThinkingLevel(request, model.ThinkingLevel)
+	}
+
+	if model.MediaResolution != "" {
+		request = handleMediaResolution(request, model.MediaResolution)
+	}
+
+	return request, nil
+}
+
+func prepareGemini3ProImagePreviewRequest(
+	request geminiRequest,
+	requestedModel models.Model,
+	systemInst string,
+	userMsg string,
+) (geminiRequest, error) {
+	model, ok := requestedModel.(models.Gemini3ProImagePreview)
+	if !ok {
+		return request, errors.New(
+			"internal error; model type assertion to models.Gemini3ProImagePreview failed",
+		)
+	}
+
+	request.SystemInstruction.Parts = part{
+		Text: systemInst,
+	}
+
+	lastIndex := 0
+	if len(request.Contents) > 1 {
+		lastIndex = len(request.Contents) - 1
+	}
+
+	if len(request.Contents) > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+		request.Contents[lastIndex].Role = "user"
+	}
+
+	if len(model.ImageFile) > 0 {
+		request = handleVisionData(request, model.ImageFile)
+	}
+
+	if len(model.PdfFiles) > 0 {
+		request = handlePdfData(request, model.PdfFiles, lastIndex)
+	}
+
+	if len(model.Files) > 0 {
+		request = handleGenericFiles(request, model.Files, lastIndex)
+	}
+
+	if model.ThinkingLevel != "" {
+		request = handleThinkingLevel(request, model.ThinkingLevel)
+	}
+
+	if model.MediaResolution != "" {
+		request = handleMediaResolution(request, model.MediaResolution)
+	}
+
+	return request, nil
 }
 
 // Image generation response structures

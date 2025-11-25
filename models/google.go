@@ -9,6 +9,8 @@ const (
 	Gemini25FlashModel      = "gemini-2.5-flash"
 	Gemini25ProModel        = "gemini-2.5-pro"
 	Gemini25FlashImageModel = "gemini-2.5-flash-image"
+	Gemini3ProModel         = "gemini-3-pro-preview"
+	Gemini3ProImageModel    = "gemini-3-pro-image-preview"
 )
 
 type ThinkBudget string
@@ -17,6 +19,21 @@ const (
 	HighThinkBudget   ThinkBudget = "thinking_budget.high"
 	MediumThinkBudget ThinkBudget = "thinking_budget.medium"
 	LowThinkBudget    ThinkBudget = "thinking_budget.low"
+)
+
+type ThinkingLevel string
+
+const (
+	HighThinkingLevel ThinkingLevel = "high"
+	LowThinkingLevel  ThinkingLevel = "low"
+)
+
+type MediaResolution string
+
+const (
+	HighMediaResolution   MediaResolution = "high"
+	MediumMediaResolution MediaResolution = "medium"
+	LowMediaResolution    MediaResolution = "low"
 )
 
 type GoogleTool []map[string]map[string]any
@@ -272,3 +289,73 @@ func (g Gemini25FlashImage) GetProvider() string {
 
 var _ Model = new(Gemini25FlashImage)
 var _ CostBreakdown = new(Gemini25FlashImage)
+
+type Gemini3ProPreview struct {
+	Tools            GoogleTool
+	StructuredOutput map[string]any
+	PdfFiles         []GooglePdf
+	ImageFile        []GoogleImagePayload
+	Files            []GoogleFilePayload
+	ThinkingLevel    ThinkingLevel
+	MediaResolution  MediaResolution
+}
+
+func (g Gemini3ProPreview) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.000002
+}
+
+func (g Gemini3ProPreview) GetInputCostPer1M() float64 {
+	return 2.0
+}
+
+func (g Gemini3ProPreview) GetOutputCostPer1M() float64 {
+	return 12.0
+}
+
+func (g Gemini3ProPreview) GetName() string {
+	return Gemini3ProModel
+}
+
+func (g Gemini3ProPreview) GetProvider() string {
+	return GoogleProvider
+}
+
+var _ Model = new(Gemini3ProPreview)
+var _ CostBreakdown = new(Gemini3ProPreview)
+
+type Gemini3ProImagePreview struct {
+	NumberOfImages  int
+	AspectRatio     AspectRatio
+	ImageFile       []GoogleImagePayload
+	PdfFiles        []GooglePdf
+	Files           []GoogleFilePayload
+	ThinkingLevel   ThinkingLevel
+	MediaResolution MediaResolution
+}
+
+func (g Gemini3ProImagePreview) EstimateCost(text string) float64 {
+	numImages := g.NumberOfImages
+	if numImages == 0 {
+		numImages = 1
+	}
+	return float64(numImages) * 0.134
+}
+
+func (g Gemini3ProImagePreview) GetInputCostPer1M() float64 {
+	return 2.0
+}
+
+func (g Gemini3ProImagePreview) GetOutputCostPer1M() float64 {
+	return 30.0
+}
+
+func (g Gemini3ProImagePreview) GetName() string {
+	return Gemini3ProImageModel
+}
+
+func (g Gemini3ProImagePreview) GetProvider() string {
+	return GoogleProvider
+}
+
+var _ Model = new(Gemini3ProImagePreview)
+var _ CostBreakdown = new(Gemini3ProImagePreview)
