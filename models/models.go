@@ -38,6 +38,7 @@ func GetAll() []string {
 		Gemini25ProModel,
 		Gemini3ProModel,
 		Gemini3ProImageModel,
+		Gemini3FlashModel,
 
 		O3MiniAlias,
 		GPT4OAlias,

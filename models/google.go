@@ -11,6 +11,7 @@ const (
 	Gemini25FlashImageModel = "gemini-2.5-flash-image"
 	Gemini3ProModel         = "gemini-3-pro-preview"
 	Gemini3ProImageModel    = "gemini-3-pro-image-preview"
+	Gemini3FlashModel       = "gemini-3-flash-preview"
 )
 
 type ThinkBudget string
@@ -359,3 +360,36 @@ func (g Gemini3ProImagePreview) GetProvider() string {
 
 var _ Model = new(Gemini3ProImagePreview)
 var _ CostBreakdown = new(Gemini3ProImagePreview)
+
+type Gemini3FlashPreview struct {
+	Tools            GoogleTool
+	StructuredOutput map[string]any
+	PdfFiles         []GooglePdf
+	ImageFile        []GoogleImagePayload
+	Files            []GoogleFilePayload
+	ThinkingLevel    ThinkingLevel
+	MediaResolution  MediaResolution
+}
+
+func (g Gemini3FlashPreview) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.0000005
+}
+
+func (g Gemini3FlashPreview) GetInputCostPer1M() float64 {
+	return 0.50
+}
+
+func (g Gemini3FlashPreview) GetOutputCostPer1M() float64 {
+	return 3.0
+}
+
+func (g Gemini3FlashPreview) GetName() string {
+	return Gemini3FlashModel
+}
+
+func (g Gemini3FlashPreview) GetProvider() string {
+	return GoogleProvider
+}
+
+var _ Model = new(Gemini3FlashPreview)
+var _ CostBreakdown = new(Gemini3FlashPreview)
