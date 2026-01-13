@@ -10,6 +10,7 @@ const (
 	AnthropicClaude4SonnetAlias  = "claude-sonnet-4-20250514"
 	AnthropicClaude4OpusAlias    = "claude-opus-4-20250514"
 	AnthropicClaude45HaikuAlias  = "claude-haiku-4-5"
+	AnthropicClaude45SonnetAlias = "claude-sonnet-4-5-20250929"
 	AnthropicClaude45OpusAlias   = "claude-opus-4-5-20251101"
 )
 
@@ -157,6 +158,25 @@ func (c Claude45Haiku) GetProvider() string {
 }
 
 var _ Model = new(Claude45Haiku)
+
+type Claude45Sonnet struct {
+	ImageFile map[AnthropicImageType]string
+	PdfFiles  []AnthropicPdf
+}
+
+func (c Claude45Sonnet) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.000003
+}
+
+func (c Claude45Sonnet) GetName() string {
+	return AnthropicClaude45SonnetAlias
+}
+
+func (c Claude45Sonnet) GetProvider() string {
+	return AnthropicProvider
+}
+
+var _ Model = new(Claude45Sonnet)
 
 type Claude45Opus struct {
 	ImageFile map[AnthropicImageType]string
