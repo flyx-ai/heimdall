@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"net/http"
@@ -105,6 +106,88 @@ func (v *VertexAI) StreamResponse(
 	return v.tryWithBackup(ctx, req, client, chunkHandler, requestLog)
 }
 
+// extractModelConfig extracts configuration from various Vertex model types
+type vertexModelConfig struct {
+	Tools            models.GoogleTool
+	StructuredOutput map[string]any
+	PdfFiles         []models.GooglePdf
+	ImageFile        []models.GoogleImagePayload
+	Files            []models.GoogleFilePayload
+	Thinking         models.ThinkBudget
+	ThinkingLevel    models.ThinkingLevel
+	MediaResolution  models.MediaResolution
+}
+
+func extractVertexModelConfig(model models.Model) vertexModelConfig {
+	config := vertexModelConfig{}
+
+	switch m := model.(type) {
+	case models.VertexGemini20Flash:
+		config.Tools = m.Tools
+		config.StructuredOutput = m.StructuredOutput
+		config.PdfFiles = m.PdfFiles
+		config.ImageFile = m.ImageFile
+		config.Files = m.Files
+		config.Thinking = m.Thinking
+	case models.VertexGemini20FlashLite:
+		config.Tools = m.Tools
+		config.StructuredOutput = m.StructuredOutput
+		config.PdfFiles = m.PdfFiles
+		config.ImageFile = m.ImageFile
+		config.Files = m.Files
+		config.Thinking = m.Thinking
+	case models.VertexGemini25Pro:
+		config.Tools = m.Tools
+		config.StructuredOutput = m.StructuredOutput
+		config.PdfFiles = m.PdfFiles
+		config.ImageFile = m.ImageFile
+		config.Files = m.Files
+		config.Thinking = m.Thinking
+	case models.VertexGemini25Flash:
+		config.Tools = m.Tools
+		config.StructuredOutput = m.StructuredOutput
+		config.PdfFiles = m.PdfFiles
+		config.ImageFile = m.ImageFile
+		config.Files = m.Files
+		config.Thinking = m.Thinking
+	case models.VertexGemini25FlashLite:
+		config.Tools = m.Tools
+		config.StructuredOutput = m.StructuredOutput
+		config.PdfFiles = m.PdfFiles
+		config.ImageFile = m.ImageFile
+		config.Files = m.Files
+		config.Thinking = m.Thinking
+	case models.VertexGemini3ProPreview:
+		config.Tools = m.Tools
+		config.StructuredOutput = m.StructuredOutput
+		config.PdfFiles = m.PdfFiles
+		config.ImageFile = m.ImageFile
+		config.Files = m.Files
+		config.ThinkingLevel = m.ThinkingLevel
+		config.MediaResolution = m.MediaResolution
+	case models.VertexGemini3FlashPreview:
+		config.Tools = m.Tools
+		config.StructuredOutput = m.StructuredOutput
+		config.PdfFiles = m.PdfFiles
+		config.ImageFile = m.ImageFile
+		config.Files = m.Files
+		config.ThinkingLevel = m.ThinkingLevel
+		config.MediaResolution = m.MediaResolution
+	case models.VertexGemini25FlashImage:
+		config.ImageFile = m.ImageFile
+		config.PdfFiles = m.PdfFiles
+		config.Files = m.Files
+	case models.VertexGemini3ProImagePreview:
+		config.ImageFile = m.ImageFile
+		config.PdfFiles = m.PdfFiles
+		config.Files = m.Files
+		config.ThinkingLevel = m.ThinkingLevel
+		config.MediaResolution = m.MediaResolution
+	}
+
+	return config
+}
+
 func (v *VertexAI) doRequest(
 	ctx context.Context,
 	req request.Completion,
@@ -112,9 +195,13 @@ func (v *VertexAI) doRequest(
 	chunkHandler func(chunk string) error,
 	key string,
 ) (response.Completion, int, error) {
-	// TODO: system instructions seems to not work with current SDK version
-	// systemInstructions := ""
+	// Extract model configuration
+	modelConfig := extractVertexModelConfig(req.Model)
+
+	// Build content parts
 	var parts []*genai.Content
+
+	// Add history
 	for _, his := range req.History {
 		parts = append(
 			parts,
@@ -122,36 +209,83 @@ func (v *VertexAI) doRequest(
 		)
 	}
 
-	parts = append(
-		parts,
-		genai.NewContentFromText(req.UserMessage, genai.RoleUser),
-	)
-	// if msg.Role == "file" {
-	// 	parts = append(
-	// 		parts,
-	// 		genai.NewContentFromURI(
-	// 			msg.Content,
-	// 			string(msg.FileType),
-	// 			genai.RoleUser,
-	// 		),
-	// 	)
-	// }
-	// if msg.Role == "bytes" {
-	// 	parts = append(
-	// 		parts,
-	// 		genai.NewContentFromBytes(
-	// 			[]byte(msg.Content),
-	// 			string(msg.FileType),
-	// 			genai.RoleUser,
-	// 		),
-	// 	)
-	// }
+	// Build user content with text and any files
+	userParts := []*genai.Part{
+		genai.NewPartFromText(req.UserMessage),
+	}
+
+	// Add image files
+	for _, img := range modelConfig.ImageFile {
+		if strings.HasPrefix(img.Data, "https://") || strings.HasPrefix(img.Data, "gs://") {
+			// File URI
+			userParts = append(userParts, genai.NewPartFromURI(img.Data, img.MimeType))
+		} else {
+			// Base64 data
+			data, err := base64.StdEncoding.DecodeString(img.Data)
+			if err != nil {
+				// Try without decoding if it fails (might already be raw)
+				data = []byte(img.Data)
+			}
+			userParts = append(userParts, genai.NewPartFromBytes(data, img.MimeType))
+		}
+	}
+
+	// Add PDF files
+	for _, pdf := range modelConfig.PdfFiles {
+		pdfStr := string(pdf)
+		if strings.HasPrefix(pdfStr, "https://") || strings.HasPrefix(pdfStr, "gs://") {
+			// File URI
+			userParts = append(userParts, genai.NewPartFromURI(pdfStr, "application/pdf"))
+		} else {
+			// Base64 data
+			data, err := base64.StdEncoding.DecodeString(pdfStr)
+			if err != nil {
+				data = []byte(pdfStr)
+			}
+			userParts = append(userParts, genai.NewPartFromBytes(data, "application/pdf"))
+		}
+	}
+
+	// Add generic files
+	for _, file := range modelConfig.Files {
+		if strings.HasPrefix(file.Data, "https://") || strings.HasPrefix(file.Data, "gs://") {
+			userParts = append(userParts, genai.NewPartFromURI(file.Data, file.MimeType))
+		} else {
+			data, err := base64.StdEncoding.DecodeString(file.Data)
+			if err != nil {
+				data = []byte(file.Data)
+			}
+			userParts = append(userParts, genai.NewPartFromBytes(data, file.MimeType))
+		}
+	}
+
+	// Create user content
+	userContent := genai.NewContentFromParts(userParts, genai.RoleUser)
+	parts = append(parts, userContent)
+
+	// Build generation config
+	var genConfig *genai.GenerateContentConfig
+	if len(modelConfig.StructuredOutput) > 0 || req.SystemMessage != "" {
+		genConfig = &genai.GenerateContentConfig{}
+
+		// Add system instruction
+		if req.SystemMessage != "" {
+			genConfig.SystemInstruction = genai.NewContentFromText(req.SystemMessage, genai.RoleUser)
+		}
+
+		// Add structured output (response schema)
+		if len(modelConfig.StructuredOutput) > 0 {
+			genConfig.ResponseMIMEType = "application/json"
+			// Note: ResponseSchema would need to be converted from map[string]any to *genai.Schema
+			// For now, we rely on the model following JSON instructions in the prompt
+		}
+	}
 
 	stream := v.vertexAIClient.Models.GenerateContentStream(
 		ctx,
 		req.Model.GetName(),
 		parts,
-		nil,
+		genConfig,
 	)
 
 	var fullContent strings.Builder
@@ -170,37 +304,40 @@ func (v *VertexAI) doRequest(
 				return response.Completion{}, 0, context.Canceled
 			}
 
-			if streamPart.Candidates[0].Content.Parts[0].Text != "Analyzing" {
-				_, err := fullContent.WriteString(
-					streamPart.Candidates[0].Content.Parts[0].Text,
-				)
-				if err != nil {
-					return response.Completion{}, 0, err
+			if len(streamPart.Candidates) > 0 &&
+				len(streamPart.Candidates[0].Content.Parts) > 0 {
+				text := streamPart.Candidates[0].Content.Parts[0].Text
+				if text != "Analyzing" {
+					_, err := fullContent.WriteString(text)
+					if err != nil {
+						return response.Completion{}, 0, err
+					}
+
+					if chunkHandler != nil {
+						if err := chunkHandler(text); err != nil {
+							return response.Completion{}, 0, err
+						}
+					}
 				}
 
-				if chunkHandler != nil {
-					if err := chunkHandler(streamPart.Candidates[0].Content.Parts[0].Text); err != nil {
-						return response.Completion{}, 0, err
+				if streamPart.Candidates[0].FinishReason == "STOP" {
+					isAnalyzing = false
+
+					if streamPart.UsageMetadata != nil {
+						usage = response.Usage{
+							PromptTokens: int(
+								streamPart.UsageMetadata.PromptTokenCount,
+							),
+							CompletionTokens: int(
+								streamPart.UsageMetadata.CandidatesTokenCount,
+							),
+							TotalTokens: int(
+								streamPart.UsageMetadata.TotalTokenCount,
+							),
+						}
 					}
 				}
 			}
-
-			if streamPart.Candidates[0].FinishReason == "STOP" {
-				isAnalyzing = false
-
-				usage = response.Usage{
-					PromptTokens: int(
-						streamPart.UsageMetadata.PromptTokenCount,
-					),
-					CompletionTokens: int(
-						streamPart.UsageMetadata.CandidatesTokenCount,
-					),
-					TotalTokens: int(
-						streamPart.UsageMetadata.TotalTokenCount,
-					),
-				}
-			}
-
 		}
 	}
 
