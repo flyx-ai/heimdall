@@ -7,6 +7,7 @@ const (
 	Gemini20FlashModel      = "gemini-2.0-flash-001"
 	Gemini20FlashLiteModel  = "gemini-2.0-flash-lite-001"
 	Gemini25FlashModel      = "gemini-2.5-flash"
+	Gemini25FlashLiteModel  = "gemini-2.5-flash-lite"
 	Gemini25ProModel        = "gemini-2.5-pro"
 	Gemini25FlashImageModel = "gemini-2.5-flash-image"
 	Gemini3ProModel         = "gemini-3-pro-preview"
