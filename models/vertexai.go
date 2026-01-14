@@ -136,19 +136,20 @@ type VertexGemini25FlashImage struct {
 }
 
 func (v VertexGemini25FlashImage) EstimateCost(text string) float64 {
+	// 1K/2K image = 1120 tokens at $30/1M = $0.0336 per image
 	numImages := v.NumberOfImages
 	if numImages == 0 {
 		numImages = 1
 	}
-	return float64(numImages) * 0.039
+	return float64(numImages) * 0.0336
 }
 
 func (v VertexGemini25FlashImage) GetInputCostPer1M() float64 {
-	return 0.15
+	return 0.30
 }
 
 func (v VertexGemini25FlashImage) GetOutputCostPer1M() float64 {
-	return 0.60
+	return 30.0
 }
 
 func (v VertexGemini25FlashImage) GetName() string {
@@ -219,6 +220,7 @@ type VertexGemini3ProImagePreview struct {
 }
 
 func (v VertexGemini3ProImagePreview) EstimateCost(text string) float64 {
+	// 1K/2K image = 1120 tokens at $120/1M = $0.134 per image
 	numImages := v.NumberOfImages
 	if numImages == 0 {
 		numImages = 1
@@ -231,7 +233,7 @@ func (v VertexGemini3ProImagePreview) GetInputCostPer1M() float64 {
 }
 
 func (v VertexGemini3ProImagePreview) GetOutputCostPer1M() float64 {
-	return 30.0
+	return 120.0
 }
 
 func (v VertexGemini3ProImagePreview) GetName() string {
