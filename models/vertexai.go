@@ -10,6 +10,14 @@ func (v VertexGemini20Flash) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.00000010
 }
 
+func (v VertexGemini20Flash) GetInputCostPer1M() float64 {
+	return 0.10
+}
+
+func (v VertexGemini20Flash) GetOutputCostPer1M() float64 {
+	return 0.40
+}
+
 func (v VertexGemini20Flash) GetName() string {
 	return "gemini-2.0-flash-001"
 }
@@ -19,11 +27,20 @@ func (v VertexGemini20Flash) GetProvider() string {
 }
 
 var _ Model = new(VertexGemini20Flash)
+var _ CostBreakdown = new(VertexGemini20Flash)
 
 type VertexGemini20FlashLite struct{}
 
 func (v VertexGemini20FlashLite) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.000000075
+}
+
+func (v VertexGemini20FlashLite) GetInputCostPer1M() float64 {
+	return 0.075
+}
+
+func (v VertexGemini20FlashLite) GetOutputCostPer1M() float64 {
+	return 0.30
 }
 
 func (v VertexGemini20FlashLite) GetName() string {
@@ -35,6 +52,7 @@ func (v VertexGemini20FlashLite) GetProvider() string {
 }
 
 var _ Model = new(VertexGemini20FlashLite)
+var _ CostBreakdown = new(VertexGemini20FlashLite)
 
 // Gemini 2.5 Models (GA)
 
@@ -66,7 +84,7 @@ var _ CostBreakdown = new(VertexGemini25Pro)
 type VertexGemini25Flash struct{}
 
 func (v VertexGemini25Flash) EstimateCost(text string) float64 {
-	return (float64(len(text)) / 4) * 0.0000001
+	return (float64(len(text)) / 4) * 0.00000015
 }
 
 func (v VertexGemini25Flash) GetInputCostPer1M() float64 {

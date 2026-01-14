@@ -36,6 +36,7 @@ func GetAll() []string {
 		Gemini20FlashModel,
 		Gemini20FlashLiteModel,
 		Gemini25FlashModel,
+		Gemini25FlashLiteModel,
 		Gemini25ProModel,
 		Gemini3ProModel,
 		Gemini3ProImageModel,
