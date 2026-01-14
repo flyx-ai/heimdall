@@ -22,12 +22,15 @@ func TestVertexAIModelsWithCompletion(t *testing.T) {
 	}
 
 	projectID := os.Getenv("VERTEX_PROJECT_ID")
-	apiKey := os.Getenv("GOOGLE_API_KEY")
+	location := os.Getenv("VERTEX_LOCATION")
+	if location == "" {
+		location = "us-central1"
+	}
 
 	vertexai, err := providers.NewVertexAI(
 		context.Background(),
 		projectID,
-		apiKey,
+		location,
 	)
 	require.NoError(t, err, "error creating VertexAI provider", "error", err)
 
@@ -93,12 +96,15 @@ func TestVertexAIModelsWithStreaming(t *testing.T) {
 	}
 
 	projectID := os.Getenv("VERTEX_PROJECT_ID")
-	apiKey := os.Getenv("GOOGLE_API_KEY")
+	location := os.Getenv("VERTEX_LOCATION")
+	if location == "" {
+		location = "us-central1"
+	}
 
 	vertexai, err := providers.NewVertexAI(
 		context.Background(),
 		projectID,
-		apiKey,
+		location,
 	)
 	require.NoError(t, err, "error creating VertexAI provider", "error", err)
 
