@@ -17,6 +17,169 @@ import (
 	"github.com/flyx-ai/heimdall/response"
 )
 
+// convertSchemaToGenai converts a map[string]any schema to *genai.Schema
+func convertSchemaToGenai(schema map[string]any) *genai.Schema {
+	if schema == nil {
+		return nil
+	}
+
+	result := &genai.Schema{}
+
+	if typ, ok := schema["type"].(string); ok {
+		result.Type = genai.Type(typ)
+	}
+
+	if desc, ok := schema["description"].(string); ok {
+		result.Description = desc
+	}
+
+	if format, ok := schema["format"].(string); ok {
+		result.Format = format
+	}
+
+	if enum, ok := schema["enum"].([]any); ok {
+		for _, e := range enum {
+			if s, ok := e.(string); ok {
+				result.Enum = append(result.Enum, s)
+			}
+		}
+	}
+
+	if properties, ok := schema["properties"].(map[string]any); ok {
+		result.Properties = make(map[string]*genai.Schema)
+		for key, val := range properties {
+			if propSchema, ok := val.(map[string]any); ok {
+				result.Properties[key] = convertSchemaToGenai(propSchema)
+			}
+		}
+	}
+
+	if required, ok := schema["required"].([]any); ok {
+		for _, r := range required {
+			if s, ok := r.(string); ok {
+				result.Required = append(result.Required, s)
+			}
+		}
+	}
+
+	if items, ok := schema["items"].(map[string]any); ok {
+		result.Items = convertSchemaToGenai(items)
+	}
+
+	return result
+}
+
+// buildThinkingConfig creates a ThinkingConfig based on ThinkBudget or ThinkingLevel
+// ThinkingLevel is for Gemini 3 models, ThinkBudget is for Gemini 2.5 models
+// They are mutually exclusive - using both will cause an API error for Gemini 3 models
+func buildThinkingConfig(budget models.ThinkBudget, level models.ThinkingLevel) *genai.ThinkingConfig {
+	// ThinkingLevel takes precedence if set (for Gemini 3 models)
+	if level != "" {
+		config := &genai.ThinkingConfig{
+			IncludeThoughts: true,
+		}
+		// Convert models.ThinkingLevel (lowercase) to genai.ThinkingLevel (uppercase)
+		// Gemini 3 Pro supports: LOW, HIGH
+		// Gemini 3 Flash supports: MINIMAL, LOW, MEDIUM, HIGH
+		switch level {
+		case models.HighThinkingLevel:
+			config.ThinkingLevel = genai.ThinkingLevelHigh
+		case models.LowThinkingLevel:
+			config.ThinkingLevel = genai.ThinkingLevelLow
+		default:
+			// For any other values (medium, minimal), convert to uppercase
+			config.ThinkingLevel = genai.ThinkingLevel(strings.ToUpper(string(level)))
+		}
+		return config
+	}
+
+	// ThinkBudget is for Gemini 2.5 models
+	if budget == "" {
+		return nil
+	}
+
+	config := &genai.ThinkingConfig{
+		IncludeThoughts: true,
+	}
+
+	switch budget {
+	case models.HighThinkBudget:
+		budgetVal := int32(24576)
+		config.ThinkingBudget = &budgetVal
+	case models.MediumThinkBudget:
+		budgetVal := int32(12288)
+		config.ThinkingBudget = &budgetVal
+	case models.LowThinkBudget:
+		budgetVal := int32(4096)
+		config.ThinkingBudget = &budgetVal
+	}
+
+	return config
+}
+
+// convertMediaResolution converts models.MediaResolution (lowercase) to genai.MediaResolution
+// models uses "high", "medium", "low" while genai uses "MEDIA_RESOLUTION_HIGH", etc.
+func convertMediaResolution(resolution models.MediaResolution) genai.MediaResolution {
+	switch resolution {
+	case models.HighMediaResolution:
+		return genai.MediaResolutionHigh
+	case models.MediumMediaResolution:
+		return genai.MediaResolutionMedium
+	case models.LowMediaResolution:
+		return genai.MediaResolutionLow
+	default:
+		return genai.MediaResolutionUnspecified
+	}
+}
+
+// convertToolsToGenai converts GoogleTool to []*genai.Tool
+func convertToolsToGenai(tools models.GoogleTool) []*genai.Tool {
+	if len(tools) == 0 {
+		return nil
+	}
+
+	var result []*genai.Tool
+
+	for _, toolMap := range tools {
+		tool := &genai.Tool{}
+
+		// Handle code_execution tool
+		if _, hasCodeExec := toolMap["code_execution"]; hasCodeExec {
+			tool.CodeExecution = &genai.ToolCodeExecution{}
+			result = append(result, tool)
+			continue
+		}
+
+		// Handle function_declarations - the value is map[string]any
+		if funcDeclsMap, ok := toolMap["function_declarations"]; ok {
+			// funcDeclsMap is map[string]any, try to get as slice
+			if declsSlice, ok := funcDeclsMap["declarations"].([]any); ok {
+				for _, decl := range declsSlice {
+					if declMap, ok := decl.(map[string]any); ok {
+						funcDecl := &genai.FunctionDeclaration{}
+						if name, ok := declMap["name"].(string); ok {
+							funcDecl.Name = name
+						}
+						if desc, ok := declMap["description"].(string); ok {
+							funcDecl.Description = desc
+						}
+						if params, ok := declMap["parameters"].(map[string]any); ok {
+							funcDecl.Parameters = convertSchemaToGenai(params)
+						}
+						tool.FunctionDeclarations = append(tool.FunctionDeclarations, funcDecl)
+					}
+				}
+			}
+		}
+
+		if len(tool.FunctionDeclarations) > 0 || tool.CodeExecution != nil {
+			result = append(result, tool)
+		}
+	}
+
+	return result
+}
+
 type VertexAI struct {
 	vertexAIClient *genai.Client
 }
@@ -264,21 +427,32 @@ func (v *VertexAI) doRequest(
 	parts = append(parts, userContent)
 
 	// Build generation config
-	var genConfig *genai.GenerateContentConfig
-	if len(modelConfig.StructuredOutput) > 0 || req.SystemMessage != "" {
-		genConfig = &genai.GenerateContentConfig{}
+	genConfig := &genai.GenerateContentConfig{}
 
-		// Add system instruction
-		if req.SystemMessage != "" {
-			genConfig.SystemInstruction = genai.NewContentFromText(req.SystemMessage, genai.RoleUser)
-		}
+	// Add system instruction
+	if req.SystemMessage != "" {
+		genConfig.SystemInstruction = genai.NewContentFromText(req.SystemMessage, genai.RoleUser)
+	}
 
-		// Add structured output (response schema)
-		if len(modelConfig.StructuredOutput) > 0 {
-			genConfig.ResponseMIMEType = "application/json"
-			// Note: ResponseSchema would need to be converted from map[string]any to *genai.Schema
-			// For now, we rely on the model following JSON instructions in the prompt
-		}
+	// Add structured output (response schema)
+	if len(modelConfig.StructuredOutput) > 0 {
+		genConfig.ResponseMIMEType = "application/json"
+		genConfig.ResponseSchema = convertSchemaToGenai(modelConfig.StructuredOutput)
+	}
+
+	// Add tools
+	if len(modelConfig.Tools) > 0 {
+		genConfig.Tools = convertToolsToGenai(modelConfig.Tools)
+	}
+
+	// Add thinking configuration
+	if thinkingConfig := buildThinkingConfig(modelConfig.Thinking, modelConfig.ThinkingLevel); thinkingConfig != nil {
+		genConfig.ThinkingConfig = thinkingConfig
+	}
+
+	// Add media resolution
+	if modelConfig.MediaResolution != "" {
+		genConfig.MediaResolution = convertMediaResolution(modelConfig.MediaResolution)
 	}
 
 	stream := v.vertexAIClient.Models.GenerateContentStream(
