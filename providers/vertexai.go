@@ -133,6 +133,10 @@ func convertMediaResolution(resolution models.MediaResolution) genai.MediaResolu
 }
 
 // convertToolsToGenai converts GoogleTool to []*genai.Tool
+// GoogleTool is []map[string]map[string]any where each element can be:
+// - {"code_execution": {}} for code execution
+// - {"google_search": {}} for Google search
+// - {"google_search_retrieval": {...}} for Google search retrieval
 func convertToolsToGenai(tools models.GoogleTool) []*genai.Tool {
 	if len(tools) == 0 {
 		return nil
@@ -142,37 +146,42 @@ func convertToolsToGenai(tools models.GoogleTool) []*genai.Tool {
 
 	for _, toolMap := range tools {
 		tool := &genai.Tool{}
+		hasValidTool := false
 
 		// Handle code_execution tool
 		if _, hasCodeExec := toolMap["code_execution"]; hasCodeExec {
 			tool.CodeExecution = &genai.ToolCodeExecution{}
-			result = append(result, tool)
-			continue
+			hasValidTool = true
 		}
 
-		// Handle function_declarations - the value is map[string]any
-		if funcDeclsMap, ok := toolMap["function_declarations"]; ok {
-			// funcDeclsMap is map[string]any, try to get as slice
-			if declsSlice, ok := funcDeclsMap["declarations"].([]any); ok {
-				for _, decl := range declsSlice {
-					if declMap, ok := decl.(map[string]any); ok {
-						funcDecl := &genai.FunctionDeclaration{}
-						if name, ok := declMap["name"].(string); ok {
-							funcDecl.Name = name
-						}
-						if desc, ok := declMap["description"].(string); ok {
-							funcDecl.Description = desc
-						}
-						if params, ok := declMap["parameters"].(map[string]any); ok {
-							funcDecl.Parameters = convertSchemaToGenai(params)
-						}
-						tool.FunctionDeclarations = append(tool.FunctionDeclarations, funcDecl)
+		// Handle google_search tool
+		if _, hasGoogleSearch := toolMap["google_search"]; hasGoogleSearch {
+			tool.GoogleSearch = &genai.GoogleSearch{}
+			hasValidTool = true
+		}
+
+		// Handle google_search_retrieval tool
+		if config, hasRetrieval := toolMap["google_search_retrieval"]; hasRetrieval {
+			retrieval := &genai.GoogleSearchRetrieval{}
+			// Extract dynamic_retrieval_config if present
+			if dynamicConfig, ok := config["dynamic_retrieval_config"]; ok {
+				if configMap, ok := dynamicConfig.(map[string]any); ok {
+					dynamicRetrieval := &genai.DynamicRetrievalConfig{}
+					if mode, ok := configMap["mode"].(string); ok {
+						dynamicRetrieval.Mode = genai.DynamicRetrievalConfigMode(mode)
 					}
+					if threshold, ok := configMap["dynamic_threshold"].(float64); ok {
+						thresholdFloat := float32(threshold)
+						dynamicRetrieval.DynamicThreshold = &thresholdFloat
+					}
+					retrieval.DynamicRetrievalConfig = dynamicRetrieval
 				}
 			}
+			tool.GoogleSearchRetrieval = retrieval
+			hasValidTool = true
 		}
 
-		if len(tool.FunctionDeclarations) > 0 || tool.CodeExecution != nil {
+		if hasValidTool {
 			result = append(result, tool)
 		}
 	}
@@ -279,7 +288,10 @@ type vertexModelConfig struct {
 	Thinking         models.ThinkBudget
 	ThinkingLevel    models.ThinkingLevel
 	MediaResolution  models.MediaResolution
-	// Image generation config
+	// Image generation config for models that support image output via GenerateContent
+	// Note: NumberOfImages is extracted but not applied - it's only applicable to the
+	// dedicated GenerateImages API (Imagen models), not GenerateContent. For Gemini
+	// image models, the API generates one image per request.
 	NumberOfImages int
 	AspectRatio    models.AspectRatio
 	IsImageModel   bool
