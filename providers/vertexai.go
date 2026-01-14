@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -316,23 +315,23 @@ func (v *VertexAI) tryWithBackup(
 func NewVertexAI(
 	ctx context.Context,
 	projectID string,
-	apiKey string,
+	location string,
 ) (VertexAI, error) {
 	client, err := genai.NewClient(
 		ctx,
 		&genai.ClientConfig{
-			Project:     projectID,
-			APIKey:      apiKey,
-			HTTPClient:  &http.Client{},
-			HTTPOptions: genai.HTTPOptions{APIVersion: "v1"},
+			Project:    projectID,
+			Location:   location,
+			Backend:    genai.BackendVertexAI,
+			HTTPClient: &http.Client{},
 		},
 	)
 	if err != nil {
-		return VertexAI{}, errors.New("could not setup new genai client")
+		return VertexAI{}, fmt.Errorf("could not setup new genai client: %w", err)
 	}
 
 	return VertexAI{
-		client,
+		vertexAIClient: client,
 	}, nil
 }
 
