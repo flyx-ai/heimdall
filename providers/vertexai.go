@@ -279,6 +279,10 @@ type vertexModelConfig struct {
 	Thinking         models.ThinkBudget
 	ThinkingLevel    models.ThinkingLevel
 	MediaResolution  models.MediaResolution
+	// Image generation config
+	NumberOfImages int
+	AspectRatio    models.AspectRatio
+	IsImageModel   bool
 }
 
 func extractVertexModelConfig(model models.Model) vertexModelConfig {
@@ -340,12 +344,18 @@ func extractVertexModelConfig(model models.Model) vertexModelConfig {
 		config.ImageFile = m.ImageFile
 		config.PdfFiles = m.PdfFiles
 		config.Files = m.Files
+		config.NumberOfImages = m.NumberOfImages
+		config.AspectRatio = m.AspectRatio
+		config.IsImageModel = true
 	case models.VertexGemini3ProImagePreview:
 		config.ImageFile = m.ImageFile
 		config.PdfFiles = m.PdfFiles
 		config.Files = m.Files
 		config.ThinkingLevel = m.ThinkingLevel
 		config.MediaResolution = m.MediaResolution
+		config.NumberOfImages = m.NumberOfImages
+		config.AspectRatio = m.AspectRatio
+		config.IsImageModel = true
 	}
 
 	return config
@@ -453,6 +463,16 @@ func (v *VertexAI) doRequest(
 	// Add media resolution
 	if modelConfig.MediaResolution != "" {
 		genConfig.MediaResolution = convertMediaResolution(modelConfig.MediaResolution)
+	}
+
+	// Add image generation configuration for image models
+	if modelConfig.IsImageModel {
+		genConfig.ResponseModalities = []string{"Text", "Image"}
+		if modelConfig.AspectRatio != "" {
+			genConfig.ImageConfig = &genai.ImageConfig{
+				AspectRatio: string(modelConfig.AspectRatio),
+			}
+		}
 	}
 
 	stream := v.vertexAIClient.Models.GenerateContentStream(
