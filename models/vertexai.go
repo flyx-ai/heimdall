@@ -4,7 +4,16 @@ const VertexProvider = "vertexai"
 
 // NOTE: VertexGemini15FlashThinking and VertexGemini15Pro types have been removed as these models were retired by Google in 2025
 
-type VertexGemini20Flash struct{}
+// Gemini 2.0 Models
+
+type VertexGemini20Flash struct {
+	Tools            GoogleTool
+	StructuredOutput map[string]any
+	PdfFiles         []GooglePdf
+	ImageFile        []GoogleImagePayload
+	Files            []GoogleFilePayload
+	Thinking         ThinkBudget
+}
 
 func (v VertexGemini20Flash) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.00000010
@@ -29,7 +38,14 @@ func (v VertexGemini20Flash) GetProvider() string {
 var _ Model = new(VertexGemini20Flash)
 var _ CostBreakdown = new(VertexGemini20Flash)
 
-type VertexGemini20FlashLite struct{}
+type VertexGemini20FlashLite struct {
+	Tools            GoogleTool
+	StructuredOutput map[string]any
+	PdfFiles         []GooglePdf
+	ImageFile        []GoogleImagePayload
+	Files            []GoogleFilePayload
+	Thinking         ThinkBudget
+}
 
 func (v VertexGemini20FlashLite) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.000000075
@@ -56,7 +72,14 @@ var _ CostBreakdown = new(VertexGemini20FlashLite)
 
 // Gemini 2.5 Models (GA)
 
-type VertexGemini25Pro struct{}
+type VertexGemini25Pro struct {
+	Tools            GoogleTool
+	StructuredOutput map[string]any
+	PdfFiles         []GooglePdf
+	ImageFile        []GoogleImagePayload
+	Files            []GoogleFilePayload
+	Thinking         ThinkBudget
+}
 
 func (v VertexGemini25Pro) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.00000125
@@ -81,7 +104,14 @@ func (v VertexGemini25Pro) GetProvider() string {
 var _ Model = new(VertexGemini25Pro)
 var _ CostBreakdown = new(VertexGemini25Pro)
 
-type VertexGemini25Flash struct{}
+type VertexGemini25Flash struct {
+	Tools            GoogleTool
+	StructuredOutput map[string]any
+	PdfFiles         []GooglePdf
+	ImageFile        []GoogleImagePayload
+	Files            []GoogleFilePayload
+	Thinking         ThinkBudget
+}
 
 func (v VertexGemini25Flash) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.00000015
@@ -106,7 +136,14 @@ func (v VertexGemini25Flash) GetProvider() string {
 var _ Model = new(VertexGemini25Flash)
 var _ CostBreakdown = new(VertexGemini25Flash)
 
-type VertexGemini25FlashLite struct{}
+type VertexGemini25FlashLite struct {
+	Tools            GoogleTool
+	StructuredOutput map[string]any
+	PdfFiles         []GooglePdf
+	ImageFile        []GoogleImagePayload
+	Files            []GoogleFilePayload
+	Thinking         ThinkBudget
+}
 
 func (v VertexGemini25FlashLite) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.000000075
@@ -133,6 +170,10 @@ var _ CostBreakdown = new(VertexGemini25FlashLite)
 
 type VertexGemini25FlashImage struct {
 	NumberOfImages int
+	AspectRatio    AspectRatio
+	ImageFile      []GoogleImagePayload
+	PdfFiles       []GooglePdf
+	Files          []GoogleFilePayload
 }
 
 func (v VertexGemini25FlashImage) EstimateCost(text string) float64 {
@@ -165,7 +206,15 @@ var _ CostBreakdown = new(VertexGemini25FlashImage)
 
 // Gemini 3 Models (Preview)
 
-type VertexGemini3ProPreview struct{}
+type VertexGemini3ProPreview struct {
+	Tools            GoogleTool
+	StructuredOutput map[string]any
+	PdfFiles         []GooglePdf
+	ImageFile        []GoogleImagePayload
+	Files            []GoogleFilePayload
+	ThinkingLevel    ThinkingLevel
+	MediaResolution  MediaResolution
+}
 
 func (v VertexGemini3ProPreview) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.000002
@@ -190,7 +239,15 @@ func (v VertexGemini3ProPreview) GetProvider() string {
 var _ Model = new(VertexGemini3ProPreview)
 var _ CostBreakdown = new(VertexGemini3ProPreview)
 
-type VertexGemini3FlashPreview struct{}
+type VertexGemini3FlashPreview struct {
+	Tools            GoogleTool
+	StructuredOutput map[string]any
+	PdfFiles         []GooglePdf
+	ImageFile        []GoogleImagePayload
+	Files            []GoogleFilePayload
+	ThinkingLevel    ThinkingLevel
+	MediaResolution  MediaResolution
+}
 
 func (v VertexGemini3FlashPreview) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.0000005
@@ -216,7 +273,13 @@ var _ Model = new(VertexGemini3FlashPreview)
 var _ CostBreakdown = new(VertexGemini3FlashPreview)
 
 type VertexGemini3ProImagePreview struct {
-	NumberOfImages int
+	NumberOfImages  int
+	AspectRatio     AspectRatio
+	ImageFile       []GoogleImagePayload
+	PdfFiles        []GooglePdf
+	Files           []GoogleFilePayload
+	ThinkingLevel   ThinkingLevel
+	MediaResolution MediaResolution
 }
 
 func (v VertexGemini3ProImagePreview) EstimateCost(text string) float64 {
