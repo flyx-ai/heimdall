@@ -2,6 +2,8 @@ module github.com/flyx-ai/heimdall
 
 go 1.24.0
 
+require golang.org/x/oauth2 v0.29.0
+
 require (
 	cloud.google.com/go v0.120.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
