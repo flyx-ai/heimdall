@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/genai"
 
 	"github.com/flyx-ai/heimdall/models"
@@ -659,14 +661,27 @@ func NewVertexAI(
 	ctx context.Context,
 	projectID string,
 	location string,
+	credentialsJSON ...[]byte,
 ) (VertexAI, error) {
+	httpClient := &http.Client{}
+
+	// If credentials JSON is provided, create an authenticated HTTP client
+	if len(credentialsJSON) > 0 && len(credentialsJSON[0]) > 0 {
+		creds, err := google.CredentialsFromJSON(ctx, credentialsJSON[0],
+			"https://www.googleapis.com/auth/cloud-platform")
+		if err != nil {
+			return VertexAI{}, fmt.Errorf("could not parse credentials JSON: %w", err)
+		}
+		httpClient = oauth2.NewClient(ctx, creds.TokenSource)
+	}
+
 	client, err := genai.NewClient(
 		ctx,
 		&genai.ClientConfig{
 			Project:    projectID,
 			Location:   location,
 			Backend:    genai.BackendVertexAI,
-			HTTPClient: &http.Client{},
+			HTTPClient: httpClient,
 		},
 	)
 	if err != nil {
