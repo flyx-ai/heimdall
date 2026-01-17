@@ -682,6 +682,10 @@ func NewVertexAI(
 			Location:   location,
 			Backend:    genai.BackendVertexAI,
 			HTTPClient: httpClient,
+			// Use the base endpoint instead of regional endpoint for Gemini 3 compatibility
+			HTTPOptions: genai.HTTPOptions{
+				BaseURL: "https://aiplatform.googleapis.com/",
+			},
 		},
 	)
 	if err != nil {
