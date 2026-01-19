@@ -784,6 +784,23 @@ func (g Google) doRequest(
 		}
 
 		requestBody = body
+	case models.Gemini25FlashLiteModel:
+		preparedReq, err := prepareGemini25FlashLiteRequest(
+			geminiReq,
+			model,
+			systemMessage,
+			userMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		body, err := json.Marshal(preparedReq)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+
+		requestBody = body
 	default:
 		return response.Completion{}, 0, fmt.Errorf(
 			"unsupported Gemini model: %s",
@@ -980,6 +997,72 @@ func prepareGemini20FlashLiteRequest(
 	if !ok {
 		return request, errors.New(
 			"internal error; model type assertion to models.Gemini20FlashLite failed",
+		)
+	}
+
+	request.SystemInstruction.Parts = part{
+		Text: systemInst,
+	}
+
+	lastIndex := 0
+	if len(request.Contents) > 1 {
+		lastIndex = len(request.Contents) - 1
+	}
+
+	if len(request.Contents) > 0 {
+		request.Contents[lastIndex].Parts = append(
+			request.Contents[lastIndex].Parts,
+			part{Text: userMsg},
+		)
+		request.Contents[lastIndex].Role = "user"
+	}
+
+	if len(model.PdfFiles) > 0 && len(model.ImageFile) > 0 {
+		return request, errors.New(
+			"only pdf file or image file can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		request = handleVisionData(request, model.ImageFile)
+	}
+
+	if len(model.PdfFiles) > 0 {
+		request = handlePdfData(request, model.PdfFiles, lastIndex)
+	}
+
+	if len(model.Files) > 0 {
+		request = handleGenericFiles(request, model.Files, lastIndex)
+	}
+
+	if len(model.StructuredOutput) > 1 {
+		request.Config = map[string]any{
+			"response_mime_type": "application/json",
+			"response_schema":    model.StructuredOutput,
+		}
+	}
+
+	if len(model.Tools) > 1 {
+		request.Tools = model.Tools
+	}
+
+	if model.Thinking != "" {
+		request = handleThinkingBudget(request, model.Thinking)
+	}
+
+	return request, nil
+}
+
+func prepareGemini25FlashLiteRequest(
+	request geminiRequest,
+	requestedModel models.Model,
+	systemInst string,
+	userMsg string,
+) (geminiRequest, error) {
+	model, ok := requestedModel.(models.Gemini25FlashLite)
+	if !ok {
+		return request, errors.New(
+			"internal error; model type assertion to models.Gemini25FlashLite failed",
 		)
 	}
 
