@@ -190,6 +190,38 @@ func (g Gemini25FlashPreview) GetProvider() string {
 
 var _ Model = new(Gemini25FlashPreview)
 
+type Gemini25FlashLite struct {
+	Tools            GoogleTool
+	StructuredOutput map[string]any
+	PdfFiles         []GooglePdf
+	ImageFile        []GoogleImagePayload
+	Files            []GoogleFilePayload
+	Thinking         ThinkBudget
+}
+
+func (g Gemini25FlashLite) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.000000075
+}
+
+func (g Gemini25FlashLite) GetInputCostPer1M() float64 {
+	return 0.075
+}
+
+func (g Gemini25FlashLite) GetOutputCostPer1M() float64 {
+	return 0.30
+}
+
+func (g Gemini25FlashLite) GetName() string {
+	return Gemini25FlashLiteModel
+}
+
+func (g Gemini25FlashLite) GetProvider() string {
+	return GoogleProvider
+}
+
+var _ Model = new(Gemini25FlashLite)
+var _ CostBreakdown = new(Gemini25FlashLite)
+
 type Gemini25ProPreview struct {
 	Tools GoogleTool
 	// StructuredOutput represents a subset of the OpenAPI 3.0 Schema Object. Refer to gemini documentation for complete and up-to-date information. An example structure could be:
