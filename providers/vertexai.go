@@ -514,16 +514,31 @@ func (v *VertexAI) doRequest(
 
 			if len(streamPart.Candidates) > 0 &&
 				len(streamPart.Candidates[0].Content.Parts) > 0 {
-				text := streamPart.Candidates[0].Content.Parts[0].Text
-				if text != "Analyzing" {
-					_, err := fullContent.WriteString(text)
-					if err != nil {
-						return response.Completion{}, 0, err
-					}
-
-					if chunkHandler != nil {
-						if err := chunkHandler(text); err != nil {
+				// Iterate through all parts to find text or image data
+				for _, part := range streamPart.Candidates[0].Content.Parts {
+					// Handle image data for image generation models
+					if part.InlineData != nil && len(part.InlineData.Data) > 0 {
+						imageData := base64.StdEncoding.EncodeToString(part.InlineData.Data)
+						_, err := fullContent.WriteString(imageData)
+						if err != nil {
 							return response.Completion{}, 0, err
+						}
+						if chunkHandler != nil {
+							if err := chunkHandler(imageData); err != nil {
+								return response.Completion{}, 0, err
+							}
+						}
+					} else if part.Text != "" && part.Text != "Analyzing" {
+						// Handle text responses
+						_, err := fullContent.WriteString(part.Text)
+						if err != nil {
+							return response.Completion{}, 0, err
+						}
+
+						if chunkHandler != nil {
+							if err := chunkHandler(part.Text); err != nil {
+								return response.Completion{}, 0, err
+							}
 						}
 					}
 				}
