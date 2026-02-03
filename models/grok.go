@@ -3,7 +3,7 @@ package models
 const GrokProvider = "grok"
 
 const (
-	Grok2VisionAlias   = "grok-2-vision"
+	Grok2VisionAlias   = "grok-2-vision-1212"
 	Grok3Alias         = "grok-3"
 	Grok3MiniAlias     = "grok-3-mini"
 	Grok3FastAlias     = "grok-3-fast"
