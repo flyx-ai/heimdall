@@ -17,11 +17,15 @@ import (
 func TestVertexAIModelsWithCompletion(t *testing.T) {
 	t.Parallel()
 
+	projectID := os.Getenv("VERTEX_PROJECT_ID")
+	if projectID == "" {
+		t.Skip("VERTEX_PROJECT_ID not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
 
-	projectID := os.Getenv("VERTEX_PROJECT_ID")
 	location := os.Getenv("VERTEX_LOCATION")
 	if location == "" {
 		location = "us-central1"
@@ -91,11 +95,15 @@ func TestVertexAIModelsWithCompletion(t *testing.T) {
 func TestVertexAIModelsWithStreaming(t *testing.T) {
 	t.Parallel()
 
+	projectID := os.Getenv("VERTEX_PROJECT_ID")
+	if projectID == "" {
+		t.Skip("VERTEX_PROJECT_ID not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
 
-	projectID := os.Getenv("VERTEX_PROJECT_ID")
 	location := os.Getenv("VERTEX_LOCATION")
 	if location == "" {
 		location = "us-central1"

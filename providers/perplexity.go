@@ -307,7 +307,7 @@ func (p Perplexity) StreamResponse(
 		})
 	}
 
-	return p.tryWithBackup(ctx, req, client, chunkHandler, requestLog)
+	return p.tryWithBackup(ctx, req, client, chunkHandler, reqLog)
 }
 
 // tryWithBackup implements LLMProvider.
