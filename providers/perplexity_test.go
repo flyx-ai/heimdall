@@ -58,18 +58,7 @@ func TestPerplexityModelsWithCompletion(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "should complete request with SonarReasoning",
-			req: request.Completion{
-				Model:         models.SonarReasoning{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
+		// NOTE: SonarReasoning test removed - model deprecated by Perplexity
 		{
 			name: "should complete request with SonarReasoningPro",
 			req: request.Completion{
@@ -150,18 +139,7 @@ func TestPerplexityModelsWithStreaming(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "should stream request with SonarReasoning",
-			req: request.Completion{
-				Model:         models.SonarReasoning{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
+		// NOTE: SonarReasoning test removed - model deprecated by Perplexity
 		{
 			name: "should stream request with SonarReasoningPro",
 			req: request.Completion{
