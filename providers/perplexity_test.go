@@ -17,12 +17,15 @@ import (
 func TestPerplexityModelsWithCompletion(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("PERPLEXITY_API_KEY")
+	if apiKey == "" {
+		t.Skip("PERPLEXITY_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	perplexity := providers.NewPerplexity(
-		[]string{os.Getenv("PERPLEXITY_API_KEY")},
-	)
+	perplexity := providers.NewPerplexity([]string{apiKey})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
@@ -106,12 +109,15 @@ func TestPerplexityModelsWithCompletion(t *testing.T) {
 func TestPerplexityModelsWithStreaming(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("PERPLEXITY_API_KEY")
+	if apiKey == "" {
+		t.Skip("PERPLEXITY_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	perplexity := providers.NewPerplexity(
-		[]string{os.Getenv("PERPLEXITY_API_KEY")},
-	)
+	perplexity := providers.NewPerplexity([]string{apiKey})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."

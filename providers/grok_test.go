@@ -17,10 +17,15 @@ import (
 func TestGrokModelsWithCompletion(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("GROK_API_KEY")
+	if apiKey == "" {
+		t.Skip("GROK_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	grokProvider := providers.NewGrok([]string{os.Getenv("GROK_API_KEY")})
+	grokProvider := providers.NewGrok([]string{apiKey})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
@@ -133,10 +138,15 @@ func TestGrokModelsWithCompletion(t *testing.T) {
 func TestGrokModelsWithStreaming(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("GROK_API_KEY")
+	if apiKey == "" {
+		t.Skip("GROK_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	grokProvider := providers.NewGrok([]string{os.Getenv("GROK_API_KEY")})
+	grokProvider := providers.NewGrok([]string{apiKey})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
@@ -209,10 +219,15 @@ func TestGrokModelsWithStreaming(t *testing.T) {
 func TestGrok2VisionWithImage(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("GROK_API_KEY")
+	if apiKey == "" {
+		t.Skip("GROK_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	grokProvider := providers.NewGrok([]string{os.Getenv("GROK_API_KEY")})
+	grokProvider := providers.NewGrok([]string{apiKey})
 
 	systemInst := "you are a helpful assistant that analyzes images."
 	userMsg := "What is in this image?"
@@ -271,10 +286,15 @@ func TestGrok2VisionWithImage(t *testing.T) {
 func TestGrokWithHistory(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("GROK_API_KEY")
+	if apiKey == "" {
+		t.Skip("GROK_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	grokProvider := providers.NewGrok([]string{os.Getenv("GROK_API_KEY")})
+	grokProvider := providers.NewGrok([]string{apiKey})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "What was my previous question about?"

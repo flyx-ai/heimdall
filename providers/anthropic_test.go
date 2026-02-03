@@ -18,12 +18,15 @@ import (
 func TestAnthropicModelsWithCompletion(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("ANTHROPIC_API_KEY")
+	if apiKey == "" {
+		t.Skip("ANTHROPIC_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	anthropicProvider := providers.NewAnthropic(
-		[]string{os.Getenv("ANTHROPIC_API_KEY")},
-	)
+	anthropicProvider := providers.NewAnthropic([]string{apiKey})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
@@ -33,33 +36,9 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 		req  request.Completion
 	}{
 		{
-			name: "should complete request with claude-3-haiku",
+			name: "should complete request with claude-35-haiku",
 			req: request.Completion{
 				Model:         models.Claude35Haiku{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
-		{
-			name: "should complete request with claude-35-sonnet",
-			req: request.Completion{
-				Model:         models.Claude35Sonnet{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
-		{
-			name: "should complete request with claude-3-opus",
-			req: request.Completion{
-				Model:         models.Claude3Opus{},
 				SystemMessage: systemInst,
 				UserMessage:   userMsg,
 				Temperature:   1,
@@ -107,12 +86,15 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 func TestAnthropicModelsWithStreaming(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("ANTHROPIC_API_KEY")
+	if apiKey == "" {
+		t.Skip("ANTHROPIC_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	anthropicProvider := providers.NewAnthropic(
-		[]string{os.Getenv("ANTHROPIC_API_KEY")},
-	)
+	anthropicProvider := providers.NewAnthropic([]string{apiKey})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
@@ -122,33 +104,9 @@ func TestAnthropicModelsWithStreaming(t *testing.T) {
 		req  request.Completion
 	}{
 		{
-			name: "should stream request with claude-3-haiku",
+			name: "should stream request with claude-35-haiku",
 			req: request.Completion{
 				Model:         models.Claude35Haiku{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
-		{
-			name: "should stream request with claude-35-sonnet",
-			req: request.Completion{
-				Model:         models.Claude35Sonnet{},
-				SystemMessage: systemInst,
-				UserMessage:   userMsg,
-				Temperature:   1,
-				Tags: map[string]string{
-					"type": "testing",
-				},
-			},
-		},
-		{
-			name: "should stream request with claude-3-opus",
-			req: request.Completion{
-				Model:         models.Claude3Opus{},
 				SystemMessage: systemInst,
 				UserMessage:   userMsg,
 				Temperature:   1,

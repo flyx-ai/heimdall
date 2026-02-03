@@ -301,7 +301,10 @@ func (a Anthropic) doRequest(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return response.Completion{}, resp.StatusCode, err
+		return response.Completion{}, resp.StatusCode, fmt.Errorf(
+			"anthropic returned status %d",
+			resp.StatusCode,
+		)
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
@@ -429,7 +432,7 @@ func (a Anthropic) StreamResponse(
 		})
 	}
 
-	return a.tryWithBackup(ctx, req, client, chunkHandler, requestLog)
+	return a.tryWithBackup(ctx, req, client, chunkHandler, reqLog)
 }
 
 // tryWithBackup implements LLMProvider.

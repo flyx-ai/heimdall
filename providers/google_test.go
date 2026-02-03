@@ -18,10 +18,15 @@ import (
 func TestGoogleModelsWithCompletion(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("GOOGLE_API_KEY")
+	if apiKey == "" {
+		t.Skip("GOOGLE_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	google := providers.NewGoogle([]string{os.Getenv("GOOGLE_API_KEY")})
+	google := providers.NewGoogle([]string{apiKey})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
@@ -105,10 +110,15 @@ func TestGoogleModelsWithCompletion(t *testing.T) {
 func TestGoogleModelsWithStreaming(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("GOOGLE_API_KEY")
+	if apiKey == "" {
+		t.Skip("GOOGLE_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	google := providers.NewGoogle([]string{os.Getenv("GOOGLE_API_KEY")})
+	google := providers.NewGoogle([]string{apiKey})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."

@@ -17,10 +17,15 @@ import (
 func TestOpenAIModelsWithCompletion(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		t.Skip("OPENAI_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	openai := providers.NewOpenAI([]string{os.Getenv("OPENAI_API_KEY")})
+	openai := providers.NewOpenAI([]string{apiKey})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
@@ -200,10 +205,15 @@ func TestOpenAIModelsWithCompletion(t *testing.T) {
 func TestOpenAIModelsWithStreaming(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		t.Skip("OPENAI_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	openai := providers.NewOpenAI([]string{os.Getenv("OPENAI_API_KEY")})
+	openai := providers.NewOpenAI([]string{apiKey})
 
 	systemInst := "you are a helpful assistant."
 	userMsg := "please make a detailed analysis of the NVIDIA's current valuation."
@@ -490,10 +500,15 @@ func TestOpenAIModelsWithStreaming(t *testing.T) {
 func TestOpenAIImageGeneration(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		t.Skip("OPENAI_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	openai := providers.NewOpenAI([]string{os.Getenv("OPENAI_API_KEY")})
+	openai := providers.NewOpenAI([]string{apiKey})
 
 	// Test with different image generation configurations
 	tests := []struct {
@@ -550,10 +565,15 @@ func TestOpenAIImageGeneration(t *testing.T) {
 func TestOpenAIPDFHandling(t *testing.T) {
 	t.Parallel()
 
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		t.Skip("OPENAI_API_KEY not set")
+	}
+
 	client := http.Client{
 		Timeout: 2 * time.Minute,
 	}
-	openai := providers.NewOpenAI([]string{os.Getenv("OPENAI_API_KEY")})
+	openai := providers.NewOpenAI([]string{apiKey})
 
 	// In a real test, you would need a base64-encoded PDF file
 	// This is a placeholder - you'd need to replace with actual base64 content
