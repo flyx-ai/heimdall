@@ -387,42 +387,68 @@ func (oa Openai) CompleteResponse(
 				),
 			})
 
-			res, statusCode, err := oa.callImageGenerationAPI(
-				ctx,
-				req,
-				client,
-				key,
-			)
+			// Retry logic for transient errors (5xx)
+			maxRetries := 3
+			for attempt := range maxRetries {
+				res, statusCode, err := oa.callImageGenerationAPI(
+					ctx,
+					req,
+					client,
+					key,
+				)
 
-			lastStatusCode = statusCode
+				lastStatusCode = statusCode
 
-			if err == nil {
+				if err == nil {
+					reqLog.Events = append(reqLog.Events, response.Event{
+						Timestamp: time.Now(),
+						Description: fmt.Sprintf(
+							"DALL-E 3 request succeeded with key_number: %d, status: %d",
+							i,
+							statusCode,
+						),
+					})
+
+					return res, nil
+				}
+
+				lastErr = err
+
+				// Retry on 5xx errors
+				if statusCode >= 500 && statusCode < 600 && attempt < maxRetries-1 {
+					reqLog.Events = append(reqLog.Events, response.Event{
+						Timestamp: time.Now(),
+						Description: fmt.Sprintf(
+							"DALL-E 3 request got %d error, retrying (attempt %d/%d)",
+							statusCode,
+							attempt+1,
+							maxRetries,
+						),
+					})
+					backoff := time.Duration(1<<attempt) * time.Second
+					select {
+					case <-ctx.Done():
+						return response.Completion{}, ctx.Err()
+					case <-time.After(backoff):
+						continue
+					}
+				}
+
 				reqLog.Events = append(reqLog.Events, response.Event{
 					Timestamp: time.Now(),
 					Description: fmt.Sprintf(
-						"DALL-E 3 request succeeded with key_number: %d, status: %d",
+						"DALL-E 3 request failed with key_number: %d, status: %d, err: %v",
 						i,
 						statusCode,
+						err,
 					),
 				})
-
-				return res, nil
+				break
 			}
 
-			lastErr = err
-			reqLog.Events = append(reqLog.Events, response.Event{
-				Timestamp: time.Now(),
-				Description: fmt.Sprintf(
-					"DALL-E 3 request failed with key_number: %d, status: %d, err: %v",
-					i,
-					statusCode,
-					err,
-				),
-			})
-
-			if statusCode == http.StatusUnauthorized ||
-				statusCode == http.StatusForbidden ||
-				statusCode == http.StatusTooManyRequests {
+			if lastStatusCode == http.StatusUnauthorized ||
+				lastStatusCode == http.StatusForbidden ||
+				lastStatusCode == http.StatusTooManyRequests {
 				continue
 			}
 		}
