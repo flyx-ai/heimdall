@@ -128,6 +128,27 @@ func (p Perplexity) doRequest(
 		Temperature:   1.0,
 	}
 
+	var structuredOutput map[string]any
+	switch m := req.Model.(type) {
+	case models.SonarReasoningPro:
+		structuredOutput = m.StructuredOutput
+	case models.SonarReasoning:
+		structuredOutput = m.StructuredOutput
+	case models.SonarPro:
+		structuredOutput = m.StructuredOutput
+	case models.Sonar:
+		structuredOutput = m.StructuredOutput
+	}
+
+	if len(structuredOutput) > 0 {
+		apiReq.ResponseFormat = map[string]any{
+			"type": "json_schema",
+			"json_schema": map[string]any{
+				"schema": structuredOutput,
+			},
+		}
+	}
+
 	body, err := json.Marshal(apiReq)
 	if err != nil {
 		return response.Completion{}, 0, err
@@ -286,7 +307,7 @@ func (p Perplexity) StreamResponse(
 		})
 	}
 
-	return p.tryWithBackup(ctx, req, client, chunkHandler, requestLog)
+	return p.tryWithBackup(ctx, req, client, chunkHandler, reqLog)
 }
 
 // tryWithBackup implements LLMProvider.

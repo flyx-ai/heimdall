@@ -18,7 +18,8 @@ type GrokImagePayload struct {
 }
 
 type Grok2Vision struct {
-	ImageFile []GrokImagePayload
+	ImageFile        []GrokImagePayload
+	StructuredOutput map[string]any
 }
 
 func (g Grok2Vision) EstimateCost(text string) float64 {
@@ -39,7 +40,8 @@ func (Grok2Vision) GetProvider() string {
 var _ Model = new(Grok2Vision)
 
 type Grok3 struct {
-	ImageFile []GrokImagePayload
+	ImageFile        []GrokImagePayload
+	StructuredOutput map[string]any
 }
 
 func (g Grok3) EstimateCost(text string) float64 {
@@ -60,7 +62,7 @@ func (Grok3) GetProvider() string {
 var _ Model = new(Grok3)
 
 type Grok3Mini struct {
-	// Note: Grok 3 Mini is text-only and does not support vision/images
+	StructuredOutput map[string]any
 }
 
 func (g Grok3Mini) EstimateCost(text string) float64 {
@@ -81,7 +83,8 @@ func (Grok3Mini) GetProvider() string {
 var _ Model = new(Grok3Mini)
 
 type Grok3Fast struct {
-	ImageFile []GrokImagePayload
+	ImageFile        []GrokImagePayload
+	StructuredOutput map[string]any
 }
 
 func (g Grok3Fast) EstimateCost(text string) float64 {
@@ -102,7 +105,7 @@ func (Grok3Fast) GetProvider() string {
 var _ Model = new(Grok3Fast)
 
 type Grok3MiniFast struct {
-	// Note: Grok 3 Mini Fast is text-only and does not support vision/images
+	StructuredOutput map[string]any
 }
 
 func (g Grok3MiniFast) EstimateCost(text string) float64 {
@@ -123,7 +126,8 @@ func (Grok3MiniFast) GetProvider() string {
 var _ Model = new(Grok3MiniFast)
 
 type Grok4 struct {
-	ImageFile []GrokImagePayload
+	ImageFile        []GrokImagePayload
+	StructuredOutput map[string]any
 }
 
 func (g Grok4) EstimateCost(text string) float64 {
@@ -144,7 +148,8 @@ func (Grok4) GetProvider() string {
 var _ Model = new(Grok4)
 
 type Grok4Fast struct {
-	ImageFile []GrokImagePayload
+	ImageFile        []GrokImagePayload
+	StructuredOutput map[string]any
 }
 
 func (g Grok4Fast) EstimateCost(text string) float64 {

@@ -22,11 +22,12 @@ import (
 var openRouterBaseURL = "https://openrouter.ai/api/v1"
 
 type openRouterRequest struct {
-	Model         string        `json:"model"`
-	Messages      any           `json:"messages"`
-	Stream        bool          `json:"stream"`
-	StreamOptions streamOptions `json:"stream_options"`
-	Temperature   float32       `json:"temperature,omitempty"`
+	Model          string         `json:"model"`
+	Messages       any            `json:"messages"`
+	Stream         bool           `json:"stream"`
+	StreamOptions  streamOptions  `json:"stream_options"`
+	Temperature    float32        `json:"temperature,omitempty"`
+	ResponseFormat map[string]any `json:"response_format,omitempty"`
 }
 
 type openRouterChunk struct {
@@ -73,6 +74,13 @@ func (or OpenRouter) doRequest(
 		Stream:        true,
 		StreamOptions: streamOptions{IncludeUsage: true},
 		Temperature:   1.0,
+	}
+
+	if len(model.StructuredOutput) > 0 {
+		openRouterReq.ResponseFormat = map[string]any{
+			"type":        "json_schema",
+			"json_schema": model.StructuredOutput,
+		}
 	}
 
 	preparedReq, err := prepareOpenRouterRequest(

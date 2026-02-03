@@ -60,6 +60,12 @@ type anthropicRequest struct {
 	MaxTokens   int            `json:"max_tokens"`
 	Temperature float32        `json:"temperature,omitempty"`
 	TopP        float32        `json:"top_p,omitempty"`
+	Betas       []string       `json:"-"` // Sent as header, not in body
+}
+
+type anthropicRequestWithStructuredOutput struct {
+	anthropicRequest
+	OutputConfig map[string]any `json:"output_config,omitempty"`
 }
 
 // CompleteResponse implements LLMProvider.
@@ -231,7 +237,45 @@ func (a Anthropic) doRequest(
 		Temperature: 1.0,
 	}
 
-	body, err := json.Marshal(apiReq)
+	// Extract structured output from model if present
+	var structuredOutput map[string]any
+	switch m := req.Model.(type) {
+	case models.Claude3Opus:
+		structuredOutput = m.StructuredOutput
+	case models.Claude35Sonnet:
+		structuredOutput = m.StructuredOutput
+	case models.Claude35Haiku:
+		structuredOutput = m.StructuredOutput
+	case models.Claude37Sonnet:
+		structuredOutput = m.StructuredOutput
+	case models.Claude4Sonnet:
+		structuredOutput = m.StructuredOutput
+	case models.Claude4Opus:
+		structuredOutput = m.StructuredOutput
+	case models.Claude45Haiku:
+		structuredOutput = m.StructuredOutput
+	case models.Claude45Sonnet:
+		structuredOutput = m.StructuredOutput
+	case models.Claude45Opus:
+		structuredOutput = m.StructuredOutput
+	}
+
+	var body []byte
+	var err error
+	if len(structuredOutput) > 0 {
+		reqWithOutput := anthropicRequestWithStructuredOutput{
+			anthropicRequest: apiReq,
+			OutputConfig: map[string]any{
+				"format": map[string]any{
+					"type":   "json_schema",
+					"schema": structuredOutput,
+				},
+			},
+		}
+		body, err = json.Marshal(reqWithOutput)
+	} else {
+		body, err = json.Marshal(apiReq)
+	}
 	if err != nil {
 		return response.Completion{}, 0, err
 	}
@@ -246,6 +290,9 @@ func (a Anthropic) doRequest(
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("X-Api-Key", key)
 	httpReq.Header.Set("Anthropic-Version", "2023-06-01")
+	if len(structuredOutput) > 0 {
+		httpReq.Header.Set("anthropic-beta", "structured-outputs-2025-11-13")
+	}
 
 	resp, err := client.Do(httpReq)
 	if err != nil {
@@ -788,9 +835,7 @@ func handleMedia(
 	content := []any{}
 
 	if len(imageFile) > 0 {
-		imageCount := 0
 		for t, val := range imageFile {
-			// Extract base MIME type (remove any suffix after #)
 			mimeType := string(t)
 			if idx := strings.Index(mimeType, "#"); idx > 0 {
 				mimeType = mimeType[:idx]
@@ -804,9 +849,7 @@ func handleMedia(
 					Data:      val,
 				},
 			})
-			imageCount++
 		}
-		fmt.Printf("DEBUG: Total %d images added to Anthropic content array (content length: %d)\n", imageCount, len(content))
 	}
 
 	if len(pdfFiles) > 0 {

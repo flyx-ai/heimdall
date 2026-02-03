@@ -51,6 +51,31 @@ func (g Grok) doRequest(
 		Temperature:   1.0,
 	}
 
+	var structuredOutput map[string]any
+	switch m := req.Model.(type) {
+	case models.Grok2Vision:
+		structuredOutput = m.StructuredOutput
+	case models.Grok3:
+		structuredOutput = m.StructuredOutput
+	case models.Grok3Mini:
+		structuredOutput = m.StructuredOutput
+	case models.Grok3Fast:
+		structuredOutput = m.StructuredOutput
+	case models.Grok3MiniFast:
+		structuredOutput = m.StructuredOutput
+	case models.Grok4:
+		structuredOutput = m.StructuredOutput
+	case models.Grok4Fast:
+		structuredOutput = m.StructuredOutput
+	}
+
+	if len(structuredOutput) > 0 {
+		grokRequest.ResponseFormat = map[string]any{
+			"type":        "json_schema",
+			"json_schema": structuredOutput,
+		}
+	}
+
 	request, err := prepareGrokRequest(
 		grokRequest,
 		req.Model,
