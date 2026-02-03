@@ -969,7 +969,7 @@ func prepareGemini20FlashRequest(
 		request = handleGenericFiles(request, model.Files, lastIndex)
 	}
 
-	if len(model.StructuredOutput) > 1 {
+	if len(model.StructuredOutput) > 0 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
 			"response_schema":    model.StructuredOutput,
@@ -1035,7 +1035,7 @@ func prepareGemini20FlashLiteRequest(
 		request = handleGenericFiles(request, model.Files, lastIndex)
 	}
 
-	if len(model.StructuredOutput) > 1 {
+	if len(model.StructuredOutput) > 0 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
 			"response_schema":    model.StructuredOutput,
@@ -1101,7 +1101,7 @@ func prepareGemini25FlashLiteRequest(
 		request = handleGenericFiles(request, model.Files, lastIndex)
 	}
 
-	if len(model.StructuredOutput) > 1 {
+	if len(model.StructuredOutput) > 0 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
 			"response_schema":    model.StructuredOutput,
@@ -1167,7 +1167,7 @@ func prepareGemini25FlashPreviewRequest(
 		request = handleGenericFiles(request, model.Files, lastIndex)
 	}
 
-	if len(model.StructuredOutput) > 1 {
+	if len(model.StructuredOutput) > 0 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
 			"response_schema":    model.StructuredOutput,
@@ -1233,7 +1233,7 @@ func prepareGemini25ProPreviewRequest(
 		request = handleGenericFiles(request, model.Files, lastIndex)
 	}
 
-	if len(model.StructuredOutput) > 1 {
+	if len(model.StructuredOutput) > 0 {
 		request.Config = map[string]any{
 			"response_mime_type": "application/json",
 			"response_schema":    model.StructuredOutput,

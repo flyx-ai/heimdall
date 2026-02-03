@@ -2,7 +2,9 @@ package models
 
 const PerplexityProvider = "perplexity"
 
-type SonarReasoningPro struct{}
+type SonarReasoningPro struct {
+	StructuredOutput map[string]any
+}
 
 func (s SonarReasoningPro) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.000002
@@ -18,7 +20,9 @@ func (s SonarReasoningPro) GetProvider() string {
 
 var _ Model = new(SonarReasoningPro)
 
-type SonarReasoning struct{}
+type SonarReasoning struct {
+	StructuredOutput map[string]any
+}
 
 func (s SonarReasoning) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.000001
@@ -34,7 +38,9 @@ func (s SonarReasoning) GetProvider() string {
 
 var _ Model = new(SonarReasoning)
 
-type SonarPro struct{}
+type SonarPro struct {
+	StructuredOutput map[string]any
+}
 
 func (s SonarPro) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.000003
@@ -50,7 +56,9 @@ func (s SonarPro) GetProvider() string {
 
 var _ Model = new(SonarPro)
 
-type Sonar struct{}
+type Sonar struct {
+	StructuredOutput map[string]any
+}
 
 func (s Sonar) EstimateCost(text string) float64 {
 	return (float64(len(text)) / 4) * 0.000001

@@ -27,8 +27,9 @@ const (
 )
 
 type Claude3Opus struct {
-	ImageFile map[AnthropicImageType]string
-	PdfFiles  []AnthropicPdf
+	ImageFile        map[AnthropicImageType]string
+	PdfFiles         []AnthropicPdf
+	StructuredOutput map[string]any
 }
 
 func (c Claude3Opus) EstimateCost(text string) float64 {
@@ -46,8 +47,9 @@ func (c Claude3Opus) GetProvider() string {
 var _ Model = new(Claude3Opus)
 
 type Claude35Sonnet struct {
-	ImageFile map[AnthropicImageType]string
-	PdfFiles  []AnthropicPdf
+	ImageFile        map[AnthropicImageType]string
+	PdfFiles         []AnthropicPdf
+	StructuredOutput map[string]any
 }
 
 func (c Claude35Sonnet) EstimateCost(text string) float64 {
@@ -65,8 +67,9 @@ func (c Claude35Sonnet) GetProvider() string {
 var _ Model = new(Claude35Sonnet)
 
 type Claude35Haiku struct {
-	ImageFile map[AnthropicImageType]string
-	PdfFiles  []AnthropicPdf
+	ImageFile        map[AnthropicImageType]string
+	PdfFiles         []AnthropicPdf
+	StructuredOutput map[string]any
 }
 
 func (c Claude35Haiku) EstimateCost(text string) float64 {
@@ -84,8 +87,9 @@ func (c Claude35Haiku) GetProvider() string {
 var _ Model = new(Claude35Haiku)
 
 type Claude37Sonnet struct {
-	ImageFile map[AnthropicImageType]string
-	PdfFiles  []AnthropicPdf
+	ImageFile        map[AnthropicImageType]string
+	PdfFiles         []AnthropicPdf
+	StructuredOutput map[string]any
 }
 
 func (c Claude37Sonnet) EstimateCost(text string) float64 {
@@ -103,8 +107,9 @@ func (c Claude37Sonnet) GetProvider() string {
 var _ Model = new(Claude37Sonnet)
 
 type Claude4Sonnet struct {
-	ImageFile map[AnthropicImageType]string
-	PdfFiles  []AnthropicPdf
+	ImageFile        map[AnthropicImageType]string
+	PdfFiles         []AnthropicPdf
+	StructuredOutput map[string]any
 }
 
 func (c Claude4Sonnet) EstimateCost(text string) float64 {
@@ -122,8 +127,9 @@ func (c Claude4Sonnet) GetProvider() string {
 var _ Model = new(Claude4Sonnet)
 
 type Claude4Opus struct {
-	ImageFile map[AnthropicImageType]string
-	PdfFiles  []AnthropicPdf
+	ImageFile        map[AnthropicImageType]string
+	PdfFiles         []AnthropicPdf
+	StructuredOutput map[string]any
 }
 
 func (c Claude4Opus) EstimateCost(text string) float64 {
@@ -141,8 +147,9 @@ func (c Claude4Opus) GetProvider() string {
 var _ Model = new(Claude4Opus)
 
 type Claude45Haiku struct {
-	ImageFile map[AnthropicImageType]string
-	PdfFiles  []AnthropicPdf
+	ImageFile        map[AnthropicImageType]string
+	PdfFiles         []AnthropicPdf
+	StructuredOutput map[string]any
 }
 
 func (c Claude45Haiku) EstimateCost(text string) float64 {
@@ -160,8 +167,9 @@ func (c Claude45Haiku) GetProvider() string {
 var _ Model = new(Claude45Haiku)
 
 type Claude45Sonnet struct {
-	ImageFile map[AnthropicImageType]string
-	PdfFiles  []AnthropicPdf
+	ImageFile        map[AnthropicImageType]string
+	PdfFiles         []AnthropicPdf
+	StructuredOutput map[string]any
 }
 
 func (c Claude45Sonnet) EstimateCost(text string) float64 {
@@ -179,8 +187,9 @@ func (c Claude45Sonnet) GetProvider() string {
 var _ Model = new(Claude45Sonnet)
 
 type Claude45Opus struct {
-	ImageFile map[AnthropicImageType]string
-	PdfFiles  []AnthropicPdf
+	ImageFile        map[AnthropicImageType]string
+	PdfFiles         []AnthropicPdf
+	StructuredOutput map[string]any
 }
 
 func (c Claude45Opus) EstimateCost(text string) float64 {
