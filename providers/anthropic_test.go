@@ -50,6 +50,7 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 	assert.NotEmpty(t, res.RawRequest, "RawRequest should not be empty")
 	assert.NotEmpty(t, res.RawResponse, "RawResponse should not be empty")
 	assert.True(t, json.Valid(res.RawRequest), "RawRequest should be valid JSON")
+	assert.True(t, json.Valid(res.RawResponse), "RawResponse should be valid JSON")
 }
 
 func TestClaude46OpusWithCompletion(t *testing.T) {
@@ -165,4 +166,5 @@ func TestAnthropicModelsWithStreaming(t *testing.T) {
 	assert.NotEmpty(t, res.RawRequest, "RawRequest should not be empty")
 	assert.NotEmpty(t, res.RawResponse, "RawResponse should not be empty")
 	assert.True(t, json.Valid(res.RawRequest), "RawRequest should be valid JSON")
+	assert.True(t, json.Valid(res.RawResponse), "RawResponse should be valid JSON")
 }

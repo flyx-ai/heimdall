@@ -177,7 +177,7 @@ func (g Grok) doRequest(
 
 	rawResp, err := json.Marshal(rawEvents)
 	if err != nil {
-		rawResp = nil
+		return response.Completion{}, 0, fmt.Errorf("marshal raw response events: %w", err)
 	}
 
 	return response.Completion{
