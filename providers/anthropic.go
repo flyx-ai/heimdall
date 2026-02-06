@@ -281,7 +281,8 @@ func (a Anthropic) doRequest(
 		Messages:    messages,
 		Stream:      true,
 		MaxTokens:   maxTokens,
-		Temperature: 1.0,
+		Temperature: req.Temperature,
+		TopP:        req.TopP,
 	}
 
 	var body []byte
