@@ -226,19 +226,22 @@ func (a Anthropic) doRequest(
 			return response.Completion{}, 0, err
 		}
 		messages = append(messages, msgs...)
+	case models.AnthropicClaude46OpusAlias:
+		msgs, err := prepareClaude46Opus(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = append(messages, msgs...)
 	}
 
-	apiReq := anthropicRequest{
-		System:      req.SystemMessage,
-		Model:       modelName,
-		Messages:    messages,
-		Stream:      true,
-		MaxTokens:   4096,
-		Temperature: 1.0,
-	}
+	maxTokens := 4096
 
-	// Extract structured output from model if present
+	// Extract structured output and model-specific options
 	var structuredOutput map[string]any
+	var betas []string
 	switch m := req.Model.(type) {
 	case models.Claude3Opus:
 		structuredOutput = m.StructuredOutput
@@ -258,6 +261,28 @@ func (a Anthropic) doRequest(
 		structuredOutput = m.StructuredOutput
 	case models.Claude45Opus:
 		structuredOutput = m.StructuredOutput
+	case models.Claude46Opus:
+		structuredOutput = m.StructuredOutput
+		if m.MaxOutputTokens > 0 {
+			maxTokens = m.MaxOutputTokens
+		}
+		if m.ExtendedContext {
+			betas = append(betas, "context-1m-2025-08-07")
+		}
+	}
+
+	if len(structuredOutput) > 0 {
+		betas = append(betas, "structured-outputs-2025-11-13")
+	}
+
+	apiReq := anthropicRequest{
+		System:      req.SystemMessage,
+		Model:       modelName,
+		Messages:    messages,
+		Stream:      true,
+		MaxTokens:   maxTokens,
+		Temperature: req.Temperature,
+		TopP:        req.TopP,
 	}
 
 	var body []byte
@@ -290,8 +315,8 @@ func (a Anthropic) doRequest(
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("X-Api-Key", key)
 	httpReq.Header.Set("Anthropic-Version", "2023-06-01")
-	if len(structuredOutput) > 0 {
-		httpReq.Header.Set("anthropic-beta", "structured-outputs-2025-11-13")
+	if len(betas) > 0 {
+		httpReq.Header.Set("anthropic-beta", strings.Join(betas, ","))
 	}
 
 	resp, err := client.Do(httpReq)
@@ -805,6 +830,39 @@ func prepareClaude45Sonnet(
 	if !ok {
 		return nil, errors.New(
 			"internal error; model type assertion to models.Claude45Sonnet failed",
+		)
+	}
+
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func prepareClaude46Opus(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude46Opus)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude46Opus failed",
 		)
 	}
 

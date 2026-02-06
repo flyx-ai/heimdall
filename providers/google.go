@@ -634,7 +634,7 @@ func (g Google) StreamResponse(
 }
 
 func isRetryableError(resCode int) bool {
-	return resCode > 400
+	return resCode == 429 || resCode >= 500
 }
 
 func (g Google) doRequest(
