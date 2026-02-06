@@ -175,7 +175,10 @@ func (g Grok) doRequest(
 		}
 	}
 
-	rawResp, _ := json.Marshal(rawEvents)
+	rawResp, err := json.Marshal(rawEvents)
+	if err != nil {
+		rawResp = nil
+	}
 
 	return response.Completion{
 		Content:     fullContent.String(),

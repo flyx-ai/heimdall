@@ -250,7 +250,10 @@ func (p Perplexity) doRequest(
 	}
 
 	finalContent := fullContent.String()
-	rawResp, _ := json.Marshal(rawEvents)
+	rawResp, err := json.Marshal(rawEvents)
+	if err != nil {
+		rawResp = nil
+	}
 
 	return response.Completion{
 		Content:     finalContent,
