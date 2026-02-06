@@ -167,6 +167,7 @@ func (oa Openai) doRequest(
 	reader := bufio.NewReader(resp.Body)
 	var fullContent strings.Builder
 	var usage response.Usage
+	var rawEvents []json.RawMessage
 	chunks := 0
 	now := time.Now()
 
@@ -199,6 +200,8 @@ func (oa Openai) doRequest(
 			)
 		}
 
+		rawEvents = append(rawEvents, json.RawMessage(line))
+
 		if len(chunk.Choices) > 0 {
 			fullContent.WriteString(chunk.Choices[0].Delta.Content)
 
@@ -219,10 +222,14 @@ func (oa Openai) doRequest(
 		}
 	}
 
+	rawResp, _ := json.Marshal(rawEvents)
+
 	return response.Completion{
-		Content: fullContent.String(),
-		Model:   req.Model.GetName(),
-		Usage:   usage,
+		Content:     fullContent.String(),
+		Model:       req.Model.GetName(),
+		Usage:       usage,
+		RawRequest:  body,
+		RawResponse: rawResp,
 	}, 0, nil
 }
 
@@ -684,7 +691,9 @@ func (oa Openai) callImageGenerationAPI(
 		} `json:"data"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&imageResp); err != nil {
+	var rawResponse bytes.Buffer
+	teeBody := io.TeeReader(resp.Body, &rawResponse)
+	if err := json.NewDecoder(teeBody).Decode(&imageResp); err != nil {
 		return response.Completion{}, resp.StatusCode, fmt.Errorf(
 			"decode image response: %w",
 			err,
@@ -707,9 +716,11 @@ func (oa Openai) callImageGenerationAPI(
 	}
 
 	return response.Completion{
-		Content: contentBuilder.String(),
-		Model:   req.Model.GetName(),
-		Usage:   usage,
+		Content:     contentBuilder.String(),
+		Model:       req.Model.GetName(),
+		Usage:       usage,
+		RawRequest:  bodyBytes,
+		RawResponse: rawResponse.Bytes(),
 	}, resp.StatusCode, nil
 }
 

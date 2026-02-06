@@ -28,9 +28,11 @@ type Usage struct {
 	TotalTokens      int
 }
 type Completion struct {
-	Content    string
-	Thoughts   string
-	Model      string
-	Usage      Usage
-	RequestLog Logging
+	Content     string
+	Thoughts    string
+	Model       string
+	Usage       Usage
+	RequestLog  Logging
+	RawRequest  []byte
+	RawResponse []byte
 }

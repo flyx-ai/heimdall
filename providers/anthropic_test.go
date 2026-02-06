@@ -2,6 +2,7 @@ package providers_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"os"
 	"testing"
@@ -46,6 +47,9 @@ func TestAnthropicModelsWithCompletion(t *testing.T) {
 	require.NoError(t, err, "CompleteResponse returned an unexpected error")
 	assert.NotEmpty(t, res.Content, "content should not be empty")
 	assert.NotEmpty(t, res.Model, "model should not be empty")
+	assert.NotEmpty(t, res.RawRequest, "RawRequest should not be empty")
+	assert.NotEmpty(t, res.RawResponse, "RawResponse should not be empty")
+	assert.True(t, json.Valid(res.RawRequest), "RawRequest should be valid JSON")
 }
 
 func TestClaude46OpusWithCompletion(t *testing.T) {
@@ -158,4 +162,7 @@ func TestAnthropicModelsWithStreaming(t *testing.T) {
 	assert.NotEmpty(t, chunkHandlerCollection, "chunkHandlerCollection should not be empty")
 	assert.NotEmpty(t, res.Content, "content should not be empty")
 	assert.NotEmpty(t, res.Model, "model should not be empty")
+	assert.NotEmpty(t, res.RawRequest, "RawRequest should not be empty")
+	assert.NotEmpty(t, res.RawResponse, "RawResponse should not be empty")
+	assert.True(t, json.Valid(res.RawRequest), "RawRequest should be valid JSON")
 }
