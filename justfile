@@ -4,7 +4,7 @@ alias t := test
 alias tg := test-google
 alias ta := test-anthropic
 alias to := test-openai
-alias tp := test-perplexity
+# alias tp := test-perplexity
 alias tv := test-vertexai
 
 alias ci := golangci-lint
@@ -24,8 +24,8 @@ test-anthropic:
 test-openai:
 	go test -v  providers/openai_test.go
 
-test-perplexity:
-	go test -v providers/perplexity_test.go
+# test-perplexity:
+# 	go test -v providers/perplexity_test.go
 
 test-vertexai:
 	go test -v providers/vertexai_test.go
