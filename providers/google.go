@@ -854,6 +854,7 @@ func (g Google) doRequest(
 	var fullContent strings.Builder
 	var thoughts strings.Builder
 	var usage response.Usage
+	var rawEvents []json.RawMessage
 	chunks := 0
 	now := time.Now()
 
@@ -879,6 +880,8 @@ func (g Google) doRequest(
 		if err := json.Unmarshal([]byte(line), &responseChunk); err != nil {
 			return response.Completion{}, 0, err
 		}
+
+		rawEvents = append(rawEvents, json.RawMessage(line))
 
 		if len(responseChunk.Candidates) > 0 {
 			if len(responseChunk.Candidates[0].Content.Parts) > 0 {
@@ -911,11 +914,18 @@ func (g Google) doRequest(
 		}
 	}
 
+	rawResp, err := json.Marshal(rawEvents)
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf("marshal raw response events: %w", err)
+	}
+
 	return response.Completion{
-		Content:  fullContent.String(),
-		Thoughts: thoughts.String(),
-		Model:    req.Model.GetName(),
-		Usage:    usage,
+		Content:     fullContent.String(),
+		Thoughts:    thoughts.String(),
+		Model:       req.Model.GetName(),
+		Usage:       usage,
+		RawRequest:  requestBody,
+		RawResponse: rawResp,
 	}, 0, nil
 }
 
@@ -1721,8 +1731,10 @@ func (g Google) doGemini3ProImageRequest(
 		)
 	}
 
+	var rawResponse bytes.Buffer
+	teeBody := io.TeeReader(resp.Body, &rawResponse)
 	var imageResp gemini25FlashImageResponse
-	if err := json.NewDecoder(resp.Body).Decode(&imageResp); err != nil {
+	if err := json.NewDecoder(teeBody).Decode(&imageResp); err != nil {
 		return response.Completion{}, 0, fmt.Errorf("failed to decode response: %w", err)
 	}
 
@@ -1750,6 +1762,8 @@ func (g Google) doGemini3ProImageRequest(
 			CompletionTokens: imageResp.UsageMetadata.CandidatesTokenCount,
 			TotalTokens:      imageResp.UsageMetadata.TotalTokenCount,
 		},
+		RawRequest:  bodyBytes,
+		RawResponse: rawResponse.Bytes(),
 	}, http.StatusOK, nil
 }
 
@@ -1910,8 +1924,10 @@ func (g Google) doGemini25FlashImageRequest(
 		)
 	}
 
+	var rawResponse bytes.Buffer
+	teeBody := io.TeeReader(resp.Body, &rawResponse)
 	var imageResp gemini25FlashImageResponse
-	if err := json.NewDecoder(resp.Body).Decode(&imageResp); err != nil {
+	if err := json.NewDecoder(teeBody).Decode(&imageResp); err != nil {
 		return response.Completion{}, 0, fmt.Errorf("failed to decode response: %w", err)
 	}
 
@@ -1940,5 +1956,7 @@ func (g Google) doGemini25FlashImageRequest(
 			CompletionTokens: imageResp.UsageMetadata.CandidatesTokenCount,
 			TotalTokens:      imageResp.UsageMetadata.TotalTokenCount,
 		},
+		RawRequest:  bodyBytes,
+		RawResponse: rawResponse.Bytes(),
 	}, http.StatusOK, nil
 }

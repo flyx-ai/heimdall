@@ -334,6 +334,7 @@ func (a Anthropic) doRequest(
 
 	scanner := bufio.NewScanner(resp.Body)
 	var fullContent strings.Builder
+	var rawEvents []json.RawMessage
 
 	chunks := 0
 	now := time.Now()
@@ -366,6 +367,8 @@ func (a Anthropic) doRequest(
 					return response.Completion{}, 0, err
 				}
 
+				rawEvents = append(rawEvents, json.RawMessage(dataStr))
+
 				if event.Type == "content_block_delta" &&
 					event.Delta.Type == "text_delta" {
 					completeText.WriteString(event.Delta.Text)
@@ -392,6 +395,11 @@ func (a Anthropic) doRequest(
 		}
 	}
 
+	rawResp, err := json.Marshal(rawEvents)
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf("marshal raw response events: %w", err)
+	}
+
 	return response.Completion{
 		Content: fullContent.String(),
 		Model:   req.Model.GetName(),
@@ -400,6 +408,8 @@ func (a Anthropic) doRequest(
 			// CompletionTokens: lastResponse.Usage.OutputTokens,
 			// PromptTokens:     lastResponse.Usage.InputTokens,
 		},
+		RawRequest:  body,
+		RawResponse: rawResp,
 	}, 0, nil
 }
 

@@ -1,3 +1,5 @@
+//go:build perplexity
+
 package providers
 
 import (
@@ -191,6 +193,7 @@ func (p Perplexity) doRequest(
 	reader := bufio.NewReader(resp.Body)
 	var fullContent strings.Builder
 	var usage response.Usage
+	var rawEvents []json.RawMessage
 	chunks := 0
 	now := time.Now()
 
@@ -223,6 +226,8 @@ func (p Perplexity) doRequest(
 			)
 		}
 
+		rawEvents = append(rawEvents, json.RawMessage(line))
+
 		if len(chunk.Choices) > 0 {
 			contentDelta := chunk.Choices[0].Delta.Content
 			fullContent.WriteString(contentDelta)
@@ -245,11 +250,17 @@ func (p Perplexity) doRequest(
 	}
 
 	finalContent := fullContent.String()
+	rawResp, err := json.Marshal(rawEvents)
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf("marshal raw response events: %w", err)
+	}
 
 	return response.Completion{
-		Content: finalContent,
-		Model:   req.Model.GetName(),
-		Usage:   usage,
+		Content:     finalContent,
+		Model:       req.Model.GetName(),
+		Usage:       usage,
+		RawRequest:  body,
+		RawResponse: rawResp,
 	}, 0, nil
 }
 

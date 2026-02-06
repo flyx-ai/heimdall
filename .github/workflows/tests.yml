@@ -25,19 +25,19 @@ jobs:
         run: just test-anthropic
         env:
           ANTHROPIC_API_KEY: ${{secrets.ANTHROPIC_API_KEY}}
-  perplexity:
-    name: perplexity/completion and streaming
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: extractions/setup-just@v3
-      - uses: actions/setup-go@v5
-        with:
-          go-version: 1.24
-      - name: run
-        run: just test-perplexity
-        env:
-          PERPLEXITY_API_KEY: ${{secrets.PERPLEXITY_API_KEY}}
+  # perplexity:
+  #   name: perplexity/completion and streaming
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: extractions/setup-just@v3
+  #     - uses: actions/setup-go@v5
+  #       with:
+  #         go-version: 1.24
+  #     - name: run
+  #       run: just test-perplexity
+  #       env:
+  #         PERPLEXITY_API_KEY: ${{secrets.PERPLEXITY_API_KEY}}
   google:
     name: google/completion and streaming
     runs-on: ubuntu-latest

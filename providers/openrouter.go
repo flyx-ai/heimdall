@@ -124,6 +124,7 @@ func (or OpenRouter) doRequest(
 	reader := bufio.NewReader(resp.Body)
 	var fullContent strings.Builder
 	var usage response.Usage
+	var rawEvents []json.RawMessage
 	chunks := 0
 	now := time.Now()
 
@@ -150,6 +151,8 @@ func (or OpenRouter) doRequest(
 			continue
 		}
 
+		rawEvents = append(rawEvents, json.RawMessage(line))
+
 		if len(chunk.Choices) > 0 {
 			fullContent.WriteString(chunk.Choices[0].Delta.Content)
 
@@ -170,10 +173,17 @@ func (or OpenRouter) doRequest(
 		}
 	}
 
+	rawResp, err := json.Marshal(rawEvents)
+	if err != nil {
+		return response.Completion{}, 0, fmt.Errorf("marshal raw response events: %w", err)
+	}
+
 	return response.Completion{
-		Content: fullContent.String(),
-		Model:   model.ModelName,
-		Usage:   usage,
+		Content:     fullContent.String(),
+		Model:       model.ModelName,
+		Usage:       usage,
+		RawRequest:  body,
+		RawResponse: rawResp,
 	}, 0, nil
 }
 
