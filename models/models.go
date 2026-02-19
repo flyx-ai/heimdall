@@ -32,6 +32,7 @@ func GetAll() []string {
 		AnthropicClaude45SonnetAlias,
 		AnthropicClaude45OpusAlias,
 		AnthropicClaude46OpusAlias,
+		AnthropicClaude46SonnetAlias,
 
 		// NOTE: Gemini 1.5 models have been retired by Google as of 2025
 		Gemini20FlashModel,
@@ -50,6 +51,8 @@ func GetAll() []string {
 		GPT4Alias,
 		GPT4TurboAlias,
 		GPT41Alias,
+		GPT41MiniAlias,
+		GPT41NanoAlias,
 		GPT5Alias,
 		GPT5MiniAlias,
 		GPT5NanoAlias,
@@ -58,6 +61,9 @@ func GetAll() []string {
 		GPT51ChatAlias,
 		GPT51CodexAlias,
 		GPT51CodexMiniAlias,
+		GPT52Alias,
+		O3Alias,
+		O4MiniAlias,
 
 		"sonar-reasoning-pro",
 		"sonar-reasoning",

@@ -763,6 +763,12 @@ func prepareModelRequest(
 		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.GPT51CodexMini:
 		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.GPT52:
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.O3:
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
+	case models.O4Mini:
+		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.O1:
 		return prepareRequest(request, m.StructuredOutput, m.PdfFile, m.ImageFile, systemInst, userMsg, history)
 	case models.O3Mini:
