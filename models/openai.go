@@ -20,6 +20,9 @@ const (
 	GPT51ChatAlias      = "gpt-5.1-chat-latest"
 	GPT51CodexAlias     = "gpt-5.1-codex"
 	GPT51CodexMiniAlias = "gpt-5.1-codex-mini"
+	GPT52Alias          = "gpt-5.2"
+	O3Alias             = "o3"
+	O4MiniAlias         = "o4-mini"
 )
 
 type OpenaiImagePayload struct {
@@ -591,6 +594,66 @@ func (g GPT51CodexMini) GetProvider() string {
 }
 
 var _ Model = new(GPT51CodexMini)
+
+type GPT52 struct {
+	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []OpenaiImagePayload
+}
+
+func (g GPT52) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.00000175
+}
+
+func (g GPT52) GetName() string {
+	return GPT52Alias
+}
+
+func (g GPT52) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(GPT52)
+
+type O3 struct {
+	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []OpenaiImagePayload
+}
+
+func (o O3) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.00000200
+}
+
+func (o O3) GetName() string {
+	return O3Alias
+}
+
+func (o O3) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(O3)
+
+type O4Mini struct {
+	StructuredOutput map[string]any
+	PdfFile          map[string]string
+	ImageFile        []OpenaiImagePayload
+}
+
+func (o O4Mini) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.00000110
+}
+
+func (o O4Mini) GetName() string {
+	return O4MiniAlias
+}
+
+func (o O4Mini) GetProvider() string {
+	return OpenaiProvider
+}
+
+var _ Model = new(O4Mini)
 
 const ImageModelAlias = "gpt-image-1"
 

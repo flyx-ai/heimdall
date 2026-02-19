@@ -13,6 +13,7 @@ const (
 	AnthropicClaude45SonnetAlias = "claude-sonnet-4-5-20250929"
 	AnthropicClaude45OpusAlias   = "claude-opus-4-5-20251101"
 	AnthropicClaude46OpusAlias   = "claude-opus-4-6"
+	AnthropicClaude46SonnetAlias = "claude-sonnet-4-6"
 )
 
 type (
@@ -250,3 +251,37 @@ func (c Claude46Opus) GetProvider() string {
 
 var _ Model = new(Claude46Opus)
 var _ CostBreakdown = new(Claude46Opus)
+
+type Claude46Sonnet struct {
+	ImageFile        map[AnthropicImageType]string
+	PdfFiles         []AnthropicPdf
+	StructuredOutput map[string]any
+	// ExtendedContext enables the 1M token context window (beta).
+	ExtendedContext bool
+	// MaxOutputTokens sets the maximum output tokens (up to 64K).
+	// Defaults to 4096 when zero.
+	MaxOutputTokens int
+}
+
+func (c Claude46Sonnet) EstimateCost(text string) float64 {
+	return (float64(len(text)) / 4) * 0.000003
+}
+
+func (c Claude46Sonnet) GetInputCostPer1M() float64 {
+	return 3.0
+}
+
+func (c Claude46Sonnet) GetOutputCostPer1M() float64 {
+	return 15.0
+}
+
+func (c Claude46Sonnet) GetName() string {
+	return AnthropicClaude46SonnetAlias
+}
+
+func (c Claude46Sonnet) GetProvider() string {
+	return AnthropicProvider
+}
+
+var _ Model = new(Claude46Sonnet)
+var _ CostBreakdown = new(Claude46Sonnet)

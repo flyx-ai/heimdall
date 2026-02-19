@@ -235,6 +235,15 @@ func (a Anthropic) doRequest(
 			return response.Completion{}, 0, err
 		}
 		messages = append(messages, msgs...)
+	case models.AnthropicClaude46SonnetAlias:
+		msgs, err := prepareClaude46Sonnet(
+			req.Model,
+			req.UserMessage,
+		)
+		if err != nil {
+			return response.Completion{}, 0, err
+		}
+		messages = append(messages, msgs...)
 	}
 
 	maxTokens := 4096
@@ -262,6 +271,14 @@ func (a Anthropic) doRequest(
 	case models.Claude45Opus:
 		structuredOutput = m.StructuredOutput
 	case models.Claude46Opus:
+		structuredOutput = m.StructuredOutput
+		if m.MaxOutputTokens > 0 {
+			maxTokens = m.MaxOutputTokens
+		}
+		if m.ExtendedContext {
+			betas = append(betas, "context-1m-2025-08-07")
+		}
+	case models.Claude46Sonnet:
 		structuredOutput = m.StructuredOutput
 		if m.MaxOutputTokens > 0 {
 			maxTokens = m.MaxOutputTokens
@@ -873,6 +890,39 @@ func prepareClaude46Opus(
 	if !ok {
 		return nil, errors.New(
 			"internal error; model type assertion to models.Claude46Opus failed",
+		)
+	}
+
+	if len(model.ImageFile) > 0 && len(model.PdfFiles) > 0 {
+		return nil, errors.New(
+			"only image file or pdf files can be provided, not both",
+		)
+	}
+
+	if len(model.ImageFile) > 0 {
+		return handleMedia(userMsg, model.ImageFile, nil), nil
+	}
+
+	if len(model.PdfFiles) > 0 {
+		return handleMedia(userMsg, nil, model.PdfFiles), nil
+	}
+
+	return []anthropicMsg{
+		{
+			Role:    "user",
+			Content: userMsg,
+		},
+	}, nil
+}
+
+func prepareClaude46Sonnet(
+	requestedModel models.Model,
+	userMsg string,
+) ([]anthropicMsg, error) {
+	model, ok := requestedModel.(models.Claude46Sonnet)
+	if !ok {
+		return nil, errors.New(
+			"internal error; model type assertion to models.Claude46Sonnet failed",
 		)
 	}
 
