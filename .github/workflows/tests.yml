@@ -17,12 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: extractions/setup-just@v3
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
       - name: run
-        run: just test-anthropic
+        run: go test -v providers/anthropic_test.go
         env:
           ANTHROPIC_API_KEY: ${{secrets.ANTHROPIC_API_KEY}}
   # perplexity:
@@ -30,12 +29,11 @@ jobs:
   #   runs-on: ubuntu-latest
   #   steps:
   #     - uses: actions/checkout@v4
-  #     - uses: extractions/setup-just@v3
   #     - uses: actions/setup-go@v5
   #       with:
-  #         go-version: 1.24
+  #         go-version: '1.26'
   #     - name: run
-  #       run: just test-perplexity
+  #       run: go test -v providers/perplexity_test.go
   #       env:
   #         PERPLEXITY_API_KEY: ${{secrets.PERPLEXITY_API_KEY}}
   google:
@@ -43,12 +41,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: extractions/setup-just@v3
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
       - name: run
-        run: just test-google
+        run: go test -v providers/google_test.go
         env:
           GOOGLE_API_KEY: ${{secrets.GOOGLE_API_KEY}}
   openai:
@@ -56,12 +53,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: extractions/setup-just@v3
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
       - name: run
-        run: just test-openai
+        run: go test -v  providers/openai_test.go
         env:
           OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
   vertex:
@@ -69,12 +65,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: extractions/setup-just@v3
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
       - name: run
-        run: just test-vertexai
+        run: go test -v providers/vertexai_test.go
         env:
           GOOGLE_API_KEY: ${{secrets.GOOGLE_API_KEY}}
   grok:
@@ -82,11 +77,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: extractions/setup-just@v3
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26'
       - name: run
-        run: just test-grok
+        run: go test -v providers/grok_test.go
         env:
           GROK_API_KEY: ${{secrets.GROK_API_KEY}}
