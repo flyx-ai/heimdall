@@ -64,14 +64,12 @@ func GetAll() []string {
 		GPT52Alias,
 		O3Alias,
 		O4MiniAlias,
+		ImageModelAlias,
 
 		"sonar-reasoning-pro",
 		"sonar-reasoning",
 		"sonar-pro",
 		"sonar",
-
-		"gemini-2.0-flash-001",
-		"gemini-2.0-flash-lite-001",
 
 		Grok2VisionAlias,
 		Grok3Alias,

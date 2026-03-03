@@ -137,6 +137,9 @@ func (g Google) CompleteResponse(
 	}
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -379,7 +382,7 @@ func (g Google) CacheContent(
 		Timeout: 30 * time.Second,
 	}
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) //nolint:gosec // URL is a known API endpoint
 	if err != nil {
 		return "", fmt.Errorf("failed to make request: %w", err)
 	}
@@ -445,7 +448,7 @@ func (g Google) UpdateCachedContentTTL(
 		Timeout: 30 * time.Second,
 	}
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) //nolint:gosec // URL is a known API endpoint
 	if err != nil {
 		return fmt.Errorf("failed to make request: %w", err)
 	}
@@ -508,7 +511,7 @@ func (g Google) ListCachedContents(
 		Timeout: 30 * time.Second,
 	}
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) //nolint:gosec // URL is a known API endpoint
 	if err != nil {
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
@@ -561,7 +564,7 @@ func (g Google) DeleteCachedContent(
 		Timeout: 30 * time.Second,
 	}
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) //nolint:gosec // URL is a known API endpoint
 	if err != nil {
 		return fmt.Errorf("failed to make request: %w", err)
 	}
@@ -591,6 +594,9 @@ func (g Google) StreamResponse(
 	}
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -826,24 +832,24 @@ func (g Google) doRequest(
 	}
 
 	log.Printf("[Heimdall] Sending HTTP request...")
-	resp, err := client.Do(httpReq)
+	resp, err := client.Do(httpReq) //nolint:gosec // URL is a known API endpoint
 	if err != nil {
 		log.Printf("[Heimdall] HTTP request failed: %v", err)
 		return response.Completion{}, 0, err
 	}
 	defer resp.Body.Close()
-	log.Printf("[Heimdall] Got response: status=%d", resp.StatusCode)
+	log.Printf("[Heimdall] Got response: status=%d", resp.StatusCode) //nolint:gosec // status code is an int, not user input
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, readErr := io.ReadAll(resp.Body)
 		if readErr != nil {
-			log.Printf("[Heimdall] Error response (status %d), failed to read body: %v", resp.StatusCode, readErr)
+			log.Printf("[Heimdall] Error response (status %d), failed to read body: %v", resp.StatusCode, readErr) //nolint:gosec // status code is an int
 			return response.Completion{}, resp.StatusCode, fmt.Errorf(
 				"received non-200 status code (%d), failed to read error body: %w",
 				resp.StatusCode, readErr,
 			)
 		}
-		log.Printf("[Heimdall] Error response (status %d): %s", resp.StatusCode, string(bodyBytes))
+		log.Printf("[Heimdall] Error response (status %d): %s", resp.StatusCode, string(bodyBytes)) //nolint:gosec // status code is an int
 		return response.Completion{}, resp.StatusCode, fmt.Errorf(
 			"received non-200 status code (%d): %s",
 			resp.StatusCode, string(bodyBytes),
@@ -1463,7 +1469,7 @@ func prepareGemini3ProPreviewRequest(
 	systemInst string,
 	userMsg string,
 ) (geminiRequest, error) {
-	model, ok := requestedModel.(models.Gemini3ProPreview)
+	model, ok := requestedModel.(models.Gemini3ProPreview) //nolint:staticcheck // backward compatibility
 	if !ok {
 		return request, errors.New(
 			"internal error; model type assertion to models.Gemini3ProPreview failed",
@@ -1717,7 +1723,7 @@ func (g Google) doGemini3ProImageRequest(
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(httpReq)
+	resp, err := client.Do(httpReq) //nolint:gosec // URL is a known API endpoint
 	if err != nil {
 		return response.Completion{}, 0, fmt.Errorf("HTTP request failed: %w", err)
 	}
@@ -1910,7 +1916,7 @@ func (g Google) doGemini25FlashImageRequest(
 
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(httpReq)
+	resp, err := client.Do(httpReq) //nolint:gosec // URL is a known API endpoint
 	if err != nil {
 		return response.Completion{}, 0, fmt.Errorf("HTTP request failed: %w", err)
 	}

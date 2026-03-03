@@ -41,6 +41,9 @@ func (p Perplexity) CompleteResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -169,7 +172,7 @@ func (p Perplexity) doRequest(
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+key)
 
-	resp, err := client.Do(httpReq)
+	resp, err := client.Do(httpReq) //nolint:gosec // URL is a known API endpoint
 	if err != nil {
 		return response.Completion{}, 0, err
 	}
@@ -278,6 +281,9 @@ func (p Perplexity) StreamResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{

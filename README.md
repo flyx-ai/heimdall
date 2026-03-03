@@ -4,7 +4,7 @@ Heimdall is a robust Go library for making LLM (Large Language Model) requests m
 
 ## Features
 
-- **Provider Abstraction**: Unified interface for multiple LLM providers (OpenAI, Anthropic, Google/Gemini, Perplexity, VertexAI)
+- **Provider Abstraction**: Unified interface for multiple LLM providers (OpenAI, Anthropic, Google/Gemini, Grok, VertexAI, OpenRouter, Perplexity)
 - **Request Retries**: Automatic retry mechanism for handling transient failures
 - **Model Fallbacks**: Configurable fallback models if primary model fails
 - **Streaming Support**: Fully supports streaming responses for real-time applications
@@ -139,6 +139,18 @@ perplexityProvider := providers.NewPerplexity([]string{"your-api-key"})
 vertexAIProvider := providers.NewVertexAI([]string{"your-api-key"})
 ```
 
+### Grok
+
+```go
+grokProvider := providers.NewGrok([]string{"your-api-key"})
+```
+
+### OpenRouter
+
+```go
+openRouterProvider := providers.NewOpenRouter([]string{"your-api-key"})
+```
+
 ## Working with PDF Files
 
 ### OpenAI with PDF Input
@@ -248,7 +260,7 @@ func main() {
 	res, err := anthropicProvider.CompleteResponse(
 		ctx,
 		request.Completion{
-			Model: models.Claude37Sonnet{
+			Model: models.Claude46Sonnet{
 				PdfFiles: []models.AnthropicPdf{
 					models.AnthropicPdf(encodedPdf),
 				},
@@ -437,7 +449,7 @@ func main() {
 		
 		// Fallbacks - will be tried in order if primary fails
 		Fallback: []models.Model{
-			models.Claude37Sonnet{},
+			models.Claude46Sonnet{},
 			models.Gemini20Flash{},
 		},
 		
@@ -530,7 +542,7 @@ func main() {
 	res, err := anthropicProvider.CompleteResponse(
 		ctx,
 		request.Completion{
-			Model: models.Claude37Sonnet{
+			Model: models.Claude46Sonnet{
 				ImageFile: map[models.AnthropicImageType]string{
 					models.AnthropicImageJpeg: encodedString,
 				},
@@ -564,7 +576,7 @@ if err != nil {
     case errors.Is(err, heimdall.ErrNoChunkHandler):
         // Handle missing chunk handler for streaming
         fmt.Println("Streaming requires a chunk handler")
-    case errors.Is(err, heimdall.ErrNoProviderForModel):
+    case errors.Is(err, heimdall.ErrUnsupportedProvider):
         // Handle case where provider for model is not registered
         fmt.Println("No provider registered for this model")
     default:
@@ -584,25 +596,65 @@ Heimdall supports various models from different providers:
 - GPT-4 Turbo (gpt-4-turbo)
 - GPT-4o (gpt-4o-2024-11-20)
 - GPT-4o Mini (gpt-4o-mini-2024-07-18)
-- O1 (o1-2024-12-17)
-- O1 Mini (o1-mini-2024-09-12)
-- O1 Preview (o1-preview-2024-09-12)
-- O3 Mini (o3-mini-2025-01-31)
 - GPT-4.1 (gpt-4.1-2025-04-14)
+- GPT-4.1 Mini (gpt-4.1-mini-2025-04-14)
+- GPT-4.1 Nano (gpt-4.1-nano-2025-04-14)
+- GPT-5 (gpt-5-2025-08-07)
+- GPT-5 Mini (gpt-5-mini-2025-08-07)
+- GPT-5 Nano (gpt-5-nano-2025-08-07)
+- GPT-5 Chat (gpt-5-chat-latest)
+- GPT-5.1 (gpt-5.1)
+- GPT-5.1 Chat (gpt-5.1-chat-latest)
+- GPT-5.1 Codex (gpt-5.1-codex)
+- GPT-5.1 Codex Mini (gpt-5.1-codex-mini)
+- GPT-5.2 (gpt-5.2)
+- O1 (o1-2024-12-17)
+- O3 Mini (o3-mini-2025-01-31)
+- O3 (o3)
+- O4 Mini (o4-mini)
+- GPT Image (gpt-image-1)
 
 ### Anthropic Models
-- Claude 3 Opus (claude-3-opus-latest)
-- Claude 3.5 Sonnet (claude-3-5-sonnet-latest)
-- Claude 3.5 Haiku (claude-3-5-haiku-latest)
-- Claude 3.7 Sonnet (claude-3-7-sonnet-latest)
+- Claude 4.6 Opus (claude-opus-4-6)
+- Claude 4.6 Sonnet (claude-sonnet-4-6)
+- Claude 4.5 Opus (claude-opus-4-5-20251101)
+- Claude 4.5 Sonnet (claude-sonnet-4-5-20250929)
+- Claude 4.5 Haiku (claude-haiku-4-5)
+- Claude 4 Opus (claude-opus-4-20250514)
+- Claude 4 Sonnet (claude-sonnet-4-20250514)
+- ~~Claude 3.7 Sonnet~~ (retired Feb 19, 2026)
+- ~~Claude 3.5 Sonnet~~ (retired Oct 28, 2025)
+- ~~Claude 3.5 Haiku~~ (retired Feb 19, 2026)
+- ~~Claude 3 Opus~~ (retired Jan 5, 2026)
 
 ### Google/Gemini Models
-- Gemini 1.5 Flash (gemini-1.5-flash-002)
-- Gemini 1.5 Pro (gemini-1.5-pro-002)
-- Gemini 2.0 Flash (gemini-2.0-flash-001)
-- Gemini 2.0 Flash Lite (gemini-2.0-flash-lite-001)
-- Gemini 2.5 Flash Preview (gemini-2.5-flash-preview-04-17)
-- Gemini 2.5 Pro Preview (gemini-2.5-pro-preview-03-25)
+- Gemini 3 Flash Preview (gemini-3-flash-preview)
+- Gemini 3 Pro Preview (gemini-3-pro-preview) — _deprecated, shuts down March 9, 2026; use gemini-3.1-pro-preview_
+- Gemini 3 Pro Image Preview (gemini-3-pro-image-preview)
+- Gemini 2.5 Pro (gemini-2.5-pro)
+- Gemini 2.5 Flash (gemini-2.5-flash)
+- Gemini 2.5 Flash Lite (gemini-2.5-flash-lite)
+- Gemini 2.5 Flash Image (gemini-2.5-flash-image)
+- Gemini 2.0 Flash (gemini-2.0-flash-001) — _deprecated, retires June 1, 2026_
+- Gemini 2.0 Flash Lite (gemini-2.0-flash-lite-001) — _deprecated, retires June 1, 2026_
+
+### Grok Models
+- Grok 4 (grok-4)
+- Grok 4 Fast (grok-4-fast)
+- Grok 3 (grok-3)
+- Grok 3 Mini (grok-3-mini)
+- Grok 3 Fast (grok-3-fast)
+- Grok 3 Mini Fast (grok-3-mini-fast)
+- Grok 2 Vision (grok-2-vision-1212)
+
+### Perplexity Models (build tag: `perplexity`)
+- Sonar Reasoning Pro (sonar-reasoning-pro)
+- Sonar Reasoning (sonar-reasoning)
+- Sonar Pro (sonar-pro)
+- Sonar (sonar)
+
+### OpenRouter
+- Supports any model available on OpenRouter via dynamic model names
 
 ## License
 

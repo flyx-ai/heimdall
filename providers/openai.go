@@ -152,7 +152,7 @@ func (oa Openai) doRequest(
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+key)
 
-	resp, err := client.Do(httpReq)
+	resp, err := client.Do(httpReq) //nolint:gosec // URL is a known API endpoint
 	if err != nil {
 		return response.Completion{}, 0, err
 	}
@@ -359,6 +359,9 @@ func (oa Openai) CompleteResponse(
 	if _, ok := req.Model.(*models.GPTImage); ok {
 		reqLog := requestLog
 		if reqLog == nil {
+			if req.Tags == nil {
+				req.Tags = make(map[string]string)
+			}
 			req.Tags["request_type"] = "image_generation"
 			reqLog = &response.Logging{
 				Events: []response.Event{
@@ -477,6 +480,9 @@ func (oa Openai) CompleteResponse(
 
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "completion"
 
 		reqLog = &response.Logging{
@@ -561,6 +567,9 @@ func (oa Openai) StreamResponse(
 
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -669,7 +678,7 @@ func (oa Openai) callImageGenerationAPI(
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+key)
 
-	resp, err := client.Do(httpReq)
+	resp, err := client.Do(httpReq) //nolint:gosec // URL is a known API endpoint
 	if err != nil {
 		return response.Completion{}, 0, fmt.Errorf(
 			"image request failed: %w",

@@ -177,7 +177,7 @@ type Gemini25FlashPreview struct {
 }
 
 func (g Gemini25FlashPreview) EstimateCost(text string) float64 {
-	return (float64(len(text)) / 4) * 0.0000001
+	return (float64(len(text)) / 4) * 0.0000003
 }
 
 func (g Gemini25FlashPreview) GetName() string {
@@ -324,6 +324,8 @@ func (g Gemini25FlashImage) GetProvider() string {
 var _ Model = new(Gemini25FlashImage)
 var _ CostBreakdown = new(Gemini25FlashImage)
 
+// Deprecated: gemini-3-pro-preview shuts down on March 9, 2026.
+// Use gemini-3.1-pro-preview as a replacement.
 type Gemini3ProPreview struct {
 	Tools            GoogleTool
 	StructuredOutput map[string]any

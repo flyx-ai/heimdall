@@ -24,7 +24,7 @@ type Grok2Vision struct {
 
 func (g Grok2Vision) EstimateCost(text string) float64 {
 	inputCostPerToken := 0.000002
-	outputCostPerToken := 0.000002
+	outputCostPerToken := 0.000010
 	averageCost := (inputCostPerToken + outputCostPerToken) / 2
 	return (float64(len(text)) / 4) * averageCost
 }
@@ -88,8 +88,8 @@ type Grok3Fast struct {
 }
 
 func (g Grok3Fast) EstimateCost(text string) float64 {
-	inputCostPerToken := 0.000005
-	outputCostPerToken := 0.000025
+	inputCostPerToken := 0.000003
+	outputCostPerToken := 0.000015
 	averageCost := (inputCostPerToken + outputCostPerToken) / 2
 	return (float64(len(text)) / 4) * averageCost
 }
@@ -109,8 +109,8 @@ type Grok3MiniFast struct {
 }
 
 func (g Grok3MiniFast) EstimateCost(text string) float64 {
-	inputCostPerToken := 0.0000006
-	outputCostPerToken := 0.000004
+	inputCostPerToken := 0.0000003
+	outputCostPerToken := 0.0000005
 	averageCost := (inputCostPerToken + outputCostPerToken) / 2
 	return (float64(len(text)) / 4) * averageCost
 }
@@ -131,8 +131,8 @@ type Grok4 struct {
 }
 
 func (g Grok4) EstimateCost(text string) float64 {
-	inputCostPerToken := 0.000002
-	outputCostPerToken := 0.000002
+	inputCostPerToken := 0.000003
+	outputCostPerToken := 0.000015
 	averageCost := (inputCostPerToken + outputCostPerToken) / 2
 	return (float64(len(text)) / 4) * averageCost
 }
