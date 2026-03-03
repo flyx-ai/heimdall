@@ -21,6 +21,9 @@ func (r *Router) Stream(
 		return response.Completion{}, ErrNoChunkHandler
 	}
 
+	if req.Tags == nil {
+		req.Tags = make(map[string]string)
+	}
 	req.Tags["request_type"] = "stream"
 
 	models := append([]models.Model{req.Model}, req.Fallback...)

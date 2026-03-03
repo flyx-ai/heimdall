@@ -16,6 +16,9 @@ func (r *Router) Complete(
 ) (response.Completion, error) {
 	now := time.Now()
 
+	if req.Tags == nil {
+		req.Tags = make(map[string]string)
+	}
 	req.Tags["request_type"] = "completion"
 
 	requestLog := response.Logging{

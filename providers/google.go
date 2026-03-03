@@ -137,6 +137,9 @@ func (g Google) CompleteResponse(
 	}
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{
@@ -591,6 +594,9 @@ func (g Google) StreamResponse(
 	}
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{

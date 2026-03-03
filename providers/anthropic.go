@@ -77,6 +77,9 @@ func (a Anthropic) CompleteResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "completion"
 
 		reqLog = &response.Logging{
@@ -444,6 +447,9 @@ func (a Anthropic) StreamResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{

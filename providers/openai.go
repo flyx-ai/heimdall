@@ -359,6 +359,9 @@ func (oa Openai) CompleteResponse(
 	if _, ok := req.Model.(*models.GPTImage); ok {
 		reqLog := requestLog
 		if reqLog == nil {
+			if req.Tags == nil {
+				req.Tags = make(map[string]string)
+			}
 			req.Tags["request_type"] = "image_generation"
 			reqLog = &response.Logging{
 				Events: []response.Event{
@@ -477,6 +480,9 @@ func (oa Openai) CompleteResponse(
 
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "completion"
 
 		reqLog = &response.Logging{
@@ -561,6 +567,9 @@ func (oa Openai) StreamResponse(
 
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "streaming"
 
 		reqLog = &response.Logging{

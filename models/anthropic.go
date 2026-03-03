@@ -3,10 +3,16 @@ package models
 const AnthropicProvider = "anthropic"
 
 const (
-	AnthropicClaude3OpusAlias    = "claude-3-opus-latest"
-	AnthropicClaude35SonnetAlias = "claude-3-5-sonnet-latest"
-	AnthropicClaude35HaikuAlias  = "claude-3-5-haiku-latest"
-	AnthropicClaude37SonnetAlias = "claude-3-7-sonnet-latest"
+	// Deprecated: Claude 3 Opus was retired on January 5, 2026. Requests to this model will fail.
+	AnthropicClaude3OpusAlias = "claude-3-opus-20240229"
+	// Deprecated: Claude 3.5 Sonnet was retired on October 28, 2025. Requests to this model will fail.
+	AnthropicClaude35SonnetAlias = "claude-3-5-sonnet-20241022"
+	// Deprecated: Claude 3.5 Haiku was retired on February 19, 2026. Requests to this model will fail.
+	// Use Claude45Haiku (claude-haiku-4-5) as a replacement.
+	AnthropicClaude35HaikuAlias = "claude-3-5-haiku-20241022"
+	// Deprecated: Claude 3.7 Sonnet was retired on February 19, 2026. Requests to this model will fail.
+	// Use Claude46Sonnet (claude-sonnet-4-6) as a replacement.
+	AnthropicClaude37SonnetAlias = "claude-3-7-sonnet-20250219"
 	AnthropicClaude4SonnetAlias  = "claude-sonnet-4-20250514"
 	AnthropicClaude4OpusAlias    = "claude-opus-4-20250514"
 	AnthropicClaude45HaikuAlias  = "claude-haiku-4-5"

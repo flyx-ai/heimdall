@@ -706,9 +706,10 @@ type GPTImage struct {
 	ImageFile []OpenaiImagePayload
 }
 
-// TODO
 func (d GPTImage) EstimateCost(text string) float64 {
-	return 0.0
+	// Text input tokens cost $5.00/1M, image output tokens cost $40.00/1M.
+	// Use text input cost as a rough estimate for prompt size.
+	return (float64(len(text)) / 4) * 0.000005
 }
 
 func (d GPTImage) GetName() string {

@@ -264,6 +264,9 @@ func (or OpenRouter) CompleteResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "completion"
 		reqLog = &response.Logging{
 			Events: []response.Event{{
@@ -306,6 +309,9 @@ func (or OpenRouter) StreamResponse(
 ) (response.Completion, error) {
 	reqLog := &response.Logging{}
 	if requestLog == nil {
+		if req.Tags == nil {
+			req.Tags = make(map[string]string)
+		}
 		req.Tags["request_type"] = "streaming"
 		reqLog = &response.Logging{
 			Events: []response.Event{{
