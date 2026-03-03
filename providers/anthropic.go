@@ -146,7 +146,7 @@ func (a Anthropic) doRequest(
 	}
 
 	switch modelName {
-	case models.AnthropicClaude3OpusAlias:
+	case models.AnthropicClaude3OpusAlias: //nolint:staticcheck // backward compatibility
 		msgs, err := prepareClaude3Opus(
 			req.Model,
 			req.UserMessage,
@@ -155,7 +155,7 @@ func (a Anthropic) doRequest(
 			return response.Completion{}, 0, err
 		}
 		messages = append(messages, msgs...)
-	case models.AnthropicClaude35HaikuAlias:
+	case models.AnthropicClaude35HaikuAlias: //nolint:staticcheck // backward compatibility
 		msgs, err := prepareClaude35Haiku(
 			req.Model,
 			req.UserMessage,
@@ -165,7 +165,7 @@ func (a Anthropic) doRequest(
 		}
 
 		messages = append(messages, msgs...)
-	case models.AnthropicClaude35SonnetAlias:
+	case models.AnthropicClaude35SonnetAlias: //nolint:staticcheck // backward compatibility
 		msgs, err := prepareClaude35Sonnet(
 			req.Model,
 			req.UserMessage,
@@ -175,7 +175,7 @@ func (a Anthropic) doRequest(
 		}
 
 		messages = append(messages, msgs...)
-	case models.AnthropicClaude37SonnetAlias:
+	case models.AnthropicClaude37SonnetAlias: //nolint:staticcheck // backward compatibility
 		msgs, err := prepareClaude37Sonnet(
 			req.Model,
 			req.UserMessage,
@@ -339,7 +339,7 @@ func (a Anthropic) doRequest(
 		httpReq.Header.Set("anthropic-beta", strings.Join(betas, ","))
 	}
 
-	resp, err := client.Do(httpReq)
+	resp, err := client.Do(httpReq) //nolint:gosec // URL is a known API endpoint
 	if err != nil {
 		return response.Completion{}, 0, err
 	}

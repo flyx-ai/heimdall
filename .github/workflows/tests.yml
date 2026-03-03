@@ -20,7 +20,7 @@ jobs:
       - uses: extractions/setup-just@v3
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.24
+          go-version: '1.26'
       - name: run
         run: just test-anthropic
         env:
@@ -46,7 +46,7 @@ jobs:
       - uses: extractions/setup-just@v3
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.24
+          go-version: '1.26'
       - name: run
         run: just test-google
         env:
@@ -59,7 +59,7 @@ jobs:
       - uses: extractions/setup-just@v3
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.24
+          go-version: '1.26'
       - name: run
         run: just test-openai
         env:
@@ -72,7 +72,7 @@ jobs:
       - uses: extractions/setup-just@v3
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.24
+          go-version: '1.26'
       - name: run
         run: just test-vertexai
         env:
@@ -85,7 +85,7 @@ jobs:
       - uses: extractions/setup-just@v3
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.24
+          go-version: '1.26'
       - name: run
         run: just test-grok
         env:

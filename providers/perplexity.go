@@ -172,7 +172,7 @@ func (p Perplexity) doRequest(
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+key)
 
-	resp, err := client.Do(httpReq)
+	resp, err := client.Do(httpReq) //nolint:gosec // URL is a known API endpoint
 	if err != nil {
 		return response.Completion{}, 0, err
 	}
